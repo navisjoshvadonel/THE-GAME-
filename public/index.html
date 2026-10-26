@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JD's Arena | Campus LAN Arcade 2026</title>
+  <link rel="stylesheet" href="/css/student.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  </noscript>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕹️</text></svg>">
+</head>
+<body class="student-body jules-theme">
+
+  <!-- Low-Power Optimized Retro Grid & Ambient Backdrop (Zero GPU strain) -->
+  <div class="retro-crt-backdrop" aria-hidden="true">
+    <div class="retro-cyber-grid"></div>
+    <div class="retro-scanlines"></div>
+    <div class="retro-vignette"></div>
+    <canvas id="particleCanvas" class="particle-canvas"></canvas>
+  </div>
+
+  <div class="pc-student-container">
+
+    <!-- Top Retro Terminal OS Header -->
+    <header class="pc-student-header jules-window-bar">
+      <div class="window-decorations">
+        <span class="win-btn win-close"></span>
+        <span class="win-btn win-min"></span>
+        <span class="win-btn win-max"></span>
+      </div>
+
+      <div class="student-brand">
+        <span class="student-logo-icon">🕹️</span>
+        <div>
+          <h1 class="student-logo-title">JD's Arena</h1>
+          <span class="student-logo-sub">CAMPUS ARCADE LAN • ROUND 1: CIPHER QUEST</span>
+        </div>
+      </div>
+
+      <div class="header-controls">
+
+        <div id="benchIdentityBadge" class="identity-badge hidden">
+          <span class="bench-tag" id="navBenchTag">CABINET --</span>
+          <span id="navTeamName" class="player-name">--</span>
+          <div class="meta-tag meta-score-tag">
+            <span class="score-icon">⚡</span>
+            <strong id="navSquadScore">0 PTS</strong>
+          </div>
+        </div>
+
+        <button id="btnSwitchBench" class="header-nav-btn hidden" type="button" title="Switch Cabinet or Re-register">
+          <span class="nav-btn-icon">🔄</span>
+          <span>SWITCH CABINET</span>
+        </button>
+
+        <button id="soundToggleBtn" class="header-nav-btn" type="button" title="Toggle Sound">
+          <span id="soundIcon" class="nav-btn-icon">🔊</span>
+          <span id="soundText">AUDIO</span>
+        </button>
+
+        <button id="btnFullscreen" class="header-nav-btn" type="button" title="Toggle Fullscreen">
+          <span class="nav-btn-icon">⛶</span>
+          <span>EXPAND</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (Wide 1920x1080 Layout) -->
+    <main class="pc-main-workspace" id="quiz-main-card">
+
+      <!-- ========================================================
+           VIEW 1: BENCH SETUP (ONE BENCH, ONE LEADER CONSOLE)
+           ======================================================== -->
+      <section id="viewRegister" class="view-screen active">
+        <div class="retro-window-box">
+          <div class="retro-window-header">
+            <span class="window-title-text">[ JD'S ARENA // SQUAD_REGISTRATION ]</span>
+            <span class="badge badge-cyan">👑 LEADER PORTAL</span>
+          </div>
+
+          <!-- 1. BENCH REGISTRATION VIEW -->
+          <div id="playerLoginBox" class="window-content-pad">
+            <div class="setup-welcome-banner">
+              <div class="setup-icon-box">🕹️</div>
+              <div>
+                <h2 class="auth-heading">TEAM REGISTRATION</h2>
+                <p class="auth-subheading">Team Leader connects to JD's Arena, enters the team name, and locks in the squad member roster.</p>
+              </div>
+            </div>
+
+            <form id="benchRegisterForm" onsubmit="return false;" class="setup-form-grid">
+              <!-- Left Column: Team Identity & Leader Notice -->
+              <div class="setup-col">
+                <div class="form-group text-left">
+                  <label class="terminal-label" for="teamNameInput">TEAM NAME</label>
+                  <div class="input-with-prompt">
+                    <span class="prompt-symbol">#</span>
+                    <input 
+                      type="text" 
+                      id="teamNameInput" 
+                      class="pc-input-text terminal-input" 
+                      placeholder="Enter team name..." 
+                      value="" 
+                      maxlength="28"
+                      required
+                    >
+                  </div>
+                </div>
+
+                <div class="leader-connect-notice">
+                  <div class="notice-header">
+                    <span class="notice-icon">👑</span>
+                    <span class="notice-title">TEAM LEADER CONNECTION</span>
+                  </div>
+                  <p class="notice-body">
+                    The <strong>Team Leader</strong> connects directly to <strong>JD's Arena</strong> and enters the names of all team members.
+                  </p>
+                  <div class="notice-subpoints">
+                    <div class="notice-subpoint-item">
+                      <span class="bullet-dot">›</span>
+                      <span><strong>Step 1:</strong> Enter your official <strong>Team Name</strong> above.</span>
+                    </div>
+                    <div class="notice-subpoint-item">
+                      <span class="bullet-dot">›</span>
+                      <span><strong>Step 2:</strong> Select team format (<strong>1 Leader, 1 Member</strong> | <strong>1 Leader, 2 Member</strong> | <strong>1 Leader, 3 Member Team</strong>).</span>
+                    </div>
+                    <div class="notice-subpoint-item">
+                      <span class="bullet-dot">›</span>
+                      <span><strong>Step 3:</strong> Enter your name and all teammate names on the right.</span>
+                    </div>
+                    <div class="notice-subpoint-item">
+                      <span class="bullet-dot">›</span>
+                      <span><strong>Step 4:</strong> Click <strong>LOCK IN SQUAD &amp; ENTER ARENA</strong>!</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Hidden inputs for backward compatibility -->
+                <input type="hidden" id="customBenchInput" value="">
+                <input type="hidden" name="benchGender" value="open">
+              </div>
+
+              <!-- Right Column: Team Size & Squad Roster -->
+              <div class="setup-col">
+                <div class="form-group text-left">
+                  <label class="terminal-label">SQUAD FORMAT <span class="rule-tag">(Leader + Members)</span></label>
+                  <div class="size-toggle-group format-three-col">
+                    <label class="size-radio-card">
+                      <input type="radio" name="benchTeamSize" value="2" id="sizeRadio2">
+                      <div class="size-card-content">
+                        <span class="size-icon">👥</span>
+                        <div>
+                          <strong>1 LEADER, 1 MEMBER</strong>
+                          <span class="size-sub">2 Players Total</span>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label class="size-radio-card">
+                      <input type="radio" name="benchTeamSize" value="3" checked id="sizeRadio3">
+                      <div class="size-card-content">
+                        <span class="size-icon">👥👤</span>
+                        <div>
+                          <strong>1 LEADER, 2 MEMBER</strong>
+                          <span class="size-sub">3 Players Total</span>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label class="size-radio-card">
+                      <input type="radio" name="benchTeamSize" value="4" id="sizeRadio4">
+                      <div class="size-card-content">
+                        <span class="size-icon">👥👥</span>
+                        <div>
+                          <strong>1 LEADER, 3 MEMBER TEAM</strong>
+                          <span class="size-sub">4 Players Total</span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="roster-input-panel">
+                  <div class="roster-panel-title">
+                    <span>SQUAD ROSTER // ENTERED BY LEADER</span>
+                    <span class="roster-panel-sub">[JD'S ARENA]</span>
+                  </div>
+
+                  <!-- Member 1: Leader (You) -->
+                  <div class="form-group text-left member-entry-row">
+                    <div class="member-role-badge badge-leader">👑 [LEADER] TEAM LEADER NAME (CONNECTING)</div>
+                    <div class="input-with-prompt">
+                      <span class="prompt-symbol">👑</span>
+                      <input 
+                        type="text" 
+                        id="leaderNameInput" 
+                        class="pc-input-text terminal-input" 
+                        placeholder="Enter leader name..." 
+                        value=""
+                        maxlength="24" 
+                        required 
+                        autocomplete="off"
+                      >
+                    </div>
+                  </div>
+
+                  <!-- Member 2: Member 1 -->
+                  <div class="form-group text-left member-entry-row">
+                    <div class="member-role-badge badge-member">🎮 [MEMBER 1] TEAM MEMBER 1 NAME</div>
+                    <div class="input-with-prompt">
+                      <span class="prompt-symbol">🎮</span>
+                      <input 
+                        type="text" 
+                        id="member2NameInput" 
+                        class="pc-input-text terminal-input" 
+                        placeholder="Enter member 1 name..." 
+                        value=""
+                        maxlength="24" 
+                        required 
+                        autocomplete="off"
+                      >
+                    </div>
+                  </div>
+
+                  <!-- Member 3: Member 2 (Visible when 3 or 4 members selected) -->
+                  <div class="form-group text-left member-entry-row" id="member3Container">
+                    <div class="member-role-badge badge-member">⚡ [MEMBER 2] TEAM MEMBER 2 NAME</div>
+                    <div class="input-with-prompt">
+                      <span class="prompt-symbol">⚡</span>
+                      <input 
+                        type="text" 
+                        id="member3NameInput" 
+                        class="pc-input-text terminal-input" 
+                        placeholder="Enter member 2 name..." 
+                        value=""
+                        maxlength="24" 
+                        autocomplete="off"
+                      >
+                    </div>
+                  </div>
+
+                  <!-- Member 4: Member 3 (Visible when 4 members selected) -->
+                  <div class="form-group text-left member-entry-row hidden" id="member4Container">
+                    <div class="member-role-badge badge-member">🌟 [MEMBER 3] TEAM MEMBER 3 NAME</div>
+                    <div class="input-with-prompt">
+                      <span class="prompt-symbol">🌟</span>
+                      <input 
+                        type="text" 
+                        id="member4NameInput" 
+                        class="pc-input-text terminal-input" 
+                        placeholder="Enter member 3 name..." 
+                        value=""
+                        maxlength="24" 
+                        autocomplete="off"
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div id="registerError" class="alert-box alert-error hidden"></div>
+
+                <button type="button" id="btnInitializeBench" class="btn-pc-primary btn-glow btn-jules">
+                  <span>LOCK IN SQUAD &amp; ENTER ARENA</span>
+                  <span class="btn-arrow">➔</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 2: BENCH STAGING LOUNGE (WAITING FOR ROUND 1)
+           ======================================================== -->
+      <section id="viewLobby" class="view-screen hidden">
+        <div class="retro-window-box">
+          <div class="retro-window-header">
+            <span class="window-title-text">[ STATION_READY // SQUAD_LOUNGE ]</span>
+            <span id="loungeDivisionBadge" class="badge badge-cyan">STATION ONLINE</span>
+          </div>
+
+          <div class="lounge-wide-grid window-content-pad">
+            <!-- Left Column: Bench Roster -->
+            <div class="lounge-card-box">
+              <div class="heraldic-sub">ARCADE CABINET ONLINE</div>
+              <h2 id="loungeBenchTitle" class="card-title">CABINET --: SQUAD</h2>
+              <p class="card-subtitle">Arcade cabinet locked to this table. All squad members play from this station.</p>
+
+              <div class="lounge-members-container">
+                <div class="roster-header">
+                  <span>SQUAD ROSTER (<span id="loungeMemberCount">3</span> PLAYERS)</span>
+                  <span class="status-online-dot">● ALL PLAYERS READY</span>
+                </div>
+                <div class="members-roster-grid" id="loungeMembersGrid">
+                  <!-- Dynamic Member Cards Injected via JS -->
+                </div>
+              </div>
+
+              <div class="sound-check-strip">
+                <span class="sound-check-label">AUDIO TEST:</span>
+                <button type="button" id="btnTestSound" class="btn btn-sm btn-retro">
+                  <span>🔔 TEST ARCADE SOUND FX</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Column: Mission Briefing -->
+            <div class="lounge-card-box briefing-card">
+              <div class="heraldic-sub">MISSION BRIEFING</div>
+              <h2 class="card-title">STAGE 1: KEYWORD CIPHER QUEST</h2>
+              <p class="card-subtitle">Qualifier round execution flow for your arcade cabinet.</p>
+
+              <div class="briefing-steps">
+                <div class="briefing-step-item">
+                  <span class="step-num-circle">01</span>
+                  <div>
+                    <strong>4 GAMES TOTAL (2.5 MIN PER GAME)</strong>
+                    <p>Game 1 (AI & ML), Game 2 (Tamil Cinema), Game 3 (Famous Personality), and Game 4 (Captain Final Boss). Clues unlock at the 2:00 mark.</p>
+                  </div>
+                </div>
+                <div class="briefing-step-item">
+                  <span class="step-num-circle">02</span>
+                  <div>
+                    <strong>CRACK 3 CIPHER KEYWORDS (+250 PTS EACH)</strong>
+                    <p>Each cracked riddle awards 250 PTS and locks a secret keyword into your team's vault inventory.</p>
+                  </div>
+                </div>
+                <div class="briefing-step-item">
+                  <span class="step-num-circle">03</span>
+                  <div>
+                    <strong>FINAL BOSS SYNTHESIS (GAME 4)</strong>
+                    <p>Squad Leader uses the collected keywords to craft the winning victory sentence evaluated offline by the engine (+250 PTS).</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status-callout-box">
+                <div class="callout-spinner"></div>
+                <div>
+                  <strong>STAND BY FOR GAME MASTER TO START ROUND 1</strong>
+                  <p>Round 1 will commence simultaneously for all teams when launched from the host console.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 3: RETRO-FUTURISTIC GAMIFIED ROUND 1 ARENA (1080p FIT)
+           ======================================================== -->
+      <section id="viewGame" class="view-screen hidden">
+        <div class="retro-window-box arena-window-box">
+
+          <!-- Window Title Bar with Live Bench HUD -->
+          <div class="retro-window-header arena-topbar">
+            <div class="arena-top-left">
+              <span class="bench-tag-pill" id="gameBenchTag">⚡ CABINET --</span>
+              <strong id="gameTeamName" class="meta-team-name">--</strong>
+              <span class="separator-pipe">|</span>
+              <span id="gameRoundTitle" class="meta-round-sub">STAGE 1: KEYWORD CIPHER QUEST</span>
+            </div>
+
+            <div class="arena-top-right">
+              <div class="score-pill-jules">
+                <span class="score-icon">⚡</span>
+                <span class="score-label">SCORE:</span>
+                <span id="gameTeamScore" class="score-num">0</span>
+                <span class="score-pts">PTS</span>
+                <div id="floatingScorePopup" class="floating-score-tag hidden">+250 PTS</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Turn Sequence Pipeline Tracker Strip -->
+          <div class="turn-tracker-strip">
+            <div class="tracker-meta">
+              <span class="tracker-title">PLAYER QUEUE</span>
+              <span id="trackerCurrentStepText" class="tracker-round">GAME 1 OF 4</span>
+            </div>
+            <div id="turnSequenceTracker" class="turn-sequence-flow">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Main Widescreen Battle Arena Grid -->
+          <div class="arena-workspace-layout window-content-pad">
+
+            <!-- Left Tactical Sidebar: Operatives & Axiom Vault -->
+            <aside class="arena-sidebar">
+              <!-- Active Operative Spotlight Card -->
+              <div class="tactical-card operative-card">
+                <div class="tactical-card-header">
+                  <span class="tactical-badge">🕹️ PLAYER AT CONTROLS</span>
+                  <div class="spotlight-pulse"></div>
+                </div>
+                <div class="operative-info-block">
+                  <span class="operative-avatar-icon">🎮</span>
+                  <div>
+                    <h3 id="activeScholarName" class="operative-name-large">--</h3>
+                    <span id="activeScholarRole" class="operative-role-tag">PLAYER</span>
+                  </div>
+                </div>
+                <p class="operative-instruction-hint">👉 Grab the controls! Solve this cipher puzzle for your squad!</p>
+              </div>
+
+              <!-- Persistent Axiom Vault Inventory Card -->
+              <div class="tactical-card vault-card">
+                <div class="tactical-card-header">
+                  <span class="tactical-badge">🎒 SQUAD INVENTORY</span>
+                  <span id="vaultStatusRatio" class="vault-ratio">0/3 COLLECTED</span>
+                </div>
+                <div class="vault-slots-container" id="persistentVaultSlots">
+                  <!-- Rendered via JS -->
+                </div>
+                <span class="vault-caption-text">Collect all 3 keywords to unlock the Final Boss Victory Stage!</span>
+              </div>
+            </aside>
+
+            <!-- Right Main Stage: Protocol Challenge or Master Synthesis -->
+            <div class="arena-main-stage">
+
+              <!-- 1. ACTIVE RIDDLE CHALLENGE TERMINAL -->
+              <div id="boxYourTurn" class="terminal-stage-card">
+                <div class="challenge-header-bar">
+                  <div class="badge-row">
+                    <span id="puzzleCategoryTag" class="category-tag">STAGE 1</span>
+                    <span id="puzzleStepCounter" class="step-counter">GAME 1 OF 4</span>
+                  </div>
+                  <h3 id="puzzleTitle" class="puzzle-headline">Loading Challenge...</h3>
+                </div>
+
+                <div class="challenge-body">
+                  <!-- Dynamic Speed Bounty & Turn Timer Strip -->
+                  <div id="operativeTimerStrip" class="operative-timer-strip">
+                    <div class="timer-meta">
+                      <span class="timer-label">⏱️ TURN TIME: <strong id="operativeTimeRemaining" class="timer-digits">02:30</strong></span>
+                      <span id="liveBountyBadge" class="timer-label" style="color: var(--jules-gold); font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px;">⚡ LIVE BOUNTY: 250 PTS</span>
+                    </div>
+                    <div class="operative-progress-track">
+                      <div id="operativeProgressBar" class="operative-progress-fill" style="width: 100%;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Prompt Display Box -->
+                  <div class="prompt-parchment terminal-prompt-box">
+                    <div class="terminal-prompt-prefix">👾 MISSION RIDDLE:</div>
+                    <p id="puzzlePromptText" class="prompt-text">Loading challenge text...</p>
+                  </div>
+
+                  <!-- Expandable Archive Clue Drawer (Locked until 2:00 mark) -->
+                  <div class="clue-drawer">
+                    <button id="btnToggleClue" class="clue-toggle-btn btn-retro-clue clue-locked" type="button" disabled>
+                      <span id="clueLockIcon" class="clue-icon">🔒</span>
+                      <span id="clueLockLabel">SECRET HINT LOCKED [UNLOCKS AT 2:00 (120s)]</span>
+                      <span class="drawer-arrow">▾</span>
+                    </button>
+                    <div id="clueContent" class="clue-content hidden">
+                      <p id="puzzleClueText" class="clue-body-text">Clue text appears here...</p>
+                      <div class="letter-count-box">
+                        <span class="letter-hint-icon">💡</span>
+                        <span id="puzzleHintText" class="clue-hint-text">Strategic context...</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Solution Command Input: Retro Letter Slots Arena (_ _ _ _ _ format) -->
+                  <div class="answer-action-box cipher-slots-arena">
+                    <div class="slots-header-bar">
+                      <div class="slots-header-left">
+                        <span class="prompt-icon">⌨️</span>
+                        <span class="answer-label">ENTER SECRET CODEWORD:</span>
+                      </div>
+                      <div id="slotsPatternBadge" class="slots-pattern-badge">
+                        <span id="slotsCountLabel">5 LETTERS</span>
+                      </div>
+                    </div>
+
+                    <!-- Interactive Letter Slots Board (Displays _ _ _ _ _ format) -->
+                    <div id="slotsBoard" class="slots-board" tabindex="0" role="region" aria-label="Cipher letter slots">
+                      <!-- Rendered dynamically via JS: word groups with underscore dashes _ _ _ -->
+                    </div>
+
+                    <!-- Hidden input to capture keyboard typing & mobile keyboards -->
+                    <input 
+                      type="text" 
+                      id="puzzleHiddenInput" 
+                      class="puzzle-hidden-input" 
+                      autocomplete="off" 
+                      autocorrect="off" 
+                      autocapitalize="characters" 
+                      spellcheck="false"
+                      aria-hidden="true"
+                    >
+                    <!-- Kept for value binding and legacy references -->
+                    <input type="hidden" id="puzzleAnswerInput" value="">
+
+                    <!-- Action Controls -->
+                    <div class="slots-action-controls">
+                      <span class="slots-hint-keyboard">⌨️ TYPE DIRECTLY • BACKSPACE TO DELETE • ENTER TO SUBMIT</span>
+                      <div class="slots-buttons-group">
+                        <button type="button" id="btnClearSlots" class="btn btn-secondary btn-sm btn-clear-slots">
+                          <span>⌫ CLEAR</span>
+                        </button>
+                        <button type="button" id="btnSubmitAnswer" class="btn btn-primary btn-submit btn-jules">
+                          <span>SUBMIT [ENTER ↵]</span>
+                          <span>➔</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div id="puzzleFeedbackBox" class="alert-box hidden"></div>
+                  </div>
+
+                  <!-- Pass Console Banner (Brief celebration before next turn) -->
+                  <div id="boxPassConsole" class="pass-console-banner hidden">
+                    <div class="pass-icon">🎉</div>
+                    <div class="pass-text">
+                      <strong id="passTitleText">⭐ CIPHER CRACKED! +250 PTS!</strong>
+                      <p id="passDescText">Keyword unlocked into squad inventory! Pass controls to next player...</p>
+                    </div>
+                    <button type="button" id="btnNextTurnReady" class="btn btn-gold btn-sm btn-retro">
+                      <span>NEXT PLAYER ➔</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. LEADER MASTER SYNTHESIS CHAMBER -->
+              <div id="boxLeaderTurn" class="terminal-stage-card leader-chamber-card hidden">
+                <div class="challenge-header-bar leader-bar">
+                  <div class="badge-row">
+                    <span class="category-tag tag-gold">👑 FINAL BOSS BATTLE</span>
+                    <span class="step-counter">VICTORY DECODER</span>
+                  </div>
+                  <h3 id="leaderTaskTitle" class="puzzle-headline">Final Boss: Assemble the Team Victory Sentence!</h3>
+                  <p id="leaderInstructions" class="leader-sub">All 3 keywords unlocked! Squad Leader, write a winning sentence (5-30 words) connecting your squad's keywords!</p>
+                </div>
+
+                <div class="challenge-body">
+                  <!-- Dynamic Leader Speed Bounty & Turn Timer Strip -->
+                  <div id="leaderTimerStrip" class="operative-timer-strip">
+                    <div class="timer-meta">
+                      <span class="timer-label">👑 BOSS TIME: <strong id="leaderTimeRemaining" class="timer-digits">02:30</strong></span>
+                      <span id="leaderLiveBountyBadge" class="timer-label" style="color: var(--jules-gold); font-weight: 800; font-size: 0.95rem; letter-spacing: 0.5px;">⚡ BOSS BOUNTY: 250 PTS</span>
+                    </div>
+                    <div class="operative-progress-track">
+                      <div id="leaderProgressBar" class="operative-progress-fill" style="width: 100%;"></div>
+                    </div>
+                  </div>
+
+                  <!-- The Axiom Vault: Interactive Clickable Chips -->
+                  <div class="fragments-vault">
+                    <div class="vault-header-row">
+                      <span class="vault-label">🎒 UNLOCKED KEYWORDS (CLICK TO INSERT):</span>
+                      <span class="vault-sub">Live keyword tracker active</span>
+                    </div>
+                    <div class="fragments-chips-row" id="fragmentsBank">
+                      <!-- Injected via JS -->
+                    </div>
+                  </div>
+
+                  <!-- Real-time Live Thesis Textarea -->
+                  <div class="thesis-input-box">
+                    <div class="textarea-wrapper">
+                      <textarea 
+                        id="leaderAnswerInput" 
+                        class="thesis-textarea terminal-textarea" 
+                        rows="4" 
+                        placeholder="Write your squad's victory sentence using your unlocked keywords..."
+                      ></textarea>
+                    </div>
+
+                    <!-- Real-Time Telemetry Bar -->
+                    <div class="live-thesis-inspector">
+                      <div class="inspector-item" id="inspectorKeywords">
+                        <span class="inspector-label">KEYWORDS USED:</span>
+                        <div class="keywords-pill-row" id="inspectorKeywordsPills">
+                          <!-- Dynamic checkmark badges -->
+                        </div>
+                      </div>
+
+                      <div class="inspector-item" id="inspectorWordCount">
+                        <span class="inspector-label">SENTENCE LENGTH:</span>
+                        <span id="wordCountDisplay" class="word-count-badge">0 / 5-30 words</span>
+                      </div>
+
+                      <div class="inspector-item" id="inspectorVerb">
+                        <span class="inspector-label">ACTIVE VERB:</span>
+                        <span id="verbStatusBadge" class="status-indicator-badge">Pending</span>
+                      </div>
+                    </div>
+
+                    <button id="btnSubmitLeaderAnswer" class="btn btn-gold btn-block btn-lg btn-jules-gold">
+                      <span>🏆 SUBMIT FINAL VICTORY SENTENCE ➔</span>
+                      <span>➔</span>
+                    </button>
+                    <div id="leaderFeedbackBox" class="alert-box hidden"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. ROUND 1 COMPLETED VICTORY SCREEN -->
+              <div id="boxRoundCompleted" class="terminal-stage-card victory-card hidden">
+                <div class="complete-inner">
+                  <div class="complete-trophy">🏆</div>
+                  <div class="complete-ribbon">STAGE 1 QUALIFIER CONQUERED!</div>
+                  <h2 class="complete-title">STAGE COMPLETED!</h2>
+                  <p class="complete-sub">Your squad has solved all 4 games and cracked the Final Boss victory code!</p>
+
+                  <div class="complete-stats-row">
+                    <div class="complete-stat-card">
+                      <span class="stat-card-label">SQUAD SCORE</span>
+                      <strong class="stat-card-val" id="completeTotalScore">0</strong>
+                      <span class="stat-card-unit">POINTS EARNED</span>
+                    </div>
+                    <div class="complete-stat-card">
+                      <span class="stat-card-label">TOURNAMENT STATUS</span>
+                      <strong class="stat-card-val text-success">QUALIFIED</strong>
+                      <span class="stat-card-unit">STAGE CLEAR</span>
+                    </div>
+                  </div>
+
+                  <div class="complete-thesis-quote">
+                    <span class="quote-tag">YOUR SQUAD'S WINNING SENTENCE:</span>
+                    <blockquote id="completeThesisText" class="thesis-quote-text">"..."</blockquote>
+                  </div>
+
+                  <div class="complete-footer-notice">
+                    <span>Watch the <strong>Grand Projector Screen</strong> for live rankings and Stage 2!</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. INTERMISSION / AUDIT SCREEN -->
+              <div id="boxRoundLocked" class="terminal-stage-card intermission-card hidden">
+                <div class="heraldic-ribbon">STAGE CLEAR</div>
+                <h2 id="lockedTitle" class="card-title">⏸️ STAGE 1 CLEAR // SCORE SYNC</h2>
+                <p id="lockedSub" class="card-subtitle">Look at the Grand Projector Screen for live tournament rankings!</p>
+                <div class="intermission-clock">
+                  <span id="intermissionClock" class="clock-digits">--:--</span>
+                </div>
+                <p class="intermission-notice">Game Master is preparing the next round. Get ready at your cabinet!</p>
+              </div>
+
+              <!-- 5. ROUND 2 MISSION BRIEFING & TACTICAL WORDLE GUIDE (Shown during INTERMEDIATE_1 & after R1) -->
+              <div id="boxRound2Briefing" class="terminal-stage-card r2-briefing-card hidden">
+                <div class="r2-briefing-header">
+                  <div class="briefing-badge">⚡ MISSION BRIEFING // UPCOMING STAGE</div>
+                  <h2 class="briefing-title">STAGE 2: THE 10-NODE CYBER RELAY</h2>
+                  <p class="briefing-sub">100% Non-Elimination Relay! All squads advance. Study the Wordle tile decoding rules below before the High Proctor launches Stage 2.</p>
+                </div>
+
+                <!-- Wordle Tile Decoding Rules Grid -->
+                <div class="r2-rules-grid">
+                  <div class="rule-card rule-green">
+                    <div class="rule-tile-preview tile-correct">P</div>
+                    <div class="rule-content">
+                      <strong class="rule-title">🟩 GREEN TILE (EXACT SPOT)</strong>
+                      <p class="rule-desc">The letter is in the password and in the <strong>EXACT CORRECT POSITION</strong>! Keep it in this position for your next guess.</p>
+                    </div>
+                  </div>
+
+                  <div class="rule-card rule-yellow">
+                    <div class="rule-tile-preview tile-present">T</div>
+                    <div class="rule-content">
+                      <strong class="rule-title">🟨 YELLOW TILE (WRONG SPOT)</strong>
+                      <p class="rule-desc">The letter <strong>EXISTS</strong> in the secret password, but in a <strong>DIFFERENT POSITION</strong>! Move it to another slot.</p>
+                    </div>
+                  </div>
+
+                  <div class="rule-card rule-dark">
+                    <div class="rule-tile-preview tile-absent">X</div>
+                    <div class="rule-content">
+                      <strong class="rule-title">⬛ DARK TILE (ABSENT)</strong>
+                      <p class="rule-desc">The letter <strong>DOES NOT EXIST</strong> in this password at all! Do not waste letters repeating it.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tactical Mechanics Breakdown -->
+                <div class="r2-briefing-tactics-row">
+                  <div class="tactic-item">
+                    <span class="tactic-icon">⚡</span>
+                    <div>
+                      <strong>10 Sequential Nodes</strong>
+                      <p>Breach Node 1 to unlock Node 2, through to Node 10 (Final Mainframe Core).</p>
+                    </div>
+                  </div>
+                  <div class="tactic-item">
+                    <span class="tactic-icon">🔗</span>
+                    <div>
+                      <strong>Bridge Connection Clues</strong>
+                      <p>Each node provides a bridge clue linking from the previous node's password.</p>
+                    </div>
+                  </div>
+                  <div class="tactic-item">
+                    <span class="tactic-icon">🎯</span>
+                    <div>
+                      <strong>4 Attempts &amp; Auto-Bypass</strong>
+                      <p>1st Guess = 100 PTS • 2nd = 80 PTS • 3rd = 60 PTS • 4th / Bypass = 40 PTS (Never stuck!).</p>
+                    </div>
+                  </div>
+                  <div class="tactic-item">
+                    <span class="tactic-icon">🤝</span>
+                    <div>
+                      <strong>Squad Live Sync</strong>
+                      <p>All squad computers see the live terminal. Anyone can type or collaborate!</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Standby Protocol Banner -->
+                <div class="r2-standby-banner">
+                  <div class="standby-pulse-ring"></div>
+                  <div class="standby-info">
+                    <div class="standby-status-tag">⏳ TOURNAMENT CLOCK STANDBY</div>
+                    <h3 class="standby-headline">WAITING FOR HIGH PROCTOR TO LAUNCH STAGE 2...</h3>
+                    <p class="standby-note">Please remain at your stations. Round 2 will start immediately across all computers when the Host initiates.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 3.5: ROUND 2 CYBER TERMINAL HACK (10-NODE CIRCUIT RELAY)
+           ======================================================== -->
+      <section id="viewRound2Game" class="view-screen hidden">
+        <div class="retro-window-box arena-window-box cyber-hack-window">
+
+          <!-- Window Title Bar with Live Bench HUD -->
+          <div class="retro-window-header arena-topbar">
+            <div class="arena-top-left">
+              <span class="bench-tag-pill" id="r2GameBenchTag">⚡ CABINET --</span>
+              <strong id="r2GameTeamName" class="meta-team-name">--</strong>
+              <span class="separator-pipe">|</span>
+              <span class="meta-round-sub">STAGE 2: THE 10-NODE CYBER TERMINAL HACK</span>
+            </div>
+
+            <div class="arena-top-right" style="display: flex; align-items: center; gap: 10px;">
+              <button type="button" id="btnToggleR2Rules" class="btn btn-secondary btn-sm r2-rules-btn" title="View Wordle Tile Rules &amp; Guide">
+                <span>❓ Tile Rules &amp; Guide</span>
+              </button>
+              <div class="score-pill-jules">
+                <span class="score-icon">⚡</span>
+                <span class="score-label">SCORE:</span>
+                <span id="r2GameTeamScore" class="score-num">0</span>
+                <span class="score-pts">PTS</span>
+                <div id="r2FloatingScorePopup" class="floating-score-tag hidden">+100 PTS</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 10-Node Circuit Breach Pipeline Tracker Strip -->
+          <div class="turn-tracker-strip r2-circuit-tracker-strip">
+            <div class="tracker-meta">
+              <span class="tracker-title">CYBER CIRCUIT BREACH</span>
+              <span id="r2TrackerStepText" class="tracker-round">NODE 1 OF 10</span>
+            </div>
+            <div id="r2CircuitNodesFlow" class="circuit-nodes-flow">
+              <!-- Rendered via JS: 10 glowing interconnected nodes -->
+            </div>
+          </div>
+
+          <!-- Main Widescreen Cyber Terminal Arena Grid -->
+          <div class="arena-workspace-layout window-content-pad">
+
+            <!-- Left Tactical Sidebar: Active Operative & Breached Words Vault -->
+            <aside class="arena-sidebar">
+              <!-- Active Operative Spotlight Card -->
+              <div class="tactical-card operative-card">
+                <div class="tactical-card-header">
+                  <span class="tactical-badge">🕹️ OPERATIVE AT CONTROLS</span>
+                  <div class="spotlight-pulse"></div>
+                </div>
+                <div class="operative-info-block">
+                  <span class="operative-avatar-icon">⚡</span>
+                  <div>
+                    <h3 id="r2ActivePlayerName" class="operative-name-large">--</h3>
+                    <span id="r2ActivePlayerRole" class="operative-role-tag">PLAYER</span>
+                  </div>
+                </div>
+                <p class="operative-instruction-hint">👉 Analyze the circuit bridge, type your guess, and breach this node!</p>
+              </div>
+
+              <!-- Persistent Breached Vault Card -->
+              <div class="tactical-card vault-card r2-breach-vault">
+                <div class="tactical-card-header">
+                  <span class="tactical-badge">🎒 BREACHED NODES</span>
+                  <span id="r2VaultRatio" class="vault-ratio">0/10 BREACHED</span>
+                </div>
+                <div class="vault-slots-container r2-vault-words" id="r2BreachedWordsList">
+                  <!-- Rendered via JS: Badges of breached words -->
+                </div>
+                <span class="vault-caption-text">Breach all 10 nodes to conquer the mainframe reactor!</span>
+              </div>
+            </aside>
+
+            <!-- Right Main Stage: Interactive Cyber Hacking Terminal -->
+            <div class="arena-main-stage">
+              <!-- Active Cyber Terminal Card -->
+              <div id="r2TerminalStageCard" class="terminal-stage-card cyber-terminal-card">
+
+                <div class="challenge-header-bar">
+                  <div class="badge-row">
+                    <span id="r2CategoryTag" class="category-tag tag-cyan">STAGE 2 // CYBER BREACH</span>
+                    <span id="r2NodeCounter" class="step-counter">NODE 1 OF 10</span>
+                    <span id="r2AttemptBadge" class="attempt-counter-badge">ATTEMPT 1 / 4</span>
+                  </div>
+                  <h3 id="r2NodeTitle" class="puzzle-headline">Hacking Mainframe Node...</h3>
+                </div>
+
+                <div class="challenge-body">
+                  <!-- Interconnection Circuit Linkage Banner -->
+                  <div class="circuit-linkage-box" id="r2BridgeBox">
+                    <div class="linkage-header">
+                      <span class="linkage-icon">⚡</span>
+                      <span class="linkage-title">CIRCUIT RELAY BRIDGE:</span>
+                    </div>
+                    <p id="r2BridgeClueText" class="linkage-text">Initial root cipher key to breach the security mainframe.</p>
+                  </div>
+
+                  <!-- Direct Target Mission Clue -->
+                  <div class="prompt-parchment terminal-prompt-box">
+                    <div class="terminal-prompt-prefix">👾 MISSION CLUE:</div>
+                    <p id="r2PromptText" class="prompt-text">Loading node riddle...</p>
+                  </div>
+
+                  <!-- Wordle / Mastermind 4-Row Hack Matrix -->
+                  <div class="hack-matrix-section">
+                    <div class="matrix-header-bar">
+                      <span class="matrix-title">⌨️ CYBER MATRIX INPUT (4 ATTEMPTS)</span>
+                      <span id="r2WordLengthBadge" class="slots-pattern-badge">6 LETTERS</span>
+                    </div>
+
+                    <!-- 4 Rows of Letter Tiles -->
+                    <div id="r2HackMatrixRows" class="hack-matrix-rows" tabindex="0" role="region" aria-label="Cyber hack tile rows">
+                      <!-- 4 Rows Injected Dynamically by JS -->
+                    </div>
+
+                    <!-- Hidden Input to Capture Real Keyboard / Mobile -->
+                    <input 
+                      type="text" 
+                      id="r2HiddenInput" 
+                      class="puzzle-hidden-input" 
+                      autocomplete="off" 
+                      autocorrect="off" 
+                      autocapitalize="characters" 
+                      spellcheck="false"
+                      aria-hidden="true"
+                    >
+
+                    <!-- Feedback Alert Box -->
+                    <div id="r2FeedbackBox" class="alert-box hidden"></div>
+
+                    <!-- On-Screen Virtual Cyber Keyboard -->
+                    <div class="cyber-keyboard-container" id="r2VirtualKeyboard">
+                      <!-- Rendered dynamically by JS: QWERTY rows with green/yellow/dark states -->
+                    </div>
+
+                    <!-- Matrix Controls -->
+                    <div class="slots-action-controls">
+                      <span class="slots-hint-keyboard">⌨️ TYPE DIRECTLY • BACKSPACE TO DELETE • ENTER TO ATTEMPT HACK</span>
+                      <div class="slots-buttons-group">
+                        <button type="button" id="btnR2Clear" class="btn btn-secondary btn-sm">
+                          <span>⌫ DELETE</span>
+                        </button>
+                        <button type="button" id="btnR2Submit" class="btn btn-primary btn-submit btn-jules">
+                          <span>HACK NODE [ENTER ↵]</span>
+                          <span>➔</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Node Breached Celebration Banner -->
+                  <div id="boxR2NodePassed" class="pass-console-banner hidden">
+                    <div class="pass-icon">⚡</div>
+                    <div class="pass-text">
+                      <strong id="r2PassTitleText">🎉 NODE BREACHED! +100 PTS!</strong>
+                      <p id="r2PassDescText">Relay key transmitted forward! Pass controls to the next operative...</p>
+                    </div>
+                    <button type="button" id="btnR2NextNodeReady" class="btn btn-gold btn-sm btn-retro">
+                      <span>NEXT OPERATIVE ➔</span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Stage 2 Squad Victory Card (All 10 Nodes Breached) -->
+              <div id="boxR2RoundCompleted" class="game-card victory-card r2-victory-card hidden">
+                <div class="card-badge">👑 SQUAD VICTORY // STAGE 2 CONQUERED</div>
+                <h2 class="card-title">All 10 Cyber Circuit Nodes Breached!</h2>
+                <p class="card-subtitle">Flawless relay coordination! Your squad overrode all security terminal nodes.</p>
+
+                <div class="r2-victory-keys-section">
+                  <span class="r2-keys-title">DECRYPTED MAINFRAME PASSWORDS:</span>
+                  <div id="r2CompletedKeysGrid" class="r2-completed-keys-grid">
+                    <!-- Populated via JS: 10 breached word badges -->
+                  </div>
+                </div>
+
+                <div class="finished-score-box r2-score-box">
+                  <span>SQUAD TOTAL TOURNAMENT SCORE</span>
+                  <div id="r2CompleteTotalScore" class="finished-pts">0 PTS</div>
+                </div>
+
+                <div class="victory-standby-pill">
+                  <span class="pulse-indicator"></span>
+                  <span>STANDBY FOR HIGH PROCTOR // STAGE 2 AUDIT &amp; TOP 5 FINALS CUTOFF</span>
+                </div>
+              </div>
+
+              <!-- Stage 2 Paused / Intermission / Non-Turn Waiting Card -->
+              <div id="boxR2Locked" class="game-card locked-card r2-locked-card hidden">
+                <div class="locked-icon">⏸️</div>
+                <h2 id="r2LockedTitle" class="locked-title">Stage 2 Intermission &amp; Audit</h2>
+                <p id="r2LockedSub" class="locked-sub">Direct your attention to the Grand Projector Screen for live squad rankings!</p>
+
+                <div id="r2WaitingTeammateInfo" class="waiting-turn-box hidden">
+                  <span class="waiting-icon">🎮</span>
+                  <div>
+                    <span class="waiting-lbl">TEAMMATE AT CONTROLS</span>
+                    <h4 id="r2WaitingPlayerName" class="waiting-name">--</h4>
+                    <span id="r2WaitingPlayerRole" class="waiting-role">--</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Modal: Round 2 Tile Rules & Guide Popover -->
+        <div id="modalR2Rules" class="modal-rules-backdrop hidden">
+          <div class="modal-rules-card">
+            <div class="modal-rules-header">
+              <div class="modal-title-group">
+                <span class="modal-badge-chip">TACTICAL DECRYPTION MANUAL</span>
+                <h3 class="modal-rules-heading">Wordle Tile Colors &amp; Hacking Guide</h3>
+              </div>
+              <button type="button" id="btnCloseR2Rules" class="btn-close-rules" title="Close Guide">✕</button>
+            </div>
+            <div class="modal-rules-body">
+              <div class="r2-rules-grid">
+                <div class="rule-card rule-green">
+                  <div class="rule-tile-preview tile-correct">P</div>
+                  <div class="rule-content">
+                    <strong class="rule-title">🟩 GREEN (EXACT SPOT)</strong>
+                    <p class="rule-desc">The letter is in the password and in the <strong>EXACT CORRECT POSITION</strong>! Keep it here for next attempt.</p>
+                  </div>
+                </div>
+                <div class="rule-card rule-yellow">
+                  <div class="rule-tile-preview tile-present">T</div>
+                  <div class="rule-content">
+                    <strong class="rule-title">🟨 YELLOW (WRONG SPOT)</strong>
+                    <p class="rule-desc">The letter <strong>EXISTS</strong> in the secret password, but in a <strong>DIFFERENT SLOT</strong>! Move it.</p>
+                  </div>
+                </div>
+                <div class="rule-card rule-dark">
+                  <div class="rule-tile-preview tile-absent">X</div>
+                  <div class="rule-content">
+                    <strong class="rule-title">⬛ DARK (NOT IN WORD)</strong>
+                    <p class="rule-desc">The letter <strong>DOES NOT EXIST</strong> in this password at all! Do not reuse it.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-hint-box">
+                <span class="hint-bulb">💡</span>
+                <div>
+                  <strong>Relay Bridge Clue:</strong> Look at the <em>Bridge Clue</em> text on each node. It reveals connection letters from the previous breached node's password!
+                </div>
+              </div>
+            </div>
+            <div class="modal-rules-footer">
+              <button type="button" id="btnDismissR2Rules" class="btn btn-primary btn-sm">
+                <span>RETURN TO TERMINAL ➔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           VIEW 3.6: ROUND 3 SHER"UNLOCKING" HOMIES (THE BAKER STREET MYSTERY)
+           ======================================================== -->
+      <section id="viewRound3Game" class="view-screen hidden">
+        <div class="baker-street-window">
+
+          <!-- Vintage Topbar -->
+          <div class="baker-topbar">
+            <div class="baker-top-left">
+              <span class="wax-seal-tag">🕵️ SCOTLAND YARD</span>
+              <strong id="r3GameTeamName" class="baker-team-name">--</strong>
+              <span class="baker-sep">|</span>
+              <span class="baker-case-subtitle">SHER"UNLOCKING" HOMIES: THE BAKER STREET MYSTERY</span>
+            </div>
+            <div class="baker-top-right">
+              <div class="baker-score-pill">
+                <span class="baker-score-lbl">CUMULATIVE SCORE:</span>
+                <span id="r3GameTeamScore" class="baker-score-val">0</span>
+                <span class="baker-score-unit">PTS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Investigation Progress Ribbon -->
+          <div class="baker-progress-ribbon">
+            <div class="baker-ribbon-label">FORENSIC DOSSIER PROGRESS:</div>
+            <div id="r3EvidencePipeline" class="baker-pipeline-row">
+              <!-- Evidence 1 (Forensics) -> Evidence 2 (Cipher) -> Evidence 3 (Alibis) -> Boss (Indictment Warrant) -->
+            </div>
+          </div>
+
+          <!-- Main Layout: Left Suspect Board & Case File, Right Active Investigation Console -->
+          <div class="baker-workspace-layout">
+
+            <!-- Left: Case File Summary & The 5 Suspects Board -->
+            <div class="baker-dossier-col">
+              <!-- Case File Sheet -->
+              <div class="parchment-sheet case-summary-sheet">
+                <div class="parchment-header">
+                  <span class="parchment-seal">⚖️</span>
+                  <div>
+                    <h3 class="parchment-title" id="r3CaseTitle">The Mysterious Death of Lord Alistair Blackwood</h3>
+                    <span class="parchment-meta" id="r3CaseMeta">November 14, 1891 • 11:22 PM • 221B Kensington Crescent</span>
+                  </div>
+                </div>
+                <p class="parchment-body" id="r3CaseSummary">
+                  Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet reeking of bitter almonds (cyanide) lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.
+                </p>
+              </div>
+
+              <!-- Suspect Board Header -->
+              <div class="suspects-board-header">
+                <span class="board-title">THE 5 PRIME SUSPECTS (Click card to strike out eliminated suspects):</span>
+              </div>
+
+              <!-- Suspects Grid -->
+              <div id="r3SuspectsGrid" class="suspects-grid">
+                <!-- 5 Suspect Cards populated via JS -->
+              </div>
+            </div>
+
+            <!-- Right: Active Investigation Console (Member Turn or Leader Warrant) -->
+            <div class="baker-console-col">
+
+              <!-- Active Investigator Bar -->
+              <div class="investigator-card">
+                <div class="investigator-header">
+                  <span class="investigator-badge">🔎 LEAD INVESTIGATOR AT CONSOLE</span>
+                  <div class="ink-dot"></div>
+                </div>
+                <div class="investigator-body">
+                  <h3 id="r3ActivePlayerName" class="investigator-name">--</h3>
+                  <span id="r3ActivePlayerRole" class="investigator-role">OPERATIVE</span>
+                </div>
+                <p class="investigator-note">Confer with your fellow detectives and submit your forensic deduction below.</p>
+              </div>
+
+              <!-- Member Evidence Card (Clue 1, 2, 3) -->
+              <div id="boxR3MemberGame" class="parchment-sheet evidence-sheet">
+                <div class="evidence-header-tag">
+                  <span id="r3EvidenceNumber" class="evidence-pill">EVIDENCE FILE 1 OF 3</span>
+                  <span id="r3EvidenceCategory" class="evidence-cat">Forensic Science</span>
+                </div>
+                <h2 id="r3EvidenceTitle" class="evidence-title">Forensic Autopsy &amp; Balcony Footprints</h2>
+
+                <div class="evidence-prompt-box">
+                  <p id="r3EvidencePrompt" class="evidence-prompt">Prompt...</p>
+                </div>
+
+                <div id="r3EvidenceClueBox" class="clue-box">
+                  <span class="clue-tag">SCOTLAND YARD ADVISORY:</span>
+                  <p id="r3EvidenceClue" class="clue-text">Clue...</p>
+                </div>
+
+                <div id="r3EvidenceHintBox" class="hint-box">
+                  <span class="hint-tag">FORENSIC HINT:</span>
+                  <p id="r3EvidenceHint" class="hint-text">Hint...</p>
+                </div>
+
+                <form id="r3MemberForm" onsubmit="return false;" class="evidence-form">
+                  <div class="form-group">
+                    <label for="r3MemberInput">YOUR FORENSIC DEDUCTION / KEYWORD:</label>
+                    <input type="text" id="r3MemberInput" class="baker-input" placeholder="Enter deduction..." autocomplete="off">
+                  </div>
+                  <button type="submit" id="btnR3MemberSubmit" class="btn btn-baker-primary btn-block">
+                    <span>🔍 SUBMIT FORENSIC PROOF ➔</span>
+                  </button>
+                  <div id="r3MemberFeedback" class="alert-box hidden"></div>
+                </form>
+              </div>
+
+              <!-- Leader Grand Indictment Warrant Card (Boss) -->
+              <div id="boxR3LeaderGame" class="parchment-sheet warrant-sheet hidden">
+                <div class="evidence-header-tag">
+                  <span class="evidence-pill warrant-pill">👑 FINAL INDICTMENT</span>
+                  <span class="evidence-cat">Chief Inspector Chamber</span>
+                </div>
+                <h2 class="evidence-title">Scotland Yard Official Arrest Warrant</h2>
+                <p class="warrant-instructions">
+                  Chief Inspector (Squad Leader): Gather your detectives. Assemble your 3 unlocked forensic proofs to indict the guilty criminal before the magistrate.
+                </p>
+
+                <!-- Gathered Proofs Bank -->
+                <div class="gathered-proofs-box">
+                  <span class="proofs-title">COLLECTED INVESTIGATION PROOFS:</span>
+                  <div id="r3GatheredProofs" class="proofs-row">
+                    <!-- Populated via JS: Proof 1 (Cyanide), Proof 2 (Blackmail), Proof 3 (Vance) -->
+                  </div>
+                </div>
+
+                <form id="r3LeaderForm" onsubmit="return false;" class="evidence-form">
+                  <div class="form-group">
+                    <label for="r3LeaderInput">ENTER ARREST WARRANT: [CULPRIT] : [WEAPON] : [MOTIVE]</label>
+                    <input type="text" id="r3LeaderInput" class="baker-input warrant-input" placeholder="e.g. VANCE:CYANIDE:BLACKMAIL" autocomplete="off">
+                    <span class="field-hint">Format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g., VANCE:CYANIDE:BLACKMAIL)</span>
+                  </div>
+                  <button type="submit" id="btnR3LeaderSubmit" class="btn btn-baker-gold btn-block">
+                    <span>⚖️ ISSUE OFFICIAL ARREST WARRANT &amp; CLOSE CASE ➔</span>
+                  </button>
+                  <div id="r3LeaderFeedback" class="alert-box hidden"></div>
+                </form>
+              </div>
+
+              <!-- Waiting for Teammate / Not Your Turn Card -->
+              <div id="boxR3WaitingTurn" class="parchment-sheet waiting-sheet hidden">
+                <div class="waiting-crest">🕰️</div>
+                <h3 class="waiting-title">Awaiting Fellow Detective</h3>
+                <p id="r3WaitingSub" class="waiting-sub">Operative -- is currently examining Evidence File -- at the console.</p>
+                <div class="waiting-collaborate-tip">
+                  <span>💡 Tip: All detectives share the same crime dossier! Assist your teammate with timeline calculations and suspect elimination!</span>
+                </div>
+              </div>
+
+              <!-- Round 3 Completed / Case Solved Victory Card -->
+              <div id="boxR3Completed" class="parchment-sheet victory-dossier-sheet hidden">
+                <div class="victory-wax-seal">🏆</div>
+                <h2 class="victory-dossier-title">CASE SOLVED // MAGISTRATE CONVICTION!</h2>
+                <p class="victory-dossier-sub">Congratulations! Your squad exposed the true killer and brought justice to London!</p>
+                
+                <div class="conviction-summary-box">
+                  <div class="conviction-item">
+                    <span class="conviction-label">CONVICTED CRIMINAL:</span>
+                    <strong class="conviction-val" id="r3VictoryCulprit">SILAS VANCE</strong>
+                  </div>
+                  <div class="conviction-item">
+                    <span class="conviction-label">MURDER WEAPON:</span>
+                    <strong class="conviction-val" id="r3VictoryWeapon">POTASSIUM CYANIDE</strong>
+                  </div>
+                  <div class="conviction-item">
+                    <span class="conviction-label">PRIMARY MOTIVE:</span>
+                    <strong class="conviction-val" id="r3VictoryMotive">BLACKMAIL OVER FORGED SHIPPING LEDGER</strong>
+                  </div>
+                </div>
+
+                <div class="baker-final-score-box">
+                  <span>GRAND TOURNAMENT CUMULATIVE SCORE</span>
+                  <div id="r3VictoryTotalScore" class="baker-pts-large">0 PTS</div>
+                </div>
+
+                <div class="victory-standby-pill">
+                  <span>STANDBY FOR HIGH PROCTOR // GRAND HONORS &amp; PODIUM CEREMONY</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: CHAMPIONSHIP CONCLUDED SCREEN -->
+      <section id="viewFinished" class="view-screen hidden">
+        <div class="retro-window-box text-center window-content-pad" style="max-width: 820px; margin: 40px auto; padding: 40px 30px; text-align: center;">
+          <div class="laurel-crest" style="font-size: 4rem; margin-bottom: 12px;">🏆</div>
+          <h1 class="card-title" style="font-size: 2.2rem; color: #fbbf24; margin-bottom: 8px; font-weight: 900; letter-spacing: 1px;">TOURNAMENT CONCLUDED</h1>
+          <p class="card-subtitle" style="font-size: 1rem; color: #94a3b8; margin-bottom: 24px; max-width: 600px; margin-left: auto; margin-right: auto;">
+            All tournament stages have ended. Direct your attention to the Grand Projector Screen for the official honors ceremony!
+          </p>
+          <div class="finished-score-box" style="background: rgba(15, 23, 42, 0.85); border: 2px solid #38bdf8; border-radius: 12px; padding: 26px; margin-bottom: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+            <span style="font-size: 0.85rem; letter-spacing: 2px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">YOUR SQUAD FINAL CUMULATIVE SCORE</span>
+            <div id="finishedTeamScore" class="finished-pts" style="font-size: 3.2rem; font-weight: 900; color: #f8fafc; text-shadow: 0 0 24px rgba(56, 189, 248, 0.5); margin: 10px 0;">0 PTS</div>
+            <div id="finishedScoreBreakdown" class="finished-breakdown" style="font-size: 0.95rem; color: #cbd5e1; font-weight: 600; padding: 10px 16px; background: rgba(0,0,0,0.4); border-radius: 8px; display: inline-block; border: 1px solid rgba(255,255,255,0.1);">
+              Round 1: 0 PTS  •  Round 2: 0 PTS  •  Round 3: 0 PTS
+            </div>
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b; font-family: var(--font-mono); letter-spacing: 0.05em;">
+            🏛️ JD'S ARENA ACADEMIC DECATHLON • OFFICIAL PROCTOR VERIFIED
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/soundFx.js"></script>
+  <script src="/js/student.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+.system_generated/
+.DS_Store
+Thumbs.db
+*.log
+data/snapshot.json

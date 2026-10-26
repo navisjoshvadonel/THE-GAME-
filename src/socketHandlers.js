@@ -1,0 +1,400 @@
+/**
+ * Socket.IO Handler Module
+ * Manages WebSocket-only real-time rooms, throttled display pushes,
+ * reconnection handshakes, rate limiting, and room-scoped team synchronization.
+ */
+
+function setupSocketHandlers(io, gameState) {
+  // Throttled display-client updates (pushed every 2.5 seconds to save WiFi bandwidth)
+  let lastDisplayPushTime = 0;
+  function triggerDisplayPush(immediate = false) {
+    const now = Date.now();
+    if (immediate || now - lastDisplayPushTime >= 2000) {
+      lastDisplayPushTime = now;
+      const displayData = gameState.getDisplayState();
+      io.to('display_room').emit('display_update', displayData);
+    }
+  }
+
+  // Regular interval ticker for display timer countdown & checking round expiration
+  setInterval(() => {
+    if (gameState.roundState.active && !gameState.roundState.isPaused) {
+      const now = Date.now();
+      if (now >= gameState.roundState.endTime) {
+        // Round naturally expired
+        const endResult = gameState.endRound();
+        io.emit('round_ended', {
+          currentRound: gameState.currentRound,
+          status: gameState.status
+        });
+        for (const teamId of gameState.teams.keys()) {
+          syncTeamRoom(teamId);
+        }
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+      }
+    }
+
+    // Auto-merge when Lobby Assembly Timer ends
+    if (gameState.status === 'LOBBY' && gameState.lobbyTimer.active) {
+      if (Date.now() >= gameState.lobbyTimer.endTime) {
+        gameState.lobbyTimer.active = false;
+        gameState.autoMergeLeftovers();
+        for (const teamId of gameState.teams.keys()) {
+          syncTeamRoom(teamId);
+        }
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+      }
+    }
+    // Periodic sync to display
+    triggerDisplayPush(false);
+  }, 1000);
+
+  function pushAdminUpdate() {
+    const adminData = gameState.getAdminState();
+    io.to('admin_room').emit('admin_update', adminData);
+  }
+
+  function syncTeamRoom(teamId) {
+    if (!teamId) return;
+    const team = gameState.teams.get(teamId);
+    if (!team) return;
+
+    // Send personalized, sanitized client state to each member in the team room
+    team.members.forEach(token => {
+      const player = gameState.players.get(token);
+      if (player && player.socketId) {
+        const clientState = gameState.getClientState(token);
+        io.to(player.socketId).emit('sync_state', clientState);
+      }
+    });
+  }
+
+  // Main Socket Connection Handler
+  io.on('connection', (socket) => {
+    // ----------------------------------------------------------------
+    // 1. DISPLAY CLIENT (Projector / Leaderboard)
+    // ----------------------------------------------------------------
+    socket.on('register_display', () => {
+      socket.join('display_room');
+      socket.emit('display_update', gameState.getDisplayState());
+    });
+
+    // ----------------------------------------------------------------
+    // 2. ADMIN CLIENT (Control Panel)
+    // ----------------------------------------------------------------
+    socket.on('register_admin', (authData) => {
+      if (authData && authData.password === gameState.adminPassword) {
+        socket.join('admin_room');
+        socket.emit('admin_authenticated', { success: true });
+        socket.emit('admin_update', gameState.getAdminState());
+      } else {
+        socket.emit('admin_authenticated', { success: false, message: 'Invalid Admin Password' });
+      }
+    });
+
+    socket.on('admin_action', (data) => {
+      if (!data || data.password !== gameState.adminPassword) {
+        return socket.emit('admin_action_result', { success: false, message: 'Unauthorized' });
+      }
+
+      const { action, payload } = data;
+      let result = { success: false, message: 'Unknown action' };
+
+      switch (action) {
+        case 'start_round':
+          if (gameState.status === 'LOBBY') {
+            gameState.autoMergeLeftovers();
+          }
+          // Server-side protection against accidental skipping
+          if (payload.roundNumber === 2 && gameState.status === 'LOBBY' && !payload.force) {
+            result = { success: false, message: 'Round 2 is locked. Please run and complete Round 1 first.' };
+            break;
+          }
+          if (payload.roundNumber === 3 && (gameState.status === 'LOBBY' || gameState.status === 'INTERMEDIATE_1' || gameState.status === 'ROUND_1') && !payload.force) {
+            result = { success: false, message: 'Round 3 is locked. Please complete Round 2 first.' };
+            break;
+          }
+          result = gameState.startRound(payload.roundNumber, payload.durationSec);
+          if (result.success) {
+            io.emit('round_started', {
+              roundNumber: payload.roundNumber,
+              status: gameState.status
+            });
+            // Sync all teams
+            for (const teamId of gameState.teams.keys()) {
+              syncTeamRoom(teamId);
+            }
+          }
+          break;
+
+        case 'pause_round':
+          result = gameState.pauseRound();
+          if (result.success) {
+            io.emit('round_paused', result);
+          }
+          break;
+
+        case 'resume_round':
+          result = gameState.resumeRound();
+          if (result.success) {
+            io.emit('round_resumed', result);
+          }
+          break;
+
+        case 'extend_time':
+          result = gameState.extendRoundTime(payload.seconds);
+          break;
+
+        case 'end_round':
+          result = gameState.endRound();
+          io.emit('round_ended', { status: gameState.status });
+          for (const teamId of gameState.teams.keys()) {
+            syncTeamRoom(teamId);
+          }
+          break;
+
+        case 'auto_merge':
+          result = gameState.autoMergeLeftovers();
+          for (const teamId of gameState.teams.keys()) {
+            syncTeamRoom(teamId);
+          }
+          break;
+
+        case 'start_lobby_timer':
+          result = gameState.startLobbyTimer(payload.durationSec || 300);
+          io.emit('lobby_timer_started', result);
+          break;
+
+        case 'advance_stage':
+          result = gameState.advanceStage();
+          if (result.success) {
+            io.emit('stage_advanced', { status: gameState.status, currentRound: gameState.currentRound });
+            for (const teamId of gameState.teams.keys()) {
+              syncTeamRoom(teamId);
+            }
+          }
+          break;
+
+        case 'force_advance':
+          result = gameState.forceAdvanceTeamTurn(payload.teamId, payload.reason);
+          if (result.success) {
+            syncTeamRoom(payload.teamId);
+          }
+          break;
+
+        case 'override_score':
+          result = gameState.overrideTeamScore(payload.teamId, payload.scoreDelta, payload.reason);
+          if (result.success) {
+            syncTeamRoom(payload.teamId);
+          }
+          break;
+
+        case 'reset_game':
+          gameState.resetAllState();
+          result = { success: true, message: 'Game state reset completely.' };
+          io.emit('game_reset_event');
+          break;
+      }
+
+      socket.emit('admin_action_result', result);
+      triggerDisplayPush(true);
+      pushAdminUpdate();
+    });
+
+    // ----------------------------------------------------------------
+    // HOST KEYBOARD SHORTCUT (SPACEBAR OR ANY KEY ADVANCE)
+    // ----------------------------------------------------------------
+    socket.on('host_key_advance', () => {
+      const result = gameState.advanceStage();
+      if (result.success) {
+        io.emit('stage_advanced', { status: gameState.status, currentRound: gameState.currentRound });
+        if (gameState.status.startsWith('ROUND_')) {
+          io.emit('round_started', {
+            roundNumber: gameState.currentRound,
+            status: gameState.status
+          });
+        } else {
+          io.emit('round_ended', { status: gameState.status });
+        }
+        for (const teamId of gameState.teams.keys()) {
+          syncTeamRoom(teamId);
+        }
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+      }
+    });
+
+    // ----------------------------------------------------------------
+    // 3. STUDENT CLIENT (Player / Team Member)
+    // ----------------------------------------------------------------
+    // Bench Registration (1 Bench = 1 Leader Console, 2 or 3 Members)
+    socket.on('register_bench', ({ benchNumber, teamName, gender, teamSize, leaderName, memberNames }, callback) => {
+      const reg = gameState.registerBenchTeam({
+        benchNumber,
+        teamName,
+        gender,
+        teamSize,
+        leaderName,
+        memberNames,
+        socketId: socket.id
+      });
+
+      if (reg.success) {
+        socket.join(`team_${reg.team.teamId}`);
+        const clientState = gameState.getClientState(reg.sessionToken);
+        if (typeof callback === 'function') {
+          callback({ success: true, sessionToken: reg.sessionToken, team: reg.team, teamCode: reg.teamCode, clientState });
+        }
+        pushAdminUpdate();
+        triggerDisplayPush(true);
+      } else {
+        if (typeof callback === 'function') callback(reg);
+      }
+    });
+
+    // Register / Initial Join
+    socket.on('player_join', ({ name, gender }, callback) => {
+      const reg = gameState.registerPlayer(name, gender, socket.id);
+      if (reg.success) {
+        const clientState = gameState.getClientState(reg.sessionToken);
+        if (typeof callback === 'function') {
+          callback({ success: true, sessionToken: reg.sessionToken, clientState });
+        }
+        pushAdminUpdate();
+      } else {
+        if (typeof callback === 'function') callback(reg);
+      }
+    });
+
+    // Reconnection Handshake with Session Token
+    socket.on('reconnect_session', ({ sessionToken }, callback) => {
+      const rec = gameState.reconnectPlayer(sessionToken, socket.id);
+      if (rec.success) {
+        if (rec.player.teamId) {
+          socket.join(`team_${rec.player.teamId}`);
+        }
+        const clientState = gameState.getClientState(sessionToken);
+        if (typeof callback === 'function') {
+          callback({ success: true, clientState });
+        }
+        pushAdminUpdate();
+      } else {
+        if (typeof callback === 'function') callback(rec);
+      }
+    });
+
+    // Create Team
+    socket.on('create_team', ({ sessionToken, teamName }, callback) => {
+      const res = gameState.createTeam(sessionToken, teamName);
+      if (res.success) {
+        socket.join(`team_${res.team.teamId}`);
+        syncTeamRoom(res.team.teamId);
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+        if (typeof callback === 'function') callback({ success: true, teamCode: res.teamCode });
+      } else {
+        if (typeof callback === 'function') callback(res);
+      }
+    });
+
+    // Join Team by Code
+    socket.on('join_team', ({ sessionToken, teamCode }, callback) => {
+      const res = gameState.joinTeam(sessionToken, teamCode);
+      if (res.success) {
+        socket.join(`team_${res.team.teamId}`);
+        syncTeamRoom(res.team.teamId);
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+        if (typeof callback === 'function') callback({ success: true });
+      } else {
+        if (typeof callback === 'function') callback(res);
+      }
+    });
+
+    // Leave Team (Lobby stage only)
+    socket.on('leave_team', ({ sessionToken }, callback) => {
+      const player = gameState.players.get(sessionToken);
+      const oldTeamId = player?.teamId;
+      const res = gameState.leaveTeam(sessionToken);
+      if (res.success) {
+        if (oldTeamId) {
+          socket.leave(`team_${oldTeamId}`);
+          syncTeamRoom(oldTeamId);
+        }
+        socket.emit('sync_state', gameState.getClientState(sessionToken));
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+        if (typeof callback === 'function') callback({ success: true });
+      } else {
+        if (typeof callback === 'function') callback(res);
+      }
+    });
+
+    // Submit Turn Answer
+    socket.on('submit_turn_answer', ({ sessionToken, turnIndex, answer }, callback) => {
+      const player = gameState.players.get(sessionToken);
+      if (!player) {
+        if (typeof callback === 'function') callback({ success: false, message: 'Invalid session' });
+        return;
+      }
+
+      const teamId = player.teamId;
+      const result = gameState.submitTurnAnswer(sessionToken, turnIndex, answer);
+
+      if (typeof callback === 'function') callback(result);
+
+      if (result.success) {
+        // Room-scoped broadcast to team members!
+        syncTeamRoom(teamId);
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+      }
+    });
+
+    // Submit Round 2 Cyber Hack Guess
+    socket.on('submit_round2_guess', ({ sessionToken, guess, guessWord }, callback) => {
+      const player = gameState.players.get(sessionToken);
+      if (!player) {
+        if (typeof callback === 'function') callback({ success: false, message: 'Invalid session' });
+        return;
+      }
+
+      const actualGuess = guess || guessWord;
+      const teamId = player.teamId;
+      const result = gameState.submitRound2Guess(sessionToken, actualGuess);
+
+      if (typeof callback === 'function') callback(result);
+
+      if (result.success) {
+        syncTeamRoom(teamId);
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+      }
+    });
+
+    // Manual Refresh Request
+    socket.on('request_state_refresh', ({ sessionToken }) => {
+      if (sessionToken) {
+        const clientState = gameState.getClientState(sessionToken);
+        if (clientState) {
+          socket.emit('sync_state', clientState);
+        }
+      }
+    });
+
+    // Socket Disconnect
+    socket.on('disconnect', () => {
+      const disconnectedPlayer = gameState.handleDisconnect(socket.id);
+      if (disconnectedPlayer && disconnectedPlayer.teamId) {
+        syncTeamRoom(disconnectedPlayer.teamId);
+        pushAdminUpdate();
+      }
+    });
+  });
+}
+
+module.exports = {
+  setupSocketHandlers
+};

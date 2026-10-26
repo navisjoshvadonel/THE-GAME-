@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JD's Arena — Grand Hall Projection</title>
+  <link rel="stylesheet" href="/css/display.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap">
+  </noscript>
+</head>
+<body class="display-classic">
+  <div class="parchment-pattern"></div>
+
+  <div class="display-container">
+    <!-- Top Projection Header: Emblem, Stage, and Classical Timer -->
+    <header class="projector-header">
+      <div class="event-brand">
+        <span class="event-crest">🕹️</span>
+        <div class="brand-text">
+          <span class="event-title">JD's Arena</span>
+          <span class="event-sub">CAMPUS ARCADE LAN 2026</span>
+        </div>
+      </div>
+
+      <div class="stage-info">
+        <div class="heraldic-ribbon" id="stageRibbon">STAGE OVERVIEW</div>
+        <h1 id="roundTitleDisplay" class="stage-title">SQUAD LOBBY</h1>
+        <div id="roundSubtitleDisplay" class="stage-subtitle">Squads are assembling across the campus arcade network</div>
+      </div>
+
+      <!-- Classic Brass & Ivory Countdown Timer -->
+      <div class="timer-wrapper">
+        <div class="timer-box" id="timerBox">
+          <span class="timer-label">TIME REMAINING</span>
+          <span id="countdownDisplay" class="timer-numbers">--:--</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN LEADERBOARD SECTION -->
+    <main class="projector-main">
+      <section class="leaderboard-section">
+        <div class="section-topbar">
+          <div class="table-heading-row">
+            <span class="col-rank">RANK</span>
+            <span class="col-squad">CABINET &amp; SQUAD</span>
+            <span class="col-members">PLAYERS</span>
+            <span class="col-progress">CIPHER PROGRESS</span>
+            <span class="col-status">STAGE STATUS</span>
+            <span class="col-score">TOTAL SCORE</span>
+          </div>
+        </div>
+
+        <div id="leaderboardList" class="leaderboard-rows-container">
+          <!-- Dynamic Team rows with CSS-only rank transitions -->
+          <div class="empty-state-notice">
+            <span>Awaiting squad assemblies... Players connect to: <strong id="fallbackIpDisplay" style="color: #ffd60a; letter-spacing: 1px;">Detecting Lab LAN IP...</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- INTERMEDIATE & CHAMPIONSHIP PODIUM OVERLAY -->
+      <div id="podiumOverlay" class="podium-overlay hidden">
+        <div class="podium-card">
+          <div class="podium-badge" id="podiumBadge">STAGE 1 COMPLETE</div>
+          <h2 class="podium-heading" id="podiumHeading">TOP SQUADS</h2>
+          <p class="podium-sub" id="podiumSub">The top arcade squads leading the tournament:</p>
+
+          <div id="podiumTopList" class="podium-list">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer Stats Strip -->
+    <footer class="display-footer">
+      <div class="footer-left">
+        <span class="footer-stat">Registered Squads: <strong id="statTotalTeams">0</strong></span>
+        <span class="footer-divider">❧</span>
+        <span class="footer-stat">System Mode: <strong class="text-navy">Autonomous Offline LAN WebSocket Engine</strong></span>
+      </div>
+      <div class="footer-right">
+        <span id="lastSyncTime" class="sync-time">Official Sync: Just now</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/display.js"></script>
+</body>
+</html>

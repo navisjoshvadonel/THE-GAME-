@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Server Control — Live Team Unlocks</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap">
+  </noscript>
+</head>
+<body class="server-deck">
+  <!-- Ambient Studio Lighting & Aurora Glows -->
+  <div class="aurora-bg" aria-hidden="true">
+    <div class="aurora-glow aurora-glow-1"></div>
+    <div class="aurora-glow aurora-glow-2"></div>
+    <div class="aurora-glow aurora-glow-3"></div>
+    <div class="cyber-grid"></div>
+  </div>
+  <!-- Minimal Top Control Header -->
+  <!-- 1. DEDICATED HOST LOGIN SCREEN (Visible when unauthenticated) -->
+  <section id="hostLoginScreen" class="host-login-wrapper">
+    <div class="host-login-card">
+      <div class="login-crest">🏛️</div>
+      <h1 class="login-title">Tournament Host Login</h1>
+      <p class="login-sub">Administrator access to server controls, live team scores, and dynamic member unlocks.</p>
+      
+      <form id="adminLoginForm" onsubmit="return false;" class="login-form">
+        <div class="form-group">
+          <label for="adminPasswordInput">Host Password</label>
+          <input type="password" id="adminPasswordInput" class="admin-input" placeholder="Password..." value="" autofocus>
+          <span class="field-hint">Enter the Game Master tournament password</span>
+        </div>
+        <p id="adminLoginError" class="auth-error-msg hidden">Invalid credentials</p>
+        <button type="submit" id="btnAdminLogin" class="btn btn-primary btn-block">
+          <span>Login as Host & Open Dashboard</span>
+          <span>➔</span>
+        </button>
+      </form>
+
+      <div class="login-footer-links">
+        <a href="/" class="login-switch-link">← Switch to Player Login</a>
+        <span class="dot-divider">•</span>
+        <a href="/display" target="_blank" class="login-switch-link">📺 Open Projector Display</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. MAIN TOURNAMENT SERVER DASHBOARD (Visible when authenticated) -->
+  <div id="hostDashboardScreen" class="host-dashboard-layout hidden">
+    <!-- Minimal Top Control Header -->
+    <header class="server-header">
+      <div class="header-brand">
+        <span class="brand-crest">🏛️</span>
+        <div>
+          <h1 class="brand-title">Tournament Server Dashboard</h1>
+          <div class="header-status-line">
+            <span class="status-indicator"></span>
+            <span id="headerStageText">STAGE: LOBBY</span>
+            <span class="status-divider">•</span>
+            <span id="metricTimer" class="timer-display">--:--</span>
+            <span class="status-divider">•</span>
+            <span id="adminLanIpBadge" class="lan-ip-badge" title="Share with student laptops" style="color: #00f0ff; font-family: monospace; font-size: 0.85rem; font-weight: 700; background: rgba(0,240,255,0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0,240,255,0.3);">📶 Detecting LAN IP...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simple, Direct Control Bar -->
+      <div class="header-actions">
+        <button id="btnStartRound1" class="btn btn-sm btn-primary" title="Launch Round 1: Keyword Cipher Quest">▶ Round 1</button>
+        <button id="btnStartRound2" class="btn btn-sm btn-secondary" disabled title="Locked: Complete Round 1 first">🔒 Round 2</button>
+        <button id="btnStartRound3" class="btn btn-sm btn-gold" disabled title="Locked: Complete Round 2 first">🔒 Round 3</button>
+        <span class="button-separator"></span>
+        <button id="btnPauseResume" class="btn btn-sm btn-outline">⏸ Pause</button>
+        <button id="btnExtendTime1m" class="btn btn-sm btn-outline">+1m</button>
+        <button id="btnForceEndRound" class="btn btn-sm btn-danger-outline">⏹ End</button>
+        <span class="button-separator"></span>
+        <button id="btnExportResults" class="btn btn-sm btn-secondary" title="Export scores to JSON">💾 Export</button>
+        <button id="btnResetAll" class="btn btn-sm btn-text-danger" title="Reset all data">Reset</button>
+        <span class="button-separator"></span>
+        <button id="btnHostLogout" class="btn btn-sm btn-outline" title="Log out from Host Panel">🚪 Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Clean Teams & Dynamic Unlocks Grid -->
+    <main class="server-container">
+      <div class="dashboard-bar">
+        <div class="bar-left">
+          <span class="bar-title">TEAMS & LIVE MEMBER UNLOCKS</span>
+          <span class="squad-counter">(<span id="metricTotalSquads">0</span> Teams / <span id="metricOnlinePlayers">0</span> Online Players)</span>
+        </div>
+        <div class="bar-right">
+          <input type="text" id="squadFilterInput" class="search-input" placeholder="Search team or member...">
+        </div>
+      </div>
+
+      <!-- DYNAMIC TEAMS LIST -->
+      <div id="teamsCardList" class="teams-container">
+        <div class="loading-state">
+          <span>Connecting to server engine...</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Simple Score Override Modal -->
+  <div id="scoreOverrideModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3>Adjust Team Score</h3>
+      <p id="scoreModalSquadName">Team: --</p>
+      <div class="form-group">
+        <label>Points delta (+/-):</label>
+        <input type="number" id="scoreDeltaInput" class="admin-input" placeholder="+100">
+      </div>
+      <div class="form-group">
+        <label>Reason:</label>
+        <input type="text" id="scoreReasonInput" class="admin-input" placeholder="Manual adjustment">
+      </div>
+      <div class="modal-actions">
+        <button id="btnCancelScoreOverride" class="btn btn-secondary">Cancel</button>
+        <button id="btnConfirmScoreOverride" class="btn btn-primary">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,690 @@
+/* ==========================================================================
+   THE ACADEMIC DECATHLON — GRAND PROJECTOR DISPLAY STYLESHEET
+   Light, Rich, and Classic Collegiate Tournament Projection Aesthetic.
+   Engineered for low-GPU hardware & crystal-clear viewing from 25+ meters.
+   Zero WebGL, zero Canvas, pure CSS-only rank transforms and antique gold trims.
+   ========================================================================== */
+
+:root {
+  --display-bg: #f7f5ee;
+  --display-card: #ffffff;
+  --display-row: #ffffff;
+  --display-row-alt: #fbfaf6;
+
+  --navy-oxford: #0f223d;
+  --navy-slate: #1e3a5f;
+  --gold-antique: #c59b27;
+  --gold-burnished: #a67c1e;
+  --gold-light: #fbf7ee;
+  --gold-border: #e2c87b;
+
+  --rank-gold: #c59b27;
+  --rank-silver: #7e8b9b;
+  --rank-bronze: #a56336;
+
+  --green-racing: #1b4d3e;
+  --green-light: #eaf4ef;
+  --crimson-heritage: #8b1e2b;
+
+  --border-classic: #e4ded3;
+  --border-double: 3px double #d6cbbe;
+
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-display: 'Cinzel', serif;
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.display-classic {
+  background-color: var(--display-bg);
+  color: var(--navy-oxford);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.parchment-pattern {
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(197, 155, 39, 0.06) 0%, transparent 60%),
+    linear-gradient(to right, rgba(140, 120, 100, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(140, 120, 100, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.display-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 24px 36px;
+  max-width: 1800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* -------------------------------------------------------------
+ * TOP PROJECTOR HEADER & CLASSICAL COUNTDOWN CLOCK
+ * ----------------------------------------------------------- */
+.projector-header {
+  display: grid;
+  grid-template-columns: 1.2fr auto 1fr;
+  align-items: center;
+  padding: 20px 32px;
+  background: var(--display-card);
+  border: 1px solid #dfd8ce;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(45, 35, 20, 0.05);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.projector-header::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  border: 1px solid rgba(197, 155, 39, 0.2);
+  border-radius: 11px;
+  pointer-events: none;
+}
+
+.event-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.event-crest {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.event-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  color: var(--navy-oxford);
+}
+
+.event-sub {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gold-antique);
+}
+
+.stage-info {
+  text-align: center;
+}
+
+.heraldic-ribbon {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--gold-antique);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.stage-title {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--navy-oxford);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.stage-subtitle {
+  font-size: 1.05rem;
+  color: var(--gold-burnished);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* Classic Clock Box */
+.timer-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.timer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 8px 26px;
+  background: var(--gold-light);
+  border: 1.5px solid var(--gold-border);
+  border-radius: 10px;
+}
+
+.timer-label {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--gold-burnished);
+}
+
+.timer-numbers {
+  font-family: var(--font-mono);
+  font-size: 4.2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--navy-oxford);
+  letter-spacing: -1.5px;
+}
+
+.timer-warning .timer-numbers {
+  color: var(--gold-antique);
+}
+
+.timer-danger .timer-numbers {
+  color: var(--crimson-heritage);
+  animation: pulseClassic 1s infinite alternate;
+}
+
+@keyframes pulseClassic {
+  from { opacity: 0.85; }
+  to { opacity: 1; transform: scale(1.03); }
+}
+
+/* -------------------------------------------------------------
+ * HOST ADVANCE CALLOUT BANNER (SPACEBAR SHORTCUT)
+ * ----------------------------------------------------------- */
+.advance-banner {
+  background: linear-gradient(135deg, #0f223d 0%, #1e3a5f 100%);
+  border: 2px solid var(--gold-antique);
+  border-radius: 12px;
+  padding: 16px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 30px rgba(15, 34, 61, 0.18), 0 0 15px rgba(197, 155, 39, 0.25);
+  animation: glowPulse 2s infinite alternate;
+}
+
+@keyframes glowPulse {
+  from { box-shadow: 0 8px 30px rgba(15, 34, 61, 0.18), 0 0 10px rgba(197, 155, 39, 0.2); }
+  to { box-shadow: 0 8px 30px rgba(15, 34, 61, 0.25), 0 0 25px rgba(197, 155, 39, 0.5); }
+}
+
+.advance-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.key-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold-antique);
+  color: #000;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 1.5px;
+  padding: 7px 16px;
+  border-radius: 6px;
+  box-shadow: 0 3px 0 #8d6b15, 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.advance-banner-text {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.btn-advance-action {
+  background: #ffffff;
+  color: var(--navy-oxford);
+  border: 1.5px solid var(--gold-antique);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-advance-action:hover {
+  background: var(--gold-antique);
+  color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(197, 155, 39, 0.4);
+}
+
+/* -------------------------------------------------------------
+ * MAIN LEADERBOARD SECTION
+ * ----------------------------------------------------------- */
+.projector-main {
+  flex: 1;
+  position: relative;
+}
+
+.leaderboard-section {
+  background: var(--display-card);
+  border: 1.5px solid #dfd8ce;
+  border-radius: 14px;
+  box-shadow: 0 6px 28px rgba(45, 35, 20, 0.06);
+  overflow: hidden;
+}
+
+.table-heading-row {
+  display: grid;
+  grid-template-columns: 85px 2.8fr 1.2fr 2fr 1.4fr 1.5fr;
+  align-items: center;
+  padding: 18px 28px;
+  background: #fbf9f5;
+  border-bottom: 2px solid var(--border-classic);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--navy-slate);
+  text-transform: uppercase;
+}
+
+.leaderboard-rows-container {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 18px;
+  gap: 10px;
+  min-height: 480px;
+}
+
+/* Dynamic Fellowship Row */
+.team-row {
+  display: grid;
+  grid-template-columns: 85px 2.8fr 1.2fr 2fr 1.4fr 1.5fr;
+  align-items: center;
+  padding: 20px 28px;
+  background: var(--display-row);
+  border: 1px solid var(--border-classic);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+
+.team-row:nth-child(even) {
+  background: var(--display-row-alt);
+}
+
+/* Rank Medals */
+.rank-badge {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--navy-oxford);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.team-row.rank-1 {
+  border-left: 6px solid var(--gold-antique);
+  background: #fffdf5;
+}
+.team-row.rank-1 .rank-badge { color: var(--gold-burnished); font-weight: 800; }
+
+.team-row.rank-2 {
+  border-left: 6px solid #9aa5b4;
+  background: #fafbfc;
+}
+.team-row.rank-2 .rank-badge { color: #586677; }
+
+.team-row.rank-3 {
+  border-left: 6px solid #bf7d4e;
+  background: #fdfbf8;
+}
+.team-row.rank-3 .rank-badge { color: #a56336; }
+
+.squad-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.squad-name {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--navy-oxford);
+  letter-spacing: -0.3px;
+}
+
+.squad-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.squad-tag {
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+}
+
+.tag-male { background: #eef3f9; color: var(--navy-oxford); }
+.tag-female { background: #f9f0f2; color: #8b1e2b; }
+
+.members-cell {
+  font-size: 1rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Progress Fill */
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 240px;
+}
+
+.progress-track {
+  height: 8px;
+  background: #eae4d8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-antique), var(--green-racing));
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7b889b;
+  letter-spacing: 0.5px;
+}
+
+/* Status Pill */
+.status-cell {
+  display: flex;
+  align-items: center;
+}
+
+.display-status-pill {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-completed {
+  background: var(--green-light);
+  color: var(--green-racing);
+  border: 1px solid rgba(27, 77, 62, 0.3);
+}
+
+.status-solving {
+  background: var(--gold-light);
+  color: var(--gold-burnished);
+  border: 1px solid var(--gold-border);
+}
+
+.status-ready {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #7dd3fc;
+}
+
+.status-eliminated {
+  background: #f5f2ed;
+  color: #8c8273;
+}
+
+/* Grand Lobby Broadcast Standby Card */
+.lobby-broadcast-box {
+  text-align: center;
+  padding: 70px 30px;
+  background: radial-gradient(circle at center, rgba(254, 249, 195, 0.15) 0%, rgba(247, 245, 238, 0.6) 100%);
+  border-radius: 14px;
+}
+
+.lobby-crest {
+  font-size: 3.5rem;
+  margin-bottom: 10px;
+  animation: pulseCrest 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseCrest {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.lobby-title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--navy-oxford);
+  letter-spacing: 2px;
+}
+
+.lobby-instruction-sub {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: #475569;
+  margin-top: 8px;
+}
+
+.lobby-ip-chip {
+  display: inline-block;
+  margin-top: 24px;
+  background: #0f172a;
+  border: 2px solid var(--gold-antique);
+  border-radius: 12px;
+  padding: 16px 36px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.lobby-ip-chip .ip-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 2.5px;
+  color: var(--gold-antique);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.lobby-ip-chip .ip-value {
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+}
+
+.lobby-footer-help {
+  margin-top: 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+/* Score Cell */
+.score-cell {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--navy-oxford);
+  text-align: right;
+  padding-right: 14px;
+}
+
+.score-pts {
+  font-size: 0.9rem;
+  color: var(--gold-antique);
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.empty-state-notice {
+  text-align: center;
+  padding: 90px 20px;
+  font-family: var(--font-serif);
+  color: #7b889b;
+  font-size: 1.5rem;
+}
+
+/* -------------------------------------------------------------
+ * PODIUM & INTERMISSION OVERLAY
+ * ----------------------------------------------------------- */
+.podium-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(247, 245, 238, 0.94);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 40px;
+  animation: fadeInClassic 0.35s ease;
+}
+
+.podium-card {
+  max-width: 920px;
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid var(--gold-antique);
+  border-radius: 16px;
+  padding: 44px;
+  text-align: center;
+  box-shadow: 0 14px 45px rgba(197, 155, 39, 0.25);
+  position: relative;
+}
+
+.podium-badge {
+  display: inline-block;
+  padding: 6px 20px;
+  background: var(--gold-light);
+  color: var(--gold-burnished);
+  border: 1px solid var(--gold-border);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 2.5px;
+  margin-bottom: 14px;
+}
+
+.podium-heading {
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--navy-oxford);
+  margin-bottom: 8px;
+}
+
+.podium-sub {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+}
+
+.podium-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.podium-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  background: #fbfaf7;
+  border: 1px solid var(--border-classic);
+  border-radius: 10px;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--navy-oxford);
+}
+
+.podium-item.top-1 {
+  border: 1.5px solid var(--gold-antique);
+  background: #fffdf5;
+  box-shadow: 0 4px 14px rgba(197, 155, 39, 0.15);
+}
+
+/* -------------------------------------------------------------
+ * FOOTER
+ * ----------------------------------------------------------- */
+.display-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding: 16px 24px;
+  background: var(--display-card);
+  border: 1px solid #dfd8ce;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: var(--navy-muted);
+}
+
+.footer-stat strong {
+  color: var(--navy-oxford);
+}
+
+.footer-divider {
+  margin: 0 12px;
+  color: var(--gold-antique);
+}
+
+.text-navy {
+  color: var(--navy-oxford) !important;
+}
+
+.sync-time {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--gold-burnished);
+}
+
+.hidden {
+  display: none !important;
+}
