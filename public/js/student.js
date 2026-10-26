@@ -240,9 +240,21 @@
     }
   }
 
+  let _activeScreen = null;
+  const _ALL_SCREENS = [viewRegister, viewLobby, viewGame, viewRound2Game, viewRound3Game, viewFinished];
+
   function switchScreen(screen) {
-    [viewRegister, viewLobby, viewGame, viewRound2Game, viewRound3Game, viewFinished].forEach(s => s && s.classList.add('hidden'));
-    [viewRegister, viewLobby, viewGame, viewRound2Game, viewRound3Game, viewFinished].forEach(s => s && s.classList.remove('active'));
+    if (_activeScreen === screen) return; // Already on this screen — skip DOM work
+    if (_activeScreen) {
+      _activeScreen.classList.add('hidden');
+      _activeScreen.classList.remove('active');
+      // Clean up R1 turn timer when leaving game view
+      if (_activeScreen === viewGame) {
+        clearInterval(operativeTimerInterval);
+        operativeTimerInterval = null;
+      }
+    }
+    _activeScreen = screen || null;
     if (screen) {
       screen.classList.remove('hidden');
       screen.classList.add('active');
@@ -466,10 +478,18 @@
     } else if (state.gameStatus === 'FINISHED') {
       renderFinished(state);
       switchScreen(viewFinished);
-    } else if (state.gameStatus === 'ROUND_2' || state.currentRound === 2 || state.puzzle?.type === 'cyber_hack_round2') {
+    } else if (state.gameStatus === 'INTERMEDIATE_1') {
+      // Stage 1 Intermission: All players see Round 2 Guide & Mission Briefing!
+      renderGame(state);
+      switchScreen(viewGame);
+    } else if (state.gameStatus === 'ROUND_2') {
       renderRound2Game(state);
       switchScreen(viewRound2Game);
-    } else if (state.gameStatus === 'ROUND_3' || state.currentRound === 3 || (state.puzzle?.type && state.puzzle.type.startsWith('sherlock'))) {
+    } else if (state.gameStatus === 'INTERMEDIATE_2') {
+      // Stage 2 Intermission / Qualification Audit
+      renderRound2Game(state);
+      switchScreen(viewRound2Game);
+    } else if (state.gameStatus === 'ROUND_3') {
       renderRound3Game(state);
       switchScreen(viewRound3Game);
     } else {
@@ -807,6 +827,10 @@
       if (boxR2NodePassed) boxR2NodePassed.classList.add('hidden');
       r2CurrentGuess = '';
       lastR2RenderedNode = puzzle.nodeNumber;
+      // Reset keyboard + matrix caches for the new node
+      _keyboardBuilt = false;
+      _lastHackMatrixAttemptCount = -1;
+      _lastHackMatrixNodeIndex = -1;
     }
 
     // Active Operative Spotlight in Left Sidebar
@@ -900,67 +924,114 @@
     }
   }
 
+  // Hack matrix: last rendered attempt count for diffing
+  let _lastHackMatrixAttemptCount = -1;
+  let _lastHackMatrixNodeIndex = -1;
+
   function renderHackMatrix(puzzle) {
     if (!r2HackMatrixRows) return;
-    r2HackMatrixRows.innerHTML = '';
 
     const targetLength = puzzle.nodeData?.length || 5;
     const attempts = puzzle.attempts || [];
     const currentAttemptIdx = attempts.length;
+    const nodeNumber = puzzle.nodeNumber;
 
-    // Build 4 rows
-    for (let r = 0; r < 4; r++) {
-      const row = document.createElement('div');
-      row.className = 'hack-matrix-row';
+    // Full rebuild only when: node changed, attempt count changed, or first render
+    const needsFullRebuild = (nodeNumber !== _lastHackMatrixNodeIndex)
+      || (currentAttemptIdx !== _lastHackMatrixAttemptCount)
+      || (r2HackMatrixRows.children.length === 0);
 
-      if (r < currentAttemptIdx) {
-        // Past Attempt: rendered with status colors
-        const att = attempts[r];
-        const feedback = att.feedback || [];
-        for (let c = 0; c < targetLength; c++) {
-          const tile = document.createElement('div');
-          const fb = feedback[c];
-          const letter = fb ? fb.letter : (att.guess[c] || '');
-          const status = fb ? fb.status : 'absent';
-          tile.className = `hack-tile tile-${status} flip-in`;
-          tile.style.animationDelay = `${c * 0.08}s`;
-          tile.textContent = letter;
-          row.appendChild(tile);
-        }
-      } else if (r === currentAttemptIdx && !r2NodePassedState) {
-        // Current Active Input Row
-        for (let c = 0; c < targetLength; c++) {
-          const tile = document.createElement('div');
-          const letter = r2CurrentGuess[c] || '';
-          if (letter) {
-            tile.className = 'hack-tile filled';
+    if (needsFullRebuild) {
+      _lastHackMatrixNodeIndex = nodeNumber;
+      _lastHackMatrixAttemptCount = currentAttemptIdx;
+      r2HackMatrixRows.innerHTML = '';
+
+      // Build 4 rows
+      for (let r = 0; r < 4; r++) {
+        const row = document.createElement('div');
+        row.className = 'hack-matrix-row';
+        row.dataset.rowIndex = r;
+
+        if (r < currentAttemptIdx) {
+          // Past Attempt: rendered with status colors
+          const att = attempts[r];
+          const feedback = att.feedback || [];
+          for (let c = 0; c < targetLength; c++) {
+            const tile = document.createElement('div');
+            const fb = feedback[c];
+            const letter = fb ? fb.letter : (att.guess[c] || '');
+            const status = fb ? fb.status : 'absent';
+            tile.className = `hack-tile tile-${status} flip-in`;
+            tile.style.animationDelay = `${c * 0.08}s`;
             tile.textContent = letter;
-          } else if (c === r2CurrentGuess.length) {
-            tile.className = 'hack-tile current-active';
-            tile.textContent = '';
-          } else {
+            row.appendChild(tile);
+          }
+        } else if (r === currentAttemptIdx && !r2NodePassedState) {
+          // Current Active Input Row
+          row.dataset.isActive = '1';
+          for (let c = 0; c < targetLength; c++) {
+            const tile = document.createElement('div');
+            const letter = r2CurrentGuess[c] || '';
+            if (letter) {
+              tile.className = 'hack-tile filled';
+              tile.textContent = letter;
+            } else if (c === r2CurrentGuess.length) {
+              tile.className = 'hack-tile current-active';
+              tile.textContent = '';
+            } else {
+              tile.className = 'hack-tile';
+              tile.textContent = '';
+            }
+            row.appendChild(tile);
+          }
+        } else {
+          // Future Row: blank tiles
+          for (let c = 0; c < targetLength; c++) {
+            const tile = document.createElement('div');
             tile.className = 'hack-tile';
             tile.textContent = '';
+            row.appendChild(tile);
           }
-          row.appendChild(tile);
         }
-      } else {
-        // Future Row: blank tiles
+
+        r2HackMatrixRows.appendChild(row);
+      }
+    } else {
+      // Fast path: only update the active row tiles (keypress typing)
+      const activeRow = r2HackMatrixRows.querySelector('[data-is-active="1"]');
+      if (activeRow) {
+        const tiles = activeRow.children;
         for (let c = 0; c < targetLength; c++) {
-          const tile = document.createElement('div');
-          tile.className = 'hack-tile';
-          tile.textContent = '';
-          row.appendChild(tile);
+          const tile = tiles[c];
+          if (!tile) continue;
+          const letter = r2CurrentGuess[c] || '';
+          if (c < r2CurrentGuess.length) {
+            if (tile.className !== 'hack-tile filled' || tile.textContent !== letter) {
+              tile.className = 'hack-tile filled';
+              tile.textContent = letter;
+            }
+          } else if (c === r2CurrentGuess.length) {
+            if (tile.className !== 'hack-tile current-active') {
+              tile.className = 'hack-tile current-active';
+              tile.textContent = '';
+            }
+          } else {
+            if (tile.className !== 'hack-tile') {
+              tile.className = 'hack-tile';
+              tile.textContent = '';
+            }
+          }
         }
       }
-
-      r2HackMatrixRows.appendChild(row);
     }
   }
 
+  // Virtual Keyboard: built once, patched on state updates
+  let _keyboardBuilt = false;
+  let _keyBtnMap = {}; // letter -> button element
+
   function renderVirtualKeyboard(puzzle) {
     if (!r2VirtualKeyboard) return;
-    r2VirtualKeyboard.innerHTML = '';
 
     // Calculate letter statuses from all attempts on current node
     const attempts = puzzle.attempts || [];
@@ -985,43 +1056,62 @@
       ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
     ];
 
-    rows.forEach(rKeys => {
-      const rowDiv = document.createElement('div');
-      rowDiv.className = 'cyber-keyboard-row';
+    if (!_keyboardBuilt) {
+      // Build keyboard DOM once
+      _keyboardBuilt = true;
+      _keyBtnMap = {};
+      r2VirtualKeyboard.innerHTML = '';
 
-      rKeys.forEach(k => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        const isWide = k === 'ENTER' || k === '⌫';
-        const status = r2KeyStatuses[k] ? ` key-${r2KeyStatuses[k]}` : '';
-        btn.className = `key-btn${isWide ? ' key-wide' : ''}${status}`;
-        btn.textContent = k;
+      rows.forEach(rKeys => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'cyber-keyboard-row';
 
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (r2NodePassedState) return;
-          if (k === 'ENTER') {
-            submitRound2Guess();
-          } else if (k === '⌫') {
-            if (r2CurrentGuess.length > 0) {
-              r2CurrentGuess = r2CurrentGuess.slice(0, -1);
-              if (sound) sound.playKeyClick();
-              if (currentClientState?.puzzle) renderHackMatrix(currentClientState.puzzle);
+        rKeys.forEach(k => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isWide = k === 'ENTER' || k === '⌫';
+          btn.className = `key-btn${isWide ? ' key-wide' : ''}`;
+          btn.textContent = k;
+          btn.dataset.key = k;
+          _keyBtnMap[k] = btn;
+
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (r2NodePassedState) return;
+            if (k === 'ENTER') {
+              submitRound2Guess();
+            } else if (k === '⌫') {
+              if (r2CurrentGuess.length > 0) {
+                r2CurrentGuess = r2CurrentGuess.slice(0, -1);
+                if (sound) sound.playKeyClick();
+                if (currentClientState?.puzzle) renderHackMatrix(currentClientState.puzzle);
+              }
+            } else {
+              const targetLen = currentClientState?.puzzle?.nodeData?.length || 5;
+              if (r2CurrentGuess.length < targetLen) {
+                r2CurrentGuess += k;
+                if (sound) sound.playKeyClick();
+                if (currentClientState?.puzzle) renderHackMatrix(currentClientState.puzzle);
+              }
             }
-          } else {
-            const targetLen = currentClientState?.puzzle?.nodeData?.length || 5;
-            if (r2CurrentGuess.length < targetLen) {
-              r2CurrentGuess += k;
-              if (sound) sound.playKeyClick();
-              if (currentClientState?.puzzle) renderHackMatrix(currentClientState.puzzle);
-            }
-          }
+          });
+
+          rowDiv.appendChild(btn);
         });
 
-        rowDiv.appendChild(btn);
+        r2VirtualKeyboard.appendChild(rowDiv);
       });
+    }
 
-      r2VirtualKeyboard.appendChild(rowDiv);
+    // Patch only changed key classes (no DOM rebuild needed)
+    const allKeys = rows.flat();
+    allKeys.forEach(k => {
+      const btn = _keyBtnMap[k];
+      if (!btn) return;
+      const isWide = k === 'ENTER' || k === '⌫';
+      const status = r2KeyStatuses[k];
+      const newClass = `key-btn${isWide ? ' key-wide' : ''}${status ? ` key-${status}` : ''}`;
+      if (btn.className !== newClass) btn.className = newClass;
     });
   }
 
@@ -1103,8 +1193,21 @@
         if (sound) sound.playError();
         const exactMatches = (res.feedback || []).filter(f => f.status === 'correct').length;
         const presentMatches = (res.feedback || []).filter(f => f.status === 'present').length;
-        showToast(`Attempt ${res.attemptsUsed || 1}/4 recorded: ${exactMatches} 🟩 Exact, ${presentMatches} 🟨 Wrong Spot. Examine tile colors!`, 'warning');
+        const attemptsLeft = res.remainingAttempts !== undefined ? res.remainingAttempts : (4 - (res.attemptsUsed || 1));
+        
+        showToast(`Attempt ${res.attemptsUsed || 1}/4: ${exactMatches} 🟩 Exact, ${presentMatches} 🟨 Wrong Spot. ${attemptsLeft} attempts left!`, 'warning');
+        
+        if (r2FeedbackBox) {
+          r2FeedbackBox.className = 'alert-box alert-warning';
+          r2FeedbackBox.innerHTML = `<strong>ATTEMPT ${res.attemptsUsed || 1}/4 RECORDED:</strong> ${exactMatches} 🟩 Exact Spot • ${presentMatches} 🟨 Wrong Spot • <strong>${attemptsLeft} left</strong>. Keep green letters in place!`;
+          r2FeedbackBox.classList.remove('hidden');
+        }
+
         r2CurrentGuess = '';
+        if (r2HiddenInput) {
+          r2HiddenInput.value = '';
+          r2HiddenInput.focus();
+        }
         socket.emit('request_state_refresh', { sessionToken });
       }
     });
@@ -1114,14 +1217,21 @@
     clearTimeout(autoAdvanceTimer);
     r2NodePassedState = false;
     if (boxR2NodePassed) boxR2NodePassed.classList.add('hidden');
+    if (r2FeedbackBox) r2FeedbackBox.classList.add('hidden');
     r2CurrentGuess = '';
+    if (r2HiddenInput) {
+      r2HiddenInput.value = '';
+      r2HiddenInput.focus();
+    }
     socket.emit('request_state_refresh', { sessionToken });
   }
 
-  // Clear button
+  // Clear / Backspace button (deletes last character, or clears if empty)
   if (btnR2Clear) {
     btnR2Clear.addEventListener('click', () => {
-      r2CurrentGuess = '';
+      if (r2CurrentGuess.length > 0) {
+        r2CurrentGuess = r2CurrentGuess.slice(0, -1);
+      }
       if (r2HiddenInput) r2HiddenInput.value = '';
       if (sound) sound.playKeyClick();
       if (currentClientState?.puzzle) renderHackMatrix(currentClientState.puzzle);

@@ -51,9 +51,27 @@ function setupSocketHandlers(io, gameState) {
     triggerDisplayPush(false);
   }, 1000);
 
-  function pushAdminUpdate() {
-    const adminData = gameState.getAdminState();
-    io.to('admin_room').emit('admin_update', adminData);
+  // Throttled admin update (max 1/sec) — avoids admin CPU spikes during active gameplay
+  let lastAdminPushTime = 0;
+  let adminPushTimer = null;
+  function pushAdminUpdate(immediate = false) {
+    const now = Date.now();
+    const elapsed = now - lastAdminPushTime;
+    if (immediate || elapsed >= 1000) {
+      clearTimeout(adminPushTimer);
+      adminPushTimer = null;
+      lastAdminPushTime = now;
+      const adminData = gameState.getAdminState();
+      io.to('admin_room').emit('admin_update', adminData);
+    } else if (!adminPushTimer) {
+      // Schedule a deferred push for the remaining throttle window
+      adminPushTimer = setTimeout(() => {
+        adminPushTimer = null;
+        lastAdminPushTime = Date.now();
+        const adminData = gameState.getAdminState();
+        io.to('admin_room').emit('admin_update', adminData);
+      }, 1000 - elapsed);
+    }
   }
 
   function syncTeamRoom(teamId) {
@@ -200,7 +218,7 @@ function setupSocketHandlers(io, gameState) {
 
       socket.emit('admin_action_result', result);
       triggerDisplayPush(true);
-      pushAdminUpdate();
+      pushAdminUpdate(true); // admin explicit action — always flush immediately
     });
 
     // ----------------------------------------------------------------

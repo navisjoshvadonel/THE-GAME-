@@ -35,6 +35,21 @@ class GameStateManager {
     this.players = new Map();
     this.teams = new Map();
 
+    // --- PERFORMANCE INDEXES ---
+    // O(1) socket → player lookup (avoids O(n) scan on every disconnect)
+    this._socketIndex = new Map(); // socketId -> sessionToken
+    // O(1) bench number → teamId lookup (avoids O(n) scan on bench-session API)
+    this._benchIndex = new Map(); // normalizedBenchKey -> teamId
+
+    // --- LEADERBOARD CACHE ---
+    // Avoid rebuilding the full leaderboard on every admin/display tick
+    this._leaderboardCache = null;
+    this._leaderboardDirty = true;
+
+    // --- DEBOUNCED SNAPSHOT ---
+    this._snapshotTimer = null;
+    this._snapshotPending = false;
+
     // Event audit logs
     this.auditLogs = [];
 
@@ -46,10 +61,70 @@ class GameStateManager {
     // Try auto-loading existing snapshot if server rebooted
     this.loadSnapshot();
 
-    // Periodic auto-snapshot every 10 seconds
+    // Periodic auto-snapshot every 10 seconds (belt-and-suspenders for debounce)
     setInterval(() => {
-      this.saveSnapshot();
+      if (this._snapshotPending) this._flushSnapshot();
     }, 10000);
+  }
+
+  // Debounced save: coalesces rapid saves into one write per 3 seconds
+  saveSnapshot(immediate = false) {
+    this._snapshotPending = true;
+    if (immediate) {
+      this._flushSnapshot();
+      return;
+    }
+    if (!this._snapshotTimer) {
+      this._snapshotTimer = setTimeout(() => {
+        this._snapshotTimer = null;
+        this._flushSnapshot();
+      }, 3000);
+    }
+  }
+
+  _flushSnapshot() {
+    if (!this._snapshotPending) return;
+    this._snapshotPending = false;
+    try {
+      const data = {
+        status: this.status,
+        currentRound: this.currentRound,
+        roundState: this.roundState,
+        lobbyTimer: this.lobbyTimer,
+        players: Array.from(this.players.entries()),
+        teams: Array.from(this.teams.entries()),
+        auditLogs: this.auditLogs.slice(0, 50),
+        savedAt: new Date().toISOString()
+      };
+      const tempFile = `${SNAPSHOT_FILE}.tmp`;
+      fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(tempFile, SNAPSHOT_FILE);
+    } catch (err) {
+      console.error('[Snapshot Save Error]:', err.message);
+    }
+  }
+
+  // Mark leaderboard as needing rebuild on next access
+  _invalidateLeaderboard() {
+    this._leaderboardDirty = true;
+  }
+
+  // Rebuild bench index from current teams Map (called after load/reset)
+  _rebuildIndexes() {
+    this._socketIndex.clear();
+    this._benchIndex.clear();
+    for (const [token, player] of this.players) {
+      if (player.socketId) this._socketIndex.set(player.socketId, token);
+    }
+    for (const [teamId, team] of this.teams) {
+      if (team.benchNumber) {
+        const key = team.benchNumber.toLowerCase().replace(/[^0-9a-z]/g, '');
+        this._benchIndex.set(key, teamId);
+        // Also index numeric-only version
+        const numKey = key.replace(/[^0-9]/g, '');
+        if (numKey) this._benchIndex.set(numKey, teamId);
+      }
+    }
   }
 
   logEvent(type, detail) {
@@ -65,26 +140,7 @@ class GameStateManager {
   /* -------------------------------------------------------------
    * PERSISTENCE & RECOVERY
    * ----------------------------------------------------------- */
-  saveSnapshot() {
-    try {
-      const data = {
-        status: this.status,
-        currentRound: this.currentRound,
-        roundState: this.roundState,
-        lobbyTimer: this.lobbyTimer,
-        players: Array.from(this.players.entries()),
-        teams: Array.from(this.teams.entries()),
-        auditLogs: this.auditLogs.slice(0, 50),
-        savedAt: new Date().toISOString()
-      };
-
-      const tempFile = `${SNAPSHOT_FILE}.tmp`;
-      fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
-      fs.renameSync(tempFile, SNAPSHOT_FILE);
-    } catch (err) {
-      console.error('[Snapshot Save Error]:', err.message);
-    }
-  }
+  // (saveSnapshot, _flushSnapshot, _invalidateLeaderboard, _rebuildIndexes are defined above in constructor block)
 
   loadSnapshot() {
     try {
@@ -114,6 +170,9 @@ class GameStateManager {
         this.auditLogs = data.auditLogs;
       }
 
+      // Rebuild O(1) lookup indexes after loading
+      this._rebuildIndexes();
+      this._invalidateLeaderboard();
       console.log(`[Snapshot Loaded]: Restored ${this.players.size} players and ${this.teams.size} teams.`);
     } catch (err) {
       console.warn('[Snapshot Load Warning]: Could not restore previous state. Starting fresh.', err.message);
@@ -141,7 +200,11 @@ class GameStateManager {
     this.players.clear();
     this.teams.clear();
     this.auditLogs = [];
-    this.saveSnapshot();
+    // Clear all indexes
+    this._socketIndex.clear();
+    this._benchIndex.clear();
+    this._invalidateLeaderboard();
+    this.saveSnapshot(true); // immediate flush on reset
     this.logEvent('STATE_RESET', 'All game data wiped by administrator.');
   }
 
@@ -174,8 +237,10 @@ class GameStateManager {
     };
 
     this.players.set(sessionToken, player);
+    this._socketIndex.set(socketId, sessionToken); // index for O(1) disconnect
     this.logEvent('PLAYER_JOINED', `${cleanName} (${cleanGender}) joined the lobby.`);
     this.saveSnapshot();
+    this._invalidateLeaderboard();
 
     return {
       success: true,
@@ -196,9 +261,14 @@ class GameStateManager {
     }
 
     const player = this.players.get(sessionToken);
+    // Remove old socket from index if it changed
+    if (player.socketId && player.socketId !== socketId) {
+      this._socketIndex.delete(player.socketId);
+    }
     player.socketId = socketId;
     player.isOnline = true;
     player.lastActive = Date.now();
+    this._socketIndex.set(socketId, sessionToken); // keep index fresh
 
     let team = null;
     if (player.teamId && this.teams.has(player.teamId)) {
@@ -206,6 +276,7 @@ class GameStateManager {
     }
 
     this.logEvent('PLAYER_RECONNECTED', `${player.name} reconnected.`);
+    this._invalidateLeaderboard();
 
     return {
       success: true,
@@ -215,15 +286,31 @@ class GameStateManager {
   }
 
   handleDisconnect(socketId) {
-    for (const [token, player] of this.players) {
-      if (player.socketId === socketId) {
-        player.isOnline = false;
-        player.lastActive = Date.now();
-        this.logEvent('PLAYER_DISCONNECTED', `${player.name} went offline.`);
-        return player;
+    // O(1) lookup via socket index — fast path
+    const token = this._socketIndex.get(socketId);
+    let player = token ? this.players.get(token) : null;
+
+    // Fallback: O(n) scan if socketId was set directly on player (e.g. unit tests or desync)
+    if (!player) {
+      for (const p of this.players.values()) {
+        if (p.socketId === socketId) {
+          player = p;
+          break;
+        }
       }
     }
-    return null;
+
+    if (!player) {
+      this._socketIndex.delete(socketId);
+      return null;
+    }
+
+    player.isOnline = false;
+    player.lastActive = Date.now();
+    this._socketIndex.delete(socketId);
+    this.logEvent('PLAYER_DISCONNECTED', `${player.name} went offline.`);
+    this._invalidateLeaderboard();
+    return player;
   }
 
   /* -------------------------------------------------------------
@@ -359,8 +446,18 @@ class GameStateManager {
     }
 
     this.teams.set(teamCode, team);
+    // Update bench index for O(1) bench-session API lookups
+    if (cleanBench) {
+      const benchKey = cleanBench.toLowerCase().replace(/[^0-9a-z]/g, '');
+      this._benchIndex.set(benchKey, teamCode);
+      const numKey = benchKey.replace(/[^0-9]/g, '');
+      if (numKey) this._benchIndex.set(numKey, teamCode);
+    }
+    // Update socket index for all members (all share the leader's socketId at registration)
+    this._socketIndex.set(socketId, leaderToken);
     this.logEvent('BENCH_REGISTERED', `Bench "${cleanBench}" [${team.name}] registered with ${allMembers.length} players (Leader: ${cleanLeader}).`);
     this.saveSnapshot();
+    this._invalidateLeaderboard();
 
     return {
       success: true,
@@ -618,7 +715,8 @@ class GameStateManager {
     }
 
     this.logEvent('ROUND_STARTED', `Round ${roundNumber} started (${duration}s).`);
-    this.saveSnapshot();
+    this._invalidateLeaderboard();
+    this.saveSnapshot(true); // immediate on round start
 
     return { success: true, roundState: this.roundState };
   }
@@ -696,7 +794,8 @@ class GameStateManager {
     }
 
     this.logEvent('ROUND_ENDED', `Round ${completedRound} ended.`);
-    this.saveSnapshot();
+    this._invalidateLeaderboard();
+    this.saveSnapshot(true); // immediate on round end
 
     return {
       success: true,
@@ -827,6 +926,7 @@ class GameStateManager {
 
       team.totalScore += stepPoints;
       team.roundScores[this.currentRound] = (team.roundScores[this.currentRound] || 0) + stepPoints;
+      this._invalidateLeaderboard(); // score changed
 
       const memberDetails = team.members.map(tok => this.players.get(tok)).filter(Boolean);
       const turnAssignment = this.getTurnPlayer(memberDetails, turnIndex);
@@ -985,6 +1085,7 @@ class GameStateManager {
 
       team.totalScore += pointsAwarded;
       team.roundScores[2] = (team.roundScores[2] || 0) + pointsAwarded;
+      this._invalidateLeaderboard(); // score changed
 
       const isCompleted = progress.currentTurnIndex >= puzzleSet.steps.length;
       if (isCompleted) {
@@ -1510,6 +1611,10 @@ class GameStateManager {
   }
 
   getLeaderboard() {
+    // Return cached result if state hasn't changed since last build
+    if (!this._leaderboardDirty && this._leaderboardCache) {
+      return this._leaderboardCache;
+    }
     const list = Array.from(this.teams.values()).map(t => {
       const prog = t.currentRoundProgress;
       const memberDetails = t.members.map(tok => this.players.get(tok)).filter(Boolean);
@@ -1570,6 +1675,9 @@ class GameStateManager {
       return 0;
     });
 
+    // Cache the result
+    this._leaderboardCache = list;
+    this._leaderboardDirty = false;
     return list;
   }
 

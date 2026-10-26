@@ -63,20 +63,34 @@ app.get('/api/lan-ips', (req, res) => {
 
 app.get('/api/bench-session', (req, res) => {
   const benchQuery = (req.query.bench || '').toString().trim().toLowerCase();
-  for (const team of gameState.teams.values()) {
-    const bNum = (team.benchNumber || '').toLowerCase();
-    const tName = (team.name || '').toLowerCase();
-    const queryNum = benchQuery.replace(/[^0-9]/g, '');
-    const benchNum = bNum.replace(/[^0-9]/g, '');
-    if ((queryNum && benchNum === queryNum) || bNum.includes(benchQuery) || tName.includes(benchQuery)) {
-      return res.json({
-        success: true,
-        benchNumber: team.benchNumber,
-        teamName: team.name,
-        sessionToken: team.leaderSessionToken,
-        teamId: team.teamId
-      });
+  const numericKey = benchQuery.replace(/[^0-9]/g, '');
+  const alphaNumKey = benchQuery.replace(/[^0-9a-z]/g, '');
+
+  // O(1) index lookups first
+  let teamId = gameState._benchIndex.get(alphaNumKey) || gameState._benchIndex.get(numericKey);
+  let team = teamId ? gameState.teams.get(teamId) : null;
+
+  // Fallback: linear scan (covers partial name matches & edge cases)
+  if (!team) {
+    for (const t of gameState.teams.values()) {
+      const bNum = (t.benchNumber || '').toLowerCase();
+      const tName = (t.name || '').toLowerCase();
+      const benchNum = bNum.replace(/[^0-9]/g, '');
+      if ((numericKey && benchNum === numericKey) || bNum.includes(benchQuery) || tName.includes(benchQuery)) {
+        team = t;
+        break;
+      }
     }
+  }
+
+  if (team) {
+    return res.json({
+      success: true,
+      benchNumber: team.benchNumber,
+      teamName: team.name,
+      sessionToken: team.leaderSessionToken,
+      teamId: team.teamId
+    });
   }
   res.json({ success: false, message: 'Bench not found' });
 });
