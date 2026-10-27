@@ -103,9 +103,25 @@
   /* -------------------------------------------------------------
    * DISPLAY RENDERER
    * ----------------------------------------------------------- */
+  let currentDisplayTheme = null;
+  function applyDisplayTheme(status) {
+    let target = 'theme-lobby';
+    if (status === 'ROUND_1' || status === 'INTERMEDIATE_1') target = 'theme-round-1';
+    else if (status === 'ROUND_2' || status === 'INTERMEDIATE_2') target = 'theme-round-2';
+    else if (status === 'ROUND_3') target = 'theme-round-3';
+    else if (status === 'FINISHED') target = 'theme-finished';
+
+    if (currentDisplayTheme !== target) {
+      document.body.classList.remove('theme-lobby', 'theme-round-1', 'theme-round-2', 'theme-round-3', 'theme-finished');
+      document.body.classList.add(target);
+      currentDisplayTheme = target;
+    }
+  }
+
   function renderDisplay(data) {
     if (!data) return;
     currentStageStatus = data.status || 'LOBBY';
+    applyDisplayTheme(data.status);
 
     // Stage Header
     roundTitleDisplay.textContent = data.roundTitle || 'LOBBY STAGE';

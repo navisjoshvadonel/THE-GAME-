@@ -435,11 +435,36 @@
   }
 
   /* -------------------------------------------------------------
+   * DYNAMIC ROUND THEMES ENGINE
+   * Automatically shifts color palettes, atmosphere, and visual cues
+   * ----------------------------------------------------------- */
+  let currentAppliedTheme = null;
+  function applyRoundTheme(gameStatus) {
+    let targetTheme = 'theme-lobby';
+    if (gameStatus === 'ROUND_1' || gameStatus === 'INTERMEDIATE_1') {
+      targetTheme = 'theme-round-1';
+    } else if (gameStatus === 'ROUND_2' || gameStatus === 'INTERMEDIATE_2') {
+      targetTheme = 'theme-round-2';
+    } else if (gameStatus === 'ROUND_3') {
+      targetTheme = 'theme-round-3';
+    } else if (gameStatus === 'FINISHED') {
+      targetTheme = 'theme-finished';
+    }
+
+    if (currentAppliedTheme !== targetTheme) {
+      document.body.classList.remove('theme-lobby', 'theme-round-1', 'theme-round-2', 'theme-round-3', 'theme-finished');
+      document.body.classList.add(targetTheme);
+      currentAppliedTheme = targetTheme;
+    }
+  }
+
+  /* -------------------------------------------------------------
    * STATE DISPATCHER & UI ROUTING
    * ----------------------------------------------------------- */
   function handleSyncState(state) {
     if (!state || !state.player) return;
     currentClientState = state;
+    applyRoundTheme(state.gameStatus);
     const team = state.team;
 
     // Update Header HUD

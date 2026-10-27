@@ -48,6 +48,40 @@ body.display-classic {
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.8s ease, color 0.5s ease;
+}
+
+/* Dynamic Round Themes for Grand Hall Projector */
+body.display-classic.theme-round-1 {
+  --display-bg: #f2f9f5;
+  --gold-antique: #059669;
+  --gold-burnished: #047857;
+  --gold-border: #a7f3d0;
+  --navy-oxford: #064e3b;
+}
+
+body.display-classic.theme-round-2 {
+  --display-bg: #fffbf0;
+  --gold-antique: #d97706;
+  --gold-burnished: #b45309;
+  --gold-border: #fde68a;
+  --navy-oxford: #78350f;
+}
+
+body.display-classic.theme-round-3 {
+  --display-bg: #f4f7fc;
+  --gold-antique: #2563eb;
+  --gold-burnished: #1d4ed8;
+  --gold-border: #bfdbfe;
+  --navy-oxford: #0f172a;
+}
+
+body.display-classic.theme-finished {
+  --display-bg: #fcf9f2;
+  --gold-antique: #eab308;
+  --gold-burnished: #ca8a04;
+  --gold-border: #fef08a;
+  --navy-oxford: #3b0764;
 }
 
 .parchment-pattern {

@@ -112,9 +112,11 @@ function setupSocketHandlers(io, gameState) {
       }
     });
 
-    socket.on('admin_action', (data) => {
+    socket.on('admin_action', (data, callback) => {
       if (!data || data.password !== gameState.adminPassword) {
-        return socket.emit('admin_action_result', { success: false, message: 'Unauthorized' });
+        const unauth = { success: false, message: 'Unauthorized' };
+        if (typeof callback === 'function') callback(unauth);
+        return socket.emit('admin_action_result', unauth);
       }
 
       const { action, payload } = data;
@@ -217,6 +219,7 @@ function setupSocketHandlers(io, gameState) {
       }
 
       socket.emit('admin_action_result', result);
+      if (typeof callback === 'function') callback(result);
       triggerDisplayPush(true);
       pushAdminUpdate(true); // admin explicit action — always flush immediately
     });
@@ -265,7 +268,7 @@ function setupSocketHandlers(io, gameState) {
         if (typeof callback === 'function') {
           callback({ success: true, sessionToken: reg.sessionToken, team: reg.team, teamCode: reg.teamCode, clientState });
         }
-        pushAdminUpdate();
+        pushAdminUpdate(true);
         triggerDisplayPush(true);
       } else {
         if (typeof callback === 'function') callback(reg);

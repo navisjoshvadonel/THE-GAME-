@@ -58,6 +58,134 @@ body.jules-theme {
   overflow-x: hidden;
   position: relative;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.8s ease, color 0.5s ease;
+}
+
+/* ==========================================================================
+   DYNAMIC ROUND THEMES (AUTOMATIC ARENA SHIFTS)
+   ========================================================================== */
+/* Stage 0 / Default: Synthwave Cyber Terminal */
+body.theme-lobby {
+  --jules-bg-void: #090412;
+  --jules-bg-base: #110720;
+  --jules-bg-card: #170b2c;
+  --jules-bg-elevated: #21103d;
+  --jules-cyan: #00f0ff;
+  --jules-cyan-glow: rgba(0, 240, 255, 0.35);
+  --jules-magenta: #ff007f;
+  --jules-magenta-glow: rgba(255, 0, 127, 0.35);
+  --jules-gold: #ffd60a;
+  --jules-border: #3b1f63;
+  --jules-border-bright: #5b2f98;
+}
+
+/* Round 1: The Scholar’s Synthesis (Emerald Matrix & Neon Jade) */
+body.theme-round-1 {
+  --jules-bg-void: #031208;
+  --jules-bg-base: #071c0e;
+  --jules-bg-card: #0c2b18;
+  --jules-bg-elevated: #123d23;
+  --jules-bg-input: #04140a;
+  --jules-cyan: #00ff88;
+  --jules-cyan-glow: rgba(0, 255, 136, 0.45);
+  --jules-cyan-dim: rgba(0, 255, 136, 0.15);
+  --jules-magenta: #10b981;
+  --jules-magenta-glow: rgba(16, 185, 129, 0.35);
+  --jules-gold: #fbbf24;
+  --jules-gold-glow: rgba(251, 191, 36, 0.35);
+  --jules-green: #00ff88;
+  --jules-border: #144e2b;
+  --jules-border-bright: #1fa45b;
+}
+
+body.theme-round-1 .retro-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 255, 136, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 136, 0.14) 1px, transparent 1px);
+}
+
+body.theme-round-1 .retro-vignette {
+  background: radial-gradient(circle at 50% 40%, transparent 40%, rgba(3, 18, 8, 0.92) 95%);
+}
+
+/* Round 2: The Enigma Vault (Solar Amber & Laser Breaker) */
+body.theme-round-2 {
+  --jules-bg-void: #0e0a04;
+  --jules-bg-base: #171107;
+  --jules-bg-card: #241b0b;
+  --jules-bg-elevated: #352812;
+  --jules-bg-input: #120c03;
+  --jules-cyan: #ffd60a;
+  --jules-cyan-glow: rgba(255, 214, 10, 0.45);
+  --jules-cyan-dim: rgba(255, 214, 10, 0.15);
+  --jules-magenta: #ff6b00;
+  --jules-magenta-glow: rgba(255, 107, 0, 0.4);
+  --jules-gold: #ffbe0b;
+  --jules-gold-glow: rgba(255, 190, 11, 0.4);
+  --jules-border: #4d3a14;
+  --jules-border-bright: #8a6824;
+}
+
+body.theme-round-2 .retro-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 214, 10, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 214, 10, 0.12) 1px, transparent 1px);
+}
+
+body.theme-round-2 .retro-vignette {
+  background: radial-gradient(circle at 50% 40%, transparent 40%, rgba(14, 10, 4, 0.92) 95%);
+}
+
+/* Round 3: Sher"unlocking" Homies — Baker Street Mystery (Victorian Midnight Cobalt & Wax Seal Crimson) */
+body.theme-round-3 {
+  --jules-bg-void: #060914;
+  --jules-bg-base: #0b1124;
+  --jules-bg-card: #121c38;
+  --jules-bg-elevated: #1a274d;
+  --jules-bg-input: #080d1e;
+  --jules-cyan: #38bdf8;
+  --jules-cyan-glow: rgba(56, 189, 248, 0.45);
+  --jules-cyan-dim: rgba(56, 189, 248, 0.15);
+  --jules-magenta: #e11d48;
+  --jules-magenta-glow: rgba(225, 29, 72, 0.45);
+  --jules-gold: #f59e0b;
+  --jules-gold-glow: rgba(245, 158, 11, 0.4);
+  --jules-green: #34d399;
+  --jules-border: #1f3360;
+  --jules-border-bright: #32559e;
+}
+
+body.theme-round-3 .retro-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.11) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.11) 1px, transparent 1px);
+}
+
+body.theme-round-3 .retro-vignette {
+  background: radial-gradient(circle at 50% 40%, transparent 40%, rgba(6, 9, 20, 0.92) 95%);
+}
+
+/* Finished: Championship Laurels & Royal Amethyst */
+body.theme-finished {
+  --jules-bg-void: #0e0717;
+  --jules-bg-base: #1a0d2a;
+  --jules-bg-card: #281240;
+  --jules-bg-elevated: #3a195c;
+  --jules-bg-input: #130821;
+  --jules-cyan: #ffd700;
+  --jules-cyan-glow: rgba(255, 215, 0, 0.5);
+  --jules-cyan-dim: rgba(255, 215, 0, 0.18);
+  --jules-magenta: #ec4899;
+  --jules-magenta-glow: rgba(236, 72, 153, 0.4);
+  --jules-gold: #ffb703;
+  --jules-border: #5a268a;
+  --jules-border-bright: #8a38d4;
+}
+
+body.theme-finished .retro-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 215, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 215, 0, 0.15) 1px, transparent 1px);
 }
 
 /* ==========================================================================
