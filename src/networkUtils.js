@@ -59,9 +59,9 @@ function getLocalIpAddresses() {
   detected.forEach(d => {
     if (!addresses.some(a => a.address === d.address)) {
       let label = d.interface;
-      if (d.isEthernet) label = `${d.interface} (Lab LAN / Ethernet Switch)`;
+      if (d.isVirtual) label = `${d.interface} [Virtual Adapter]`;
       else if (d.isWifi) label = `${d.interface} (Wi-Fi / Campus Wireless)`;
-      else if (d.isVirtual) label = `${d.interface} [Virtual Adapter]`;
+      else if (d.isEthernet) label = `${d.interface} (Lab LAN / Ethernet Switch)`;
 
       addresses.push({
         interface: label,
