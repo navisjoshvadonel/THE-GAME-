@@ -83,21 +83,14 @@ function printServerBanner(port, adminPassword) {
   console.log('='.repeat(68));
   console.log('  Mode: 100% Offline LAN / Wi-Fi Multiplayer (No Internet Needed)');
   console.log('  Transport: WebSocket only (Zero long-polling overhead)');
-  console.log('-'.repeat(68));
-  console.log('  STUDENT ACCESS URL:');
-  if (ips.length > 0) {
-    ips.forEach((ip, idx) => {
-      const isPrimary = idx === 0 ? '  ★ RECOMMENDED' : '';
-      console.log(`    -> http://${ip.address}:${port}   (${ip.interface})${isPrimary}`);
-    });
-  } else {
-    console.log(`    -> http://localhost:${port}`);
+  console.log('  1. STUDENT PARTICIPANTS URL:');
+  console.log(`     -> http://${primaryIp}:${port}`);
+  if (ips.length > 1) {
+    console.log('     (Alternate fallback IPs: ' + ips.slice(1).map(i => `http://${i.address}:${port}`).join(', ') + ')');
   }
-  console.log('\n  HOST / PROJECTOR DISPLAY URL (Low-GPU Leaderboard & Timer):');
-  console.log(`    -> http://${primaryIp}:${port}/display`);
-  console.log('\n  ADMIN CONTROL PANEL:');
-  console.log(`    -> http://${primaryIp}:${port}/admin`);
-  console.log(`    Admin Secret Password: ${adminPassword}`);
+  console.log('\n  2. ADMIN & GRAND HALL DISPLAY URL:');
+  console.log(`     -> http://${primaryIp}:${port}/admin   (Full Host Controls + Live Projector Display)`);
+  console.log(`     Admin Secret Password: ${adminPassword}`);
   console.log('-'.repeat(68));
   console.log('  IMPORTANT PRE-EVENT CHECKS:');
   console.log('  1. Ensure Windows Firewall allows incoming connections on port ' + port);

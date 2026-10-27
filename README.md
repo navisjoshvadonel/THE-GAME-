@@ -83,15 +83,14 @@ PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
 
 ---
 
-## 🏛️ System URLs & Roles
+## 🏛️ System URLs (Exactly Two URLs)
 
 | Role | Target Machine | Local LAN URL | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Scholar Portal** | 60+ Student Laptops | `http://172.16.10.5:5000` | Enrollment, fellowship convocation, turn-locked challenges, zero-timer screen. |
-| **Grand Hall Display** | Low-GPU Projector Laptop | `http://172.16.10.5:5000/display` | High-contrast classical projection, brass countdown timer, rank-animated leaderboard. |
-| **High Proctor’s Desk** | Tournament Director Laptop | `http://172.16.10.5:5000/admin` | Master 1-click stage progression, fellowship induction, turn bypass, score overrides. |
+| **1. Scholar Portal** | Student Participants (Laptops/Phones) | `http://172.16.10.5:5000` | Squad enrollment, lobby staging, turn-locked puzzles, and leader synthesis. |
+| **2. High Proctor & Grand Hall Display** | Tournament Host / Admin Laptop | `http://172.16.10.5:5000/admin` | Full tournament administration, 1-click stage advancement, manual unlocks, and built-in access to the Projector Display (`/display`). |
 
-> **Default High Proctor Password**: `campus_admin_2026`
+> **Host Password**: `campus_admin_2026`
 
 ---
 
