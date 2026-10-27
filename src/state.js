@@ -1443,6 +1443,7 @@ class GameStateManager {
               prompt: stepObj?.prompt || '',
               clue: stepObj?.clue || '',
               hint: stepObj?.hint || '',
+              image: stepObj?.image || null,
               wordPattern,
               totalLetters,
               caseDossier: this.currentRound === 3 ? {
@@ -1467,6 +1468,7 @@ class GameStateManager {
               title: puzzleSet.leaderTask?.title || (this.currentRound === 3 ? 'Scotland Yard Official Indictment Warrant' : 'Master Thesis Synthesis'),
               instructions: puzzleSet.leaderTask?.instructions || '',
               hint: puzzleSet.leaderTask?.hint || '',
+              image: puzzleSet.leaderTask?.image || null,
               collectedFragments: progress.collectedFragments,
               roundType: this.currentRound === 1 ? 'phrase' : 'code',
               caseDossier: this.currentRound === 3 ? {

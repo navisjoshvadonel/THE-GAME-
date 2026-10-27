@@ -1003,6 +1003,50 @@
            VIEW 3.6: ROUND 3 SHER"UNLOCKING" HOMIES (THE BAKER STREET MYSTERY)
            ======================================================== -->
       <section id="viewRound3Game" class="view-screen hidden">
+        <!-- Scotland Yard Pre-Game Mission Briefing Modal -->
+        <div id="modalR3Briefing" class="modal-overlay hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px;">
+          <div class="modal-dialog" style="max-width: 680px; width: 100%; background: #12100e; border: 2px solid #d4a017; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); color: #e6dfd3; padding: 26px; font-family: 'Cinzel', serif, system-ui; max-height: 90vh; overflow-y: auto;">
+            <div style="text-align: center; margin-bottom: 16px;">
+              <div style="font-size: 2.2rem; margin-bottom: 4px;">🏛️ 🕵️‍♂️ ⚖️</div>
+              <h2 style="font-size: 1.5rem; color: #d4a017; margin: 0 0 4px 0; letter-spacing: 2px; text-transform: uppercase;">Scotland Yard Detective Briefing</h2>
+              <p style="margin: 0; font-size: 0.8rem; color: #a89f91; letter-spacing: 1px;">ROUND 3 GRAND FINALE // THE KENSINGTON CRESCENT MURDER</p>
+            </div>
+
+            <div style="border-top: 1px solid rgba(212, 160, 23, 0.3); border-bottom: 1px solid rgba(212, 160, 23, 0.3); padding: 14px 0; margin-bottom: 18px; font-size: 0.9rem; line-height: 1.6; color: #d8d0c5;">
+              <p style="margin: 0 0 10px 0;">
+                <strong style="color: #ffd700;">THE CRIME:</strong> Lord Alistair Blackwood was found poisoned in his study at 11:22 PM. His 120-carat sapphire is missing. Five suspects are detained at the scene.
+              </p>
+              <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px;">
+                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #d4a017; padding: 8px 12px; border-radius: 0 6px 6px 0;">
+                  <strong style="color: #ffd700;">1. TEAMWORK DYNAMICS:</strong>
+                  All detectives share the crime scene and suspect board. While one detective operates the console as Lead Investigator, teammates must examine the 5 suspects and cross-check facts.
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #00e5ff; padding: 8px 12px; border-radius: 0 6px 6px 0;">
+                  <strong style="color: #00e5ff;">2. THE 3 FORENSIC PROOFS:</strong>
+                  Your detectives must solve 3 specific forensic files in sequence:
+                  <br>• <strong>File 1 (Toxicology)</strong>: Deduce the chemical poison compound.
+                  <br>• <strong>File 2 (Cryptography)</strong>: Decrypt the burnt fireplace telegram cipher.
+                  <br>• <strong>File 3 (Interrogation)</strong>: Catch the suspect in an impossible alibi lie.
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #ff5252; padding: 8px 12px; border-radius: 0 6px 6px 0;">
+                  <strong style="color: #ff5252;">3. CHIEF INSPECTOR ARREST WARRANT:</strong>
+                  Once all 3 proofs are gathered, the Squad Leader files the official warrant in the notation:
+                  <br><code style="background: #000; color: #ffd700; padding: 2px 8px; border-radius: 4px; font-weight: bold;">[CULPRIT_SURNAME]:[WEAPON]:[MOTIVE]</code>
+                </div>
+              </div>
+              <p style="margin: 0; font-size: 0.8rem; color: #aaa; font-style: italic;">
+                💡 Interactive Rule-Out: Click any suspect card on the left panel to strike them out as your investigation proceeds!
+              </p>
+            </div>
+
+            <div style="text-align: center;">
+              <button type="button" id="btnR3DismissBriefing" class="btn btn-baker-gold" style="padding: 10px 28px; font-size: 0.95rem; font-weight: bold; letter-spacing: 1.5px; border-radius: 8px; cursor: pointer;">
+                🔍 COMMENCE INVESTIGATION ➔
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="baker-street-window">
 
           <!-- Vintage Topbar -->
@@ -1012,6 +1056,7 @@
               <strong id="r3GameTeamName" class="baker-team-name">--</strong>
               <span class="baker-sep">|</span>
               <span class="baker-case-subtitle">SHER"UNLOCKING" HOMIES: THE BAKER STREET MYSTERY</span>
+              <button type="button" id="btnR3ShowBriefing" class="btn btn-sm" style="margin-left: 10px; border: 1px solid rgba(212, 160, 23, 0.4); color: #d4a017; background: rgba(0,0,0,0.4); font-size: 0.75rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">📋 BRIEFING &amp; RULES</button>
             </div>
             <div class="baker-top-right">
               <div class="baker-score-pill">
@@ -1045,7 +1090,7 @@
                   </div>
                 </div>
                 <p class="parchment-body" id="r3CaseSummary">
-                  Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet reeking of bitter almonds (cyanide) lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.
+                  Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet emitting an acrid aroma of bitter almonds lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.
                 </p>
               </div>
 
@@ -1084,6 +1129,11 @@
                 </div>
                 <h2 id="r3EvidenceTitle" class="evidence-title">Forensic Autopsy &amp; Balcony Footprints</h2>
 
+                <!-- Forensic Evidence Image Display -->
+                <div id="r3EvidenceImgContainer" class="evidence-img-container hidden" style="margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(212, 160, 23, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
+                  <img id="r3EvidenceImg" src="" alt="Forensic Evidence" style="width: 100%; height: auto; max-height: 220px; object-fit: cover; display: block;" />
+                </div>
+
                 <div class="evidence-prompt-box">
                   <p id="r3EvidencePrompt" class="evidence-prompt">Prompt...</p>
                 </div>
@@ -1117,6 +1167,12 @@
                   <span class="evidence-cat">Chief Inspector Chamber</span>
                 </div>
                 <h2 class="evidence-title">Scotland Yard Official Arrest Warrant</h2>
+
+                <!-- Warrant Visual Image -->
+                <div id="r3LeaderImgContainer" class="evidence-img-container" style="margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(212, 160, 23, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
+                  <img id="r3LeaderImg" src="/images/sherlock_arrest_warrant.jpg" alt="Official Arrest Warrant" style="width: 100%; height: auto; max-height: 190px; object-fit: cover; display: block;" />
+                </div>
+
                 <p class="warrant-instructions">
                   Chief Inspector (Squad Leader): Gather your detectives. Assemble your 3 unlocked forensic proofs to indict the guilty criminal before the magistrate.
                 </p>
@@ -1125,15 +1181,15 @@
                 <div class="gathered-proofs-box">
                   <span class="proofs-title">COLLECTED INVESTIGATION PROOFS:</span>
                   <div id="r3GatheredProofs" class="proofs-row">
-                    <!-- Populated via JS: Proof 1 (Cyanide), Proof 2 (Blackmail), Proof 3 (Vance) -->
+                    <!-- Populated via JS: Proof 1 (Cyanide), Proof 2 (Blackmail), Proof 3 (Sharma) -->
                   </div>
                 </div>
 
                 <form id="r3LeaderForm" onsubmit="return false;" class="evidence-form">
                   <div class="form-group">
                     <label for="r3LeaderInput">ENTER ARREST WARRANT: [CULPRIT] : [WEAPON] : [MOTIVE]</label>
-                    <input type="text" id="r3LeaderInput" class="baker-input warrant-input" placeholder="e.g. SHARMA:CYANIDE:BLACKMAIL" autocomplete="off">
-                    <span class="field-hint">Format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g., SHARMA:CYANIDE:BLACKMAIL)</span>
+                    <input type="text" id="r3LeaderInput" class="baker-input warrant-input" placeholder="SURNAME:WEAPON:MOTIVE" autocomplete="off">
+                    <span class="field-hint">Format: [CULPRIT_SURNAME]:[WEAPON]:[MOTIVE] (Assemble your squad's 3 unlocked proof chips)</span>
                   </div>
                   <button type="submit" id="btnR3LeaderSubmit" class="btn btn-baker-gold btn-block">
                     <span>⚖️ ISSUE OFFICIAL ARREST WARRANT &amp; CLOSE CASE ➔</span>

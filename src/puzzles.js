@@ -3766,7 +3766,7 @@ const PUZZLE_SETS = {
     "dossierTitle": "The Mysterious Death of Lord Alistair Blackwood",
     "incidentDate": "November 14, 1891 • 11:22 PM",
     "location": "221B Kensington Crescent, London",
-    "caseSummary": "Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet reeking of bitter almonds (cyanide) lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.",
+    "caseSummary": "Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet emitting an acrid aroma of bitter almonds lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.",
     "suspects": [
       {
         "id": "suspect_arun",
@@ -3792,7 +3792,7 @@ const PUZZLE_SETS = {
         "occupation": "The Estranged Wealthy Relative",
         "bootsGait": "Size 5 silk evening slippers; frail stature (cannot climb)",
         "motive": "Inherits the £50,000 estate if Blackwood dies prior to their contested estate settlement",
-        "weaponPossession": "Empty cosmetic perfume bottle containing trace prussic acid residue",
+        "weaponPossession": "Crystal atomizer perfume bottle smelling of lavender and ether",
         "alibi": "Claims she was attending the grand opera performance of Faust at Covent Garden until 11:30 PM with Countess Morcar."
       },
       {
@@ -3810,7 +3810,7 @@ const PUZZLE_SETS = {
         "occupation": "The Head Valet & Syndicate Smuggler",
         "bootsGait": "Size 10 leather boots; completely symmetrical, athletic gait (no limp)",
         "motive": "Blackwood discovered Sharma's secret forged ledger and threatened to expose him to Scotland Yard at dawn",
-        "weaponPossession": "Empty glass phial of potassium cyanide; brass pocket key",
+        "weaponPossession": "Empty glass apothecary phial bearing white crystalline residue; heavy brass pocket key",
         "alibi": "Claims he was down in the subterranean wine cellar conducting bottle inventory from 11:10 PM until 11:35 PM."
       }
     ],
@@ -3820,14 +3820,19 @@ const PUZZLE_SETS = {
         "title": "Forensic Autopsy & Balcony Footprints",
         "category": "🔬 Forensic Science",
         "investigatorRole": "Operative 1 • Forensic Specialist",
-        "prompt": "Scotland Yard's autopsy confirms the fatal toxin that triggered instantaneous cardiac arrest at 11:22 PM and tainted the wine goblet with a bitter almond scent is potassium ________. (7 Letters). Furthermore, the muddy balcony tracks measure 29 cm (Men's Size 10) with completely even left/right heel depth.",
-        "clue": "Deadly bitter-almond poison compound: C-Y-A-N-I-D-E.",
-        "hint": "CYANIDE (Eliminates Priya [Size 5], Dr. Rahul [Size 8], Joshva [Size 7], and Arun Kumar whose heavy right limp leaves an uneven track!).",
+        "prompt": "The police surgeon found traces of a fast-acting crystalline salt on the shattered crystal goblet rim, emitting a distinct pungent aroma of bitter almonds and triggering instantaneous cellular hypoxia. Furthermore, muddy balcony tracks measure 29 cm (Men's Size 10 boots) with completely symmetrical stride depth. Deduce the 7-letter lethal compound.",
+        "clue": "Forensic Toxicology: A deadly salt of prussic acid, widely utilized in Victorian electroplating and metallurgy.",
+        "hint": "Examine the chemical hallmarks: 7 letters, bitter-almond odor, highly toxic crystalline salt often formulated with potassium (KCN).",
+        "image": "/images/sherlock_crime_scene.jpg",
         "expectedFragment": "CYANIDE",
         "acceptedAnswers": [
           "cyanide",
           "CYANIDE",
-          "potassium cyanide"
+          "potassium cyanide",
+          "POTASSIUM CYANIDE",
+          "kcn",
+          "KCN",
+          "prussic acid"
         ]
       },
       {
@@ -3835,14 +3840,16 @@ const PUZZLE_SETS = {
         "title": "The Grate Cryptogram (Moriarty's Intercept)",
         "category": "📜 Cryptography",
         "investigatorRole": "Operative 2 • Cryptanalyst",
-        "prompt": "A half-charred telegram strip found in the fireplace contains a 3-shift Caesar cipher: \"EODFNPDLO\" (A=D, B=E, C=F... Shift each letter 3 positions backward). The decrypted telegram reveals the killer acted to silence Lord Blackwood's shipping ledger. What was the 9-letter primary motive?",
-        "clue": "E (-3) = B, O (-3) = L, D (-3) = A, F (-3) = C, N (-3) = K, P (-3) = M, D (-3) = A, L (-3) = I, O (-3) = L.",
-        "hint": "BLACKMAIL (The killer was being blackmailed by Lord Blackwood over forged syndicate receipts!).",
+        "prompt": "A half-charred telegram strip retrieved from the study fireplace reveals an intercepted cipher: \"EODFNPDLO\". The cipher system shifts letters forward by 3 alphabet positions (Caesar shift). Decrypt the 9-letter motive that drove the killer to murder Lord Blackwood.",
+        "clue": "Caesar Cryptographic Key: Revert each letter 3 positions backward in the alphabet (D → A, E → B, F → C ...). What motive emerges?",
+        "hint": "The decrypted term signifies the illegal extortion of money or silence through threats of exposure.",
+        "image": "/images/sherlock_burnt_cipher.jpg",
         "expectedFragment": "BLACKMAIL",
         "acceptedAnswers": [
           "blackmail",
           "BLACKMAIL",
-          "extortion"
+          "extortion",
+          "EXTORTION"
         ]
       },
       {
@@ -3850,9 +3857,9 @@ const PUZZLE_SETS = {
         "title": "The Shattered Alibi (Knights & Knaves)",
         "category": "⚖️ Deductive Logic",
         "investigatorRole": "Operative 3 • Interrogation Detective",
-        "prompt": "Scotland Yard cross-examined the alibis: Dr. Rahul's hospital register is signed until 12:30 AM; Arun Kumar was snoring drunk at the club; Priya's opera ended early at 10:45 PM but her size 5 shoes rule her out; Joshva was at the Savoy. Meanwhile, Rohan Sharma claims he was locked inside the cellar counting bottles from 11:10 to 11:35 PM. BUT the Butler testifies the ONLY cellar brass key was locked inside the victim's study desk since 9:00 PM! Which suspect was caught in an impossible lie? Enter their surname (SHARMA).",
-        "clue": "The Valet could not be in the locked cellar without the key found in the dead man's locked study.",
-        "hint": "SHARMA",
+        "prompt": "Cross-examine the 5 suspect alibis against Scotland Yard's evidence: Dr. Rahul's hospital log is verified until 12:30 AM; Arun Kumar was snoring at the club; Priya's opera ended at 10:45 PM but size 5 slippers rule her out; Joshva was at the Savoy. Meanwhile, one suspect claims they were locked inside the subterranean cellar from 11:10 to 11:35 PM—yet the Butler swears the ONLY cellar key was locked inside the victim's study desk since 9:00 PM! Which suspect is caught in an impossible lie? Enter their surname.",
+        "clue": "Interrogation Logic: A suspect claiming to be locked inside an underground location without the physical key found on the dead man's desk cannot be telling the truth.",
+        "hint": "Compare the suspect alibis carefully: which individual claimed to be inside a locked room that required the study desk key during the murder window?",
         "expectedFragment": "SHARMA",
         "acceptedAnswers": [
           "sharma",
@@ -3867,7 +3874,8 @@ const PUZZLE_SETS = {
     ],
     "leaderTask": {
       "title": "Scotland Yard Official Indictment Warrant",
-      "instructions": "Chief Inspector (Squad Leader): Review the gathered evidence. Enter the Grand Arrest Warrant in the format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g., SHARMA:CYANIDE:BLACKMAIL).",
+      "instructions": "Chief Inspector (Squad Leader): Review the gathered evidence proofs. File the official indictment before the magistrate in the standard notation: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g. SURNAME:WEAPON:MOTIVE).",
+      "image": "/images/sherlock_arrest_warrant.jpg",
       "expectedMasterCode": "SHARMA:CYANIDE:BLACKMAIL",
       "acceptedWarrants": [
         "SHARMA:CYANIDE:BLACKMAIL",
@@ -3888,8 +3896,8 @@ const PUZZLE_SETS = {
         "VANCE CYANIDE BLACKMAIL",
         "JOSHVA:CYANIDE:BLACKMAIL"
       ],
-      "hint": "Format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g. SHARMA:CYANIDE:BLACKMAIL)",
-      "errorMessage": "Warrant Rejected by Magistrate! Verify Culprit Name (SHARMA), Poison Weapon (CYANIDE), and Primary Motive (BLACKMAIL)."
+      "hint": "Format: [CULPRIT_SURNAME]:[WEAPON]:[MOTIVE] (Assemble the 3 forensic proofs unlocked by your detectives)",
+      "errorMessage": "Warrant Rejected by Magistrate! Double-check your Culprit Surname, Murder Weapon, and Motive against your squad's unlocked proof badges."
     }
   }
 ]

@@ -2250,11 +2250,28 @@
   }
 
   let r3EliminatedSuspects = new Set();
+  let r3BriefingShown = false;
+
+  function showR3BriefingModal() {
+    const modal = document.getElementById('modalR3Briefing');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function hideR3BriefingModal() {
+    const modal = document.getElementById('modalR3Briefing');
+    if (modal) modal.classList.add('hidden');
+  }
 
   function renderRound3Game(state) {
     if (!state || !state.team) return;
     const team = state.team;
     const puzzle = state.puzzle;
+
+    // Show detective briefing once upon entering Round 3
+    if (!r3BriefingShown && !team.progress?.isRoundCompleted) {
+      r3BriefingShown = true;
+      showR3BriefingModal();
+    }
 
     // 1. Top HUD
     const r3GameTeamName = document.getElementById('r3GameTeamName');
@@ -2403,6 +2420,8 @@
         const r3EvidencePrompt = document.getElementById('r3EvidencePrompt');
         const r3EvidenceClue = document.getElementById('r3EvidenceClue');
         const r3EvidenceHint = document.getElementById('r3EvidenceHint');
+        const r3EvidenceImgContainer = document.getElementById('r3EvidenceImgContainer');
+        const r3EvidenceImg = document.getElementById('r3EvidenceImg');
 
         if (r3EvidenceNumber) r3EvidenceNumber.textContent = `EVIDENCE FILE ${(puzzle.stepNumber || 1)} OF 3`;
         if (r3EvidenceCategory) r3EvidenceCategory.textContent = puzzle.category || 'Forensic Science';
@@ -2410,9 +2429,25 @@
         if (r3EvidencePrompt) r3EvidencePrompt.textContent = puzzle.prompt || '';
         if (r3EvidenceClue) r3EvidenceClue.textContent = puzzle.clue || '';
         if (r3EvidenceHint) r3EvidenceHint.textContent = puzzle.hint || '';
+
+        // Dynamic forensic image
+        if (r3EvidenceImgContainer && r3EvidenceImg) {
+          if (puzzle.image) {
+            r3EvidenceImg.src = puzzle.image;
+            r3EvidenceImgContainer.classList.remove('hidden');
+          } else {
+            r3EvidenceImgContainer.classList.add('hidden');
+          }
+        }
       }
     }
   }
+
+  // Hook up briefing modal buttons
+  const btnR3ShowBriefing = document.getElementById('btnR3ShowBriefing');
+  if (btnR3ShowBriefing) btnR3ShowBriefing.addEventListener('click', showR3BriefingModal);
+  const btnR3DismissBriefing = document.getElementById('btnR3DismissBriefing');
+  if (btnR3DismissBriefing) btnR3DismissBriefing.addEventListener('click', hideR3BriefingModal);
 
   // Round 3 Form Listeners
   const r3MemberForm = document.getElementById('r3MemberForm');
