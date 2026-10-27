@@ -35,8 +35,8 @@ async function runFullTournament() {
     teamName: 'Titan Quad',
     gender: 'open',
     teamSize: 4,
-    leaderName: 'Arthur Pendragon',
-    memberNames: ['Lancelot', 'Galahad', 'Gawain'],
+    leaderName: 'Joshva',
+    memberNames: ['Sharma', 'Rahul', 'Arun'],
     socketId: 'sock_t1_lead'
   });
 
@@ -46,8 +46,8 @@ async function runFullTournament() {
     teamName: 'Phoenix Trio',
     gender: 'female',
     teamSize: 3,
-    leaderName: 'Maya Lin',
-    memberNames: ['Elena Rostova', 'Chloe Bennett'],
+    leaderName: 'Priya',
+    memberNames: ['Ananya', 'Sneha'],
     socketId: 'sock_t2_lead'
   });
 
@@ -57,8 +57,8 @@ async function runFullTournament() {
     teamName: 'Cyber Duo',
     gender: 'male',
     teamSize: 2,
-    leaderName: 'Victor Stone',
-    memberNames: ['Ada Lovelace'],
+    leaderName: 'Karthik',
+    memberNames: ['Deepak'],
     socketId: 'sock_t3_lead'
   });
 

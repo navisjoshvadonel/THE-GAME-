@@ -8,13 +8,13 @@ state.resetAllState();
 
 // 1. Register Scholars
 console.log('1. Registering Scholars...');
-const p1 = state.registerPlayer('Julian Sterling', 'male', 'sock_1');
-const p2 = state.registerPlayer('Alistair Finch', 'male', 'sock_2');
-const p3 = state.registerPlayer('Cedric Vance', 'male', 'sock_3');
-const p4 = state.registerPlayer('Arthur Pendelton', 'male', 'sock_4');
-const p5 = state.registerPlayer('Eleanor Wright', 'female', 'sock_5');
-const p6 = state.registerPlayer('Beatrice Ross', 'female', 'sock_6');
-const p7 = state.registerPlayer('Harrison Cole', 'male', 'sock_7');
+const p1 = state.registerPlayer('Joshva', 'male', 'sock_1');
+const p2 = state.registerPlayer('Sharma', 'male', 'sock_2');
+const p3 = state.registerPlayer('Rahul', 'male', 'sock_3');
+const p4 = state.registerPlayer('Arun', 'male', 'sock_4');
+const p5 = state.registerPlayer('Priya', 'female', 'sock_5');
+const p6 = state.registerPlayer('Sneha', 'female', 'sock_6');
+const p7 = state.registerPlayer('Karthik', 'male', 'sock_7');
 
 console.log('Registered 7 scholars successfully.');
 

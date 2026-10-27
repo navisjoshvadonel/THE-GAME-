@@ -68,24 +68,24 @@ async function runLiveSocketGame() {
       teamName: 'Titan Quad',
       gender: 'open',
       teamSize: 4,
-      leaderName: 'Arthur',
-      memberNames: ['Lancelot', 'Galahad', 'Gawain']
+      leaderName: 'Joshva',
+      memberNames: ['Sharma', 'Rahul', 'Arun']
     },
     {
       benchNumber: 'Cabinet 02',
-      teamName: 'Baker Street Trio',
+      teamName: 'Phoenix Trio',
       gender: 'open',
       teamSize: 3,
-      leaderName: 'Sherlock',
-      memberNames: ['Watson', 'Mycroft']
+      leaderName: 'Priya',
+      memberNames: ['Ananya', 'Sneha']
     },
     {
       benchNumber: 'Cabinet 03',
-      teamName: 'Matrix Duo',
+      teamName: 'Cyber Duo',
       gender: 'open',
       teamSize: 2,
-      leaderName: 'Neo',
-      memberNames: ['Trinity']
+      leaderName: 'Karthik',
+      memberNames: ['Deepak']
     }
   ];
 
