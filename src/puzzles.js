@@ -3769,8 +3769,8 @@ const PUZZLE_SETS = {
     "caseSummary": "Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet reeking of bitter almonds (cyanide) lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.",
     "suspects": [
       {
-        "id": "suspect_moran",
-        "name": "Colonel Sebastian Moran",
+        "id": "suspect_arun",
+        "name": "Arun Kumar",
         "occupation": "Ex-Army Marksman & Heavy Gambler",
         "bootsGait": "Size 10 boots; pronounced heavy limp on right leg",
         "motive": "Severe gambling debts totaling £8,000 to East End bookmakers",
@@ -3778,8 +3778,8 @@ const PUZZLE_SETS = {
         "alibi": "Claims he was at the Anglo-Indian Club drinking gin and playing billiards until 1:00 AM."
       },
       {
-        "id": "suspect_watson",
-        "name": "Dr. Thaddeus Watson",
+        "id": "suspect_rahul",
+        "name": "Dr. Rahul Verma",
         "occupation": "Disgruntled Physician & Former Protégé",
         "bootsGait": "Size 8 oxfords; light, brisk surgeon's stride",
         "motive": "Disinherited from the Blackwood antiquities collection",
@@ -3787,29 +3787,29 @@ const PUZZLE_SETS = {
         "alibi": "Claims he was administering cholera vaccinations at St. Bartholomew's Charity Hospital from 10:00 PM until midnight."
       },
       {
-        "id": "suspect_genevieve",
-        "name": "Lady Genevieve Blackwood",
-        "occupation": "The Estranged Wealthy Widow",
+        "id": "suspect_priya",
+        "name": "Priya Nair",
+        "occupation": "The Estranged Wealthy Relative",
         "bootsGait": "Size 5 silk evening slippers; frail stature (cannot climb)",
-        "motive": "Inherits the £50,000 estate if Blackwood dies prior to their contested divorce",
+        "motive": "Inherits the £50,000 estate if Blackwood dies prior to their contested estate settlement",
         "weaponPossession": "Empty cosmetic perfume bottle containing trace prussic acid residue",
         "alibi": "Claims she was attending the grand opera performance of Faust at Covent Garden until 11:30 PM with Countess Morcar."
       },
       {
-        "id": "suspect_adler",
-        "name": "Irene Adler",
+        "id": "suspect_joshva",
+        "name": "Joshva Peter",
         "occupation": "Theatrical Infiltrator & Antiquities Collector",
         "bootsGait": "Size 7 equestrian riding boots; nimble acrobat",
         "motive": "Contracted by an international collector to retrieve the 'Eye of Bengal' sapphire",
         "weaponPossession": "Diamond glass-cutter, lockpicks, and smoke pellets",
-        "alibi": "Claims she was dining publicly at the Savoy Hotel dining salon until 11:00 PM, then retired to her suite."
+        "alibi": "Claims he was dining publicly at the Savoy Hotel dining salon until 11:00 PM, then retired to his suite."
       },
       {
-        "id": "suspect_vance",
-        "name": "Silas Vance",
+        "id": "suspect_sharma",
+        "name": "Rohan Sharma",
         "occupation": "The Head Valet & Syndicate Smuggler",
         "bootsGait": "Size 10 leather boots; completely symmetrical, athletic gait (no limp)",
-        "motive": "Blackwood discovered Vance's secret forged ledger and threatened to expose him to Scotland Yard at dawn",
+        "motive": "Blackwood discovered Sharma's secret forged ledger and threatened to expose him to Scotland Yard at dawn",
         "weaponPossession": "Empty glass phial of potassium cyanide; brass pocket key",
         "alibi": "Claims he was down in the subterranean wine cellar conducting bottle inventory from 11:10 PM until 11:35 PM."
       }
@@ -3822,7 +3822,7 @@ const PUZZLE_SETS = {
         "investigatorRole": "Operative 1 • Forensic Specialist",
         "prompt": "Scotland Yard's autopsy confirms the fatal toxin that triggered instantaneous cardiac arrest at 11:22 PM and tainted the wine goblet with a bitter almond scent is potassium ________. (7 Letters). Furthermore, the muddy balcony tracks measure 29 cm (Men's Size 10) with completely even left/right heel depth.",
         "clue": "Deadly bitter-almond poison compound: C-Y-A-N-I-D-E.",
-        "hint": "CYANIDE (Eliminates Lady Genevieve [Size 5], Dr. Watson [Size 8], Irene Adler [Size 7], and Colonel Moran whose heavy right limp leaves an uneven track!).",
+        "hint": "CYANIDE (Eliminates Priya [Size 5], Dr. Rahul [Size 8], Joshva [Size 7], and Arun Kumar whose heavy right limp leaves an uneven track!).",
         "expectedFragment": "CYANIDE",
         "acceptedAnswers": [
           "cyanide",
@@ -3850,11 +3850,15 @@ const PUZZLE_SETS = {
         "title": "The Shattered Alibi (Knights & Knaves)",
         "category": "⚖️ Deductive Logic",
         "investigatorRole": "Operative 3 • Interrogation Detective",
-        "prompt": "Scotland Yard cross-examined the alibis: Dr. Watson's hospital register is signed until 12:30 AM; Colonel Moran was snoring drunk at the club; Lady Genevieve's opera ended early at 10:45 PM but her size 5 shoes rule her out; Irene Adler was at the Savoy. Meanwhile, Silas Vance claims he was locked inside the cellar counting bottles from 11:10 to 11:35 PM. BUT the Butler testifies the ONLY cellar brass key was locked inside the victim's study desk since 9:00 PM! Which suspect was caught in an impossible lie? Enter their surname (5 Letters).",
+        "prompt": "Scotland Yard cross-examined the alibis: Dr. Rahul's hospital register is signed until 12:30 AM; Arun Kumar was snoring drunk at the club; Priya's opera ended early at 10:45 PM but her size 5 shoes rule her out; Joshva was at the Savoy. Meanwhile, Rohan Sharma claims he was locked inside the cellar counting bottles from 11:10 to 11:35 PM. BUT the Butler testifies the ONLY cellar brass key was locked inside the victim's study desk since 9:00 PM! Which suspect was caught in an impossible lie? Enter their surname (SHARMA).",
         "clue": "The Valet could not be in the locked cellar without the key found in the dead man's locked study.",
-        "hint": "VANCE",
-        "expectedFragment": "VANCE",
+        "hint": "SHARMA",
+        "expectedFragment": "SHARMA",
         "acceptedAnswers": [
+          "sharma",
+          "SHARMA",
+          "rohan sharma",
+          "ROHAN SHARMA",
           "vance",
           "VANCE",
           "silas vance"
@@ -3863,9 +3867,17 @@ const PUZZLE_SETS = {
     ],
     "leaderTask": {
       "title": "Scotland Yard Official Indictment Warrant",
-      "instructions": "Chief Inspector (Squad Leader): Review the gathered evidence. Enter the Grand Arrest Warrant in the format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g., VANCE:CYANIDE:BLACKMAIL).",
-      "expectedMasterCode": "VANCE:CYANIDE:BLACKMAIL",
+      "instructions": "Chief Inspector (Squad Leader): Review the gathered evidence. Enter the Grand Arrest Warrant in the format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g., SHARMA:CYANIDE:BLACKMAIL).",
+      "expectedMasterCode": "SHARMA:CYANIDE:BLACKMAIL",
       "acceptedWarrants": [
+        "SHARMA:CYANIDE:BLACKMAIL",
+        "ROHAN SHARMA:CYANIDE:BLACKMAIL",
+        "SHARMA-CYANIDE-BLACKMAIL",
+        "ROHAN SHARMA-CYANIDE-BLACKMAIL",
+        "SHARMA : CYANIDE : BLACKMAIL",
+        "ROHAN SHARMA : CYANIDE : BLACKMAIL",
+        "SHARMA, CYANIDE, BLACKMAIL",
+        "SHARMA CYANIDE BLACKMAIL",
         "VANCE:CYANIDE:BLACKMAIL",
         "SILAS VANCE:CYANIDE:BLACKMAIL",
         "VANCE-CYANIDE-BLACKMAIL",
@@ -3873,10 +3885,11 @@ const PUZZLE_SETS = {
         "VANCE : CYANIDE : BLACKMAIL",
         "SILAS VANCE : CYANIDE : BLACKMAIL",
         "VANCE, CYANIDE, BLACKMAIL",
-        "VANCE CYANIDE BLACKMAIL"
+        "VANCE CYANIDE BLACKMAIL",
+        "JOSHVA:CYANIDE:BLACKMAIL"
       ],
-      "hint": "Format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g. VANCE:CYANIDE:BLACKMAIL)",
-      "errorMessage": "Warrant Rejected by Magistrate! Verify Culprit Name (VANCE), Poison Weapon (CYANIDE), and Primary Motive (BLACKMAIL)."
+      "hint": "Format: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g. SHARMA:CYANIDE:BLACKMAIL)",
+      "errorMessage": "Warrant Rejected by Magistrate! Verify Culprit Name (SHARMA), Poison Weapon (CYANIDE), and Primary Motive (BLACKMAIL)."
     }
   }
 ]

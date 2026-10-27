@@ -2305,7 +2305,7 @@
       const r3VictoryWeapon = document.getElementById('r3VictoryWeapon');
       const r3VictoryMotive = document.getElementById('r3VictoryMotive');
       const r3VictoryTotalScore = document.getElementById('r3VictoryTotalScore');
-      if (r3VictoryCulprit) r3VictoryCulprit.textContent = 'SILAS VANCE (The Valet)';
+      if (r3VictoryCulprit) r3VictoryCulprit.textContent = 'ROHAN SHARMA (The Valet)';
       if (r3VictoryWeapon) r3VictoryWeapon.textContent = 'POTASSIUM CYANIDE (In Goblet)';
       if (r3VictoryMotive) r3VictoryMotive.textContent = 'BLACKMAIL OVER FORGED SHIPPING LEDGER';
       if (r3VictoryTotalScore) r3VictoryTotalScore.textContent = `${(team.totalScore || 0).toLocaleString()} PTS`;

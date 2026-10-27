@@ -1558,7 +1558,7 @@ class GameStateManager {
           type: 'sherlock_round3_completed',
           roundNumber: 3,
           dossierTitle: puzzleSet?.dossierTitle || 'The Kensington Crescent Mystery',
-          culpritName: 'Silas Vance',
+          culpritName: 'Rohan Sharma',
           weapon: 'Cyanide',
           motive: 'Blackmail',
           totalScore: team.totalScore,

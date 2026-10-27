@@ -259,22 +259,22 @@ async function runFullTournament() {
     const r3Step3 = state.submitTurnAnswer({
       sessionToken: turn3.scholar.sessionToken,
       turnIndex: 2,
-      answer: 'VANCE'
+      answer: 'SHARMA'
     });
     if (!r3Step3.success) throw new Error(`R3 Step 3 failed: ${r3Step3.message}`);
-    console.log(`  • Evidence 3 (Cellar Key Alibi Inconsistency): Verified by ${turn3.scholar.name} -> Deduction: "VANCE" (+${r3Step3.pointsAwarded} PTS)`);
+    console.log(`  • Evidence 3 (Cellar Key Alibi Inconsistency): Verified by ${turn3.scholar.name} -> Deduction: "SHARMA" (+${r3Step3.pointsAwarded} PTS)`);
 
-    // Step 4: Leader Grand Indictment Warrant -> VANCE:CYANIDE:BLACKMAIL
+    // Step 4: Leader Grand Indictment Warrant -> SHARMA:CYANIDE:BLACKMAIL
     const leaderPlayer = state.players.get(team.leaderSessionToken);
     state.players.forEach(p => p.lastSubmitTime = 0);
     const r3Boss = state.submitTurnAnswer({
       sessionToken: leaderPlayer.sessionToken,
       turnIndex: 3,
-      answer: 'VANCE:CYANIDE:BLACKMAIL'
+      answer: 'SHARMA:CYANIDE:BLACKMAIL'
     });
     if (!r3Boss.success) throw new Error(`R3 Boss failed: ${r3Boss.message}`);
-    console.log(`  • ⚖️ Scotland Yard Official Warrant: Issued by Chief Inspector ${leaderPlayer.name} -> "VANCE:CYANIDE:BLACKMAIL" (+${r3Boss.pointsAwarded} PTS)`);
-    console.log(`  ✓ Case Solved! Silas Vance convicted! Round 3 Score: ${team.roundScores[3]} PTS`);
+    console.log(`  • ⚖️ Scotland Yard Official Warrant: Issued by Chief Inspector ${leaderPlayer.name} -> "SHARMA:CYANIDE:BLACKMAIL" (+${r3Boss.pointsAwarded} PTS)`);
+    console.log(`  ✓ Case Solved! Rohan Sharma convicted! Round 3 Score: ${team.roundScores[3]} PTS`);
   }
 
   // Conclude Tournament

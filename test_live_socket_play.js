@@ -245,26 +245,26 @@ async function runLiveSocketGame() {
       });
     });
 
-    // Evidence 3: SILAS VANCE (turnIndex 2)
+    // Evidence 3: SHARMA (turnIndex 2)
     await sleep(1600);
     await new Promise((resolve) => {
       team.leaderSocket.emit('submit_turn_answer', {
         sessionToken: team.teamData.sessionToken,
         turnIndex: 2,
-        answer: 'SILAS VANCE'
+        answer: 'SHARMA'
       }, (res) => {
         console.log(`  [${team.info.teamName}] Evidence 3 solve:`, res?.success);
         resolve();
       });
     });
 
-    // Final Indictment: SILAS VANCE:CYANIDE:BLACKMAIL (turnIndex 3)
+    // Final Indictment: SHARMA:CYANIDE:BLACKMAIL (turnIndex 3)
     await sleep(1600);
     await new Promise((resolve) => {
       team.leaderSocket.emit('submit_turn_answer', {
         sessionToken: team.teamData.sessionToken,
         turnIndex: 3,
-        answer: 'SILAS VANCE:CYANIDE:BLACKMAIL'
+        answer: 'SHARMA:CYANIDE:BLACKMAIL'
       }, (res) => {
         console.log(`  [${team.info.teamName}] Final Indictment result:`, res?.success, res?.message);
         resolve();
