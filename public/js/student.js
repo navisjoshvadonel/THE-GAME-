@@ -2239,6 +2239,16 @@
   }
 
   // 16. ROUND 3: SHER"UNLOCKING" HOMIES (THE BAKER STREET MYSTERY)
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   let r3EliminatedSuspects = new Set();
 
   function renderRound3Game(state) {
