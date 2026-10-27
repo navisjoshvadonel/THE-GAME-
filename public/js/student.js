@@ -43,6 +43,7 @@
   const navBenchTag = document.getElementById('navBenchTag');
   const navTeamName = document.getElementById('navTeamName');
   const navSquadScore = document.getElementById('navSquadScore');
+  const navRoundSub = document.getElementById('navRoundSub');
   const btnHeaderHost = document.getElementById('btnHeaderHost');
   const btnSwitchBench = document.getElementById('btnSwitchBench');
   const soundToggleBtn = document.getElementById('soundToggleBtn');
@@ -58,6 +59,12 @@
   const viewRound2Game = document.getElementById('viewRound2Game');
   const viewRound3Game = document.getElementById('viewRound3Game');
   const viewFinished = document.getElementById('viewFinished');
+
+  // If a session token already exists in storage, hide registration immediately to prevent flashing/overlap
+  if (sessionToken && viewRegister) {
+    viewRegister.classList.add('hidden');
+    viewRegister.classList.remove('active');
+  }
 
   // Bench Registration Elements
   const tabPlayerRole = document.getElementById('tabPlayerRole');
@@ -244,21 +251,27 @@
   const _ALL_SCREENS = [viewRegister, viewLobby, viewGame, viewRound2Game, viewRound3Game, viewFinished];
 
   function switchScreen(screen) {
-    if (_activeScreen === screen) return; // Already on this screen — skip DOM work
-    if (_activeScreen) {
-      _activeScreen.classList.add('hidden');
-      _activeScreen.classList.remove('active');
-      // Clean up R1 turn timer when leaving game view
-      if (_activeScreen === viewGame) {
-        clearInterval(operativeTimerInterval);
-        operativeTimerInterval = null;
+    if (!screen) return;
+
+    // Clean up R1 turn timer when leaving game view
+    if (_activeScreen === viewGame && screen !== viewGame) {
+      clearInterval(operativeTimerInterval);
+      operativeTimerInterval = null;
+    }
+
+    _activeScreen = screen;
+
+    // Force all screens except the target to be strictly hidden and inactive
+    _ALL_SCREENS.forEach(s => {
+      if (!s) return;
+      if (s === screen) {
+        s.classList.remove('hidden');
+        s.classList.add('active');
+      } else {
+        s.classList.add('hidden');
+        s.classList.remove('active');
       }
-    }
-    _activeScreen = screen || null;
-    if (screen) {
-      screen.classList.remove('hidden');
-      screen.classList.add('active');
-    }
+    });
   }
 
   function triggerScorePopup(delta) {
@@ -441,14 +454,29 @@
   let currentAppliedTheme = null;
   function applyRoundTheme(gameStatus) {
     let targetTheme = 'theme-lobby';
-    if (gameStatus === 'ROUND_1' || gameStatus === 'INTERMEDIATE_1') {
+    let roundLabel = 'LOBBY STAGING';
+    if (gameStatus === 'ROUND_1') {
       targetTheme = 'theme-round-1';
-    } else if (gameStatus === 'ROUND_2' || gameStatus === 'INTERMEDIATE_2') {
+      roundLabel = 'ROUND 1: CIPHER QUEST';
+    } else if (gameStatus === 'INTERMEDIATE_1') {
+      targetTheme = 'theme-round-1';
+      roundLabel = 'STAGE 1 INTERMISSION';
+    } else if (gameStatus === 'ROUND_2') {
       targetTheme = 'theme-round-2';
+      roundLabel = 'ROUND 2: CYBER TERMINAL';
+    } else if (gameStatus === 'INTERMEDIATE_2') {
+      targetTheme = 'theme-round-2';
+      roundLabel = 'STAGE 2 INTERMISSION';
     } else if (gameStatus === 'ROUND_3') {
       targetTheme = 'theme-round-3';
+      roundLabel = 'ROUND 3: SHERLOCK MYSTERY';
     } else if (gameStatus === 'FINISHED') {
       targetTheme = 'theme-finished';
+      roundLabel = 'TOURNAMENT CONCLUDED';
+    }
+
+    if (navRoundSub) {
+      navRoundSub.textContent = `CAMPUS ARCADE LAN • ${roundLabel}`;
     }
 
     if (currentAppliedTheme !== targetTheme) {
@@ -781,7 +809,29 @@
     const progress = team.progress;
     const isCompleted = (progress && progress.isRoundCompleted) || state.puzzle?.type === 'cyber_hack_round2_completed';
 
-    // 1. ROUND 2 COMPLETED STATE (ALL 10 NODES BREACHED)
+    // 1. PAUSED OR INTERMISSION STAGE (Takes precedence over active play)
+    if (!state.roundActive || state.gameStatus === 'INTERMEDIATE_2') {
+      if (r2TerminalStageCard) r2TerminalStageCard.classList.add('hidden');
+      if (boxR2RoundCompleted) boxR2RoundCompleted.classList.add('hidden');
+      if (boxR2Locked) {
+        boxR2Locked.classList.remove('hidden');
+        if (r2WaitingTeammateInfo) r2WaitingTeammateInfo.classList.add('hidden');
+        if (state.gameStatus === 'INTERMEDIATE_2') {
+          if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ STAGE 2 INTERMISSION // TOP 5 AUDIT';
+          if (r2LockedSub) {
+            r2LockedSub.textContent = team.isEliminated
+              ? 'Outstanding performance! Your squad is now in Honorary Fellowship Spectator Mode. Watch the Top 5 finalists battle in Round 3 on the Grand Projector!'
+              : 'Official Round 2 scores are locked. Look at the Grand Projector Screen for the Top 5 Finalists Announcement!';
+          }
+        } else {
+          if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ MATCH PAUSED // BY HIGH PROCTOR';
+          if (r2LockedSub) r2LockedSub.textContent = 'The tournament clock is currently paused. Please stand by for resumption...';
+        }
+      }
+      return;
+    }
+
+    // 2. ROUND 2 COMPLETED STATE (ALL 10 NODES BREACHED DURING ACTIVE ROUND)
     if (isCompleted) {
       if (r2TerminalStageCard) r2TerminalStageCard.classList.add('hidden');
       if (boxR2Locked) boxR2Locked.classList.add('hidden');
@@ -811,28 +861,6 @@
           pill.className = `circuit-node-pill breached${isBoss ? ' boss' : ''}`;
           pill.innerHTML = `<span class="circuit-node-icon">✓</span> <span>${isBoss ? 'BOSS NODE 10' : `NODE ${String(i + 1).padStart(2, '0')}`}</span>`;
           r2CircuitNodesFlow.appendChild(pill);
-        }
-      }
-      return;
-    }
-
-    // 2. PAUSED OR INTERMISSION STAGE
-    if (!state.roundActive || state.gameStatus === 'INTERMEDIATE_2') {
-      if (r2TerminalStageCard) r2TerminalStageCard.classList.add('hidden');
-      if (boxR2RoundCompleted) boxR2RoundCompleted.classList.add('hidden');
-      if (boxR2Locked) {
-        boxR2Locked.classList.remove('hidden');
-        if (r2WaitingTeammateInfo) r2WaitingTeammateInfo.classList.add('hidden');
-        if (state.gameStatus === 'INTERMEDIATE_2') {
-          if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ STAGE 2 INTERMISSION // TOP 5 AUDIT';
-          if (r2LockedSub) {
-            r2LockedSub.textContent = team.isEliminated
-              ? 'Outstanding performance! Your squad is now in Honorary Fellowship Spectator Mode. Watch the Top 5 finalists battle in Round 3 on the Grand Projector!'
-              : 'Official Round 2 scores are locked. Look at the Grand Projector Screen for the Top 5 Finalists Announcement!';
-          }
-        } else {
-          if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ MATCH PAUSED // BY HIGH PROCTOR';
-          if (r2LockedSub) r2LockedSub.textContent = 'The tournament clock is currently paused. Please stand by for resumption...';
         }
       }
       return;
@@ -1179,13 +1207,18 @@
       // Check if node is breached or auto-bypassed
       if (res.isSolved || res.nodePassed) {
         r2NodePassedState = true;
-        if (sound) {
-          sound.playSuccess();
-          sound.playVictoryFanfare();
-        }
-        triggerParticleBurst();
+        const pts = res.pointsAwarded !== undefined ? res.pointsAwarded : (res.isSolved ? 100 : 0);
 
-        const pts = res.pointsAwarded || 100;
+        if (res.isSolved) {
+          if (sound) {
+            sound.playSuccess();
+            sound.playVictoryFanfare();
+          }
+          triggerParticleBurst();
+        } else {
+          if (sound) sound.playError();
+        }
+
         if (r2FloatingScorePopup) {
           r2FloatingScorePopup.textContent = `+${pts} PTS`;
         }
@@ -1195,16 +1228,22 @@
           if (r2PassTitleText) {
             r2PassTitleText.textContent = res.isSolved 
               ? `🎉 NODE ${puzzle.nodeNumber} BREACHED! +${pts} PTS!`
-              : `⚡ NODE ${puzzle.nodeNumber} AUTO-BYPASS! +${pts} PTS!`;
+              : `⚠️ NODE ${puzzle.nodeNumber} AUTO-BYPASS! (+0 PTS)`;
           }
           if (r2PassDescText) {
             r2PassDescText.textContent = res.roundCompleted
               ? '👑 CONGRATULATIONS! ALL 10 NODES BREACHED! MAIN REACTOR OVERRIDDEN!'
-              : 'Cryptographic relay key transmitted forward! Pass controls to the next operative...';
+              : (res.isSolved 
+                  ? 'Cryptographic relay key transmitted forward! Pass controls to the next operative...' 
+                  : `Target password was "${res.solvedWord || 'LOCKED'}". Node bypassed with 0 PTS.`);
           }
         }
 
-        showToast(`⚡ Node ${puzzle.nodeNumber} Breached! (+${pts} PTS)`, 'success');
+        if (res.isSolved) {
+          showToast(`⚡ Node ${puzzle.nodeNumber} Breached! (+${pts} PTS)`, 'success');
+        } else {
+          showToast(`⚠️ Node ${puzzle.nodeNumber} Auto-Bypassed (+0 PTS). Next operative up!`, 'warning');
+        }
         r2CurrentGuess = '';
 
         // Auto-advance after 3.5s or click
@@ -2191,6 +2230,7 @@
   if (btnSwitchBench) {
     btnSwitchBench.addEventListener('click', () => {
       if (confirm('Switch bench or re-register roster?\n\nYour current bench progress remains safely stored on the server.')) {
+        sessionStorage.removeItem('campus_puzzle_session_token');
         localStorage.removeItem('campus_puzzle_session_token');
         sessionToken = null;
         window.location.reload();

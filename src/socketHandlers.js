@@ -367,8 +367,17 @@ function setupSocketHandlers(io, gameState) {
       if (typeof callback === 'function') callback(result);
 
       if (result.success) {
-        // Room-scoped broadcast to team members!
-        syncTeamRoom(teamId);
+        if (!gameState.roundState.active || gameState.status.startsWith('INTERMEDIATE_') || gameState.status === 'FINISHED') {
+          io.emit('round_ended', {
+            currentRound: gameState.currentRound,
+            status: gameState.status
+          });
+          for (const tId of gameState.teams.keys()) {
+            syncTeamRoom(tId);
+          }
+        } else {
+          syncTeamRoom(teamId);
+        }
         triggerDisplayPush(true);
         pushAdminUpdate();
       }
@@ -389,7 +398,17 @@ function setupSocketHandlers(io, gameState) {
       if (typeof callback === 'function') callback(result);
 
       if (result.success) {
-        syncTeamRoom(teamId);
+        if (!gameState.roundState.active || gameState.status === 'INTERMEDIATE_2' || gameState.status !== 'ROUND_2') {
+          io.emit('round_ended', {
+            currentRound: 2,
+            status: gameState.status
+          });
+          for (const tId of gameState.teams.keys()) {
+            syncTeamRoom(tId);
+          }
+        } else {
+          syncTeamRoom(teamId);
+        }
         triggerDisplayPush(true);
         pushAdminUpdate();
       }

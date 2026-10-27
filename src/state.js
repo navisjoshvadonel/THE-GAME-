@@ -1066,13 +1066,11 @@ class GameStateManager {
 
     if (isBreached || isMaxAttempts) {
       if (isBreached) {
-        if (nodeAttempts.length === 1) pointsAwarded = 100;
-        else if (nodeAttempts.length === 2) pointsAwarded = 80;
-        else if (nodeAttempts.length === 3) pointsAwarded = 60;
-        else pointsAwarded = 40;
+        // Winning / breaching a node awards full 100 points
+        pointsAwarded = 100;
       } else {
-        // Auto-bypass on 4th failed attempt with baseline points
-        pointsAwarded = 40;
+        // Auto-bypass on 4th failed attempt awards 0 points
+        pointsAwarded = 0;
         autoBypassed = true;
       }
 
@@ -1092,6 +1090,14 @@ class GameStateManager {
         progress.isRoundCompleted = true;
         progress.completedAt = Date.now();
         this.logEvent('ROUND_COMPLETED', `Team ${team.name} breached all 10 nodes in Round 2! (+1000 max)`);
+
+        // Check if all active teams have finished Round 2 to advance stage
+        const activeTeams = Array.from(this.teams.values()).filter(t => !t.isEliminated);
+        const allFinished = activeTeams.length > 0 && activeTeams.every(t => t.currentRoundProgress?.isRoundCompleted);
+        if (allFinished) {
+          this.logEvent('ALL_TEAMS_FINISHED', `All ${activeTeams.length} teams completed Round 2! Concluding stage.`);
+          this.endRound();
+        }
       } else {
         this.logEvent('NODE_BREACHED', `Team ${team.name}: Node ${nodeIndex + 1} breached (+ ${pointsAwarded} pts).`);
       }
@@ -1100,7 +1106,7 @@ class GameStateManager {
 
       return {
         success: true,
-        isBreached: true,
+        isBreached: isBreached,
         isSolved: isBreached,
         nodePassed: true,
         autoBypassed,
@@ -1115,7 +1121,7 @@ class GameStateManager {
         roundCompleted: progress.isRoundCompleted,
         message: isBreached 
           ? `[ACCESS GRANTED] Node ${nodeIndex + 1} Breached! (+${pointsAwarded} PTS)`
-          : `[BYPASS PROTOCOL] Node ${nodeIndex + 1} unlocked. Target was "${currentNode.targetWord}". (+${pointsAwarded} PTS)`
+          : `[BYPASS PROTOCOL] Maximum attempts reached. Node ${nodeIndex + 1} bypassed (+0 PTS). Target word was "${currentNode.targetWord}".`
       };
     }
 
@@ -1373,7 +1379,7 @@ class GameStateManager {
       const totalSteps = this.currentRound === 2 ? totalRiddleSteps : totalRiddleSteps + 1;
 
       let activeTurnIndex = progress ? progress.currentTurnIndex : 0;
-      const isLeaderStep = this.currentRound === 1 ? (activeTurnIndex >= totalRiddleSteps) : (activeTurnIndex >= 9);
+      const isLeaderStep = (this.currentRound === 2) ? (activeTurnIndex >= 9) : (activeTurnIndex >= totalRiddleSteps);
 
       const currentTurnAssignment = this.getTurnPlayer(memberDetails, activeTurnIndex, this.currentRound);
       const activePlayerName = currentTurnAssignment.scholar?.name || 'Player at Controls';
