@@ -631,8 +631,8 @@
       const data = await res.json();
       const badge = document.getElementById('adminLanIpBadge');
       if (badge && data && data.ips && data.ips.length > 0) {
-        const wifiObj = data.ips.find(i => (i.interface || '').toLowerCase().includes('wi-fi')) || data.ips[0];
-        const ipStr = typeof wifiObj === 'object' ? wifiObj.address : wifiObj;
+        const primaryObj = data.ips[0];
+        const ipStr = typeof primaryObj === 'object' ? primaryObj.address : primaryObj;
         badge.textContent = `📶 http://${ipStr}:${data.port || 5000}`;
       }
     } catch (e) {

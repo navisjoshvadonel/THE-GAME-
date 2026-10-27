@@ -53,13 +53,13 @@ When you start the server, it automatically scans all active network interfaces 
    CAMPUS LAN TEAM PUZZLE GAME SERVER — ACTIVATED
 ====================================================================
   STUDENT ACCESS URL:
-    -> http://192.168.1.45:5000   (Wi-Fi)
+    -> http://172.16.10.5:5000   (Campus LAN Game IP)
 ```
 
-### Manual Detection
-- **Windows**: Run `ipconfig` in Command Prompt / PowerShell. Look for the `IPv4 Address` under your active Wi-Fi adapter.
-- **macOS**: Run `ipconfig getifaddr en0`.
-- **Linux**: Run `hostname -I | awk '{print $1}'`.
+### Manual Detection & Configuration
+- **Designated IP**: `172.16.10.5:5000` is the primary configured campus tournament IP.
+- **Windows**: Run `ipconfig` in Command Prompt / PowerShell. Look for the `IPv4 Address` under your active Wi-Fi or Lab Ethernet adapter.
+- **Override via Environment**: `HOST_IP=172.16.10.5 npm start`
 
 ---
 
@@ -78,7 +78,7 @@ npm start
 
 ### Environment Variables (Optional)
 ```bash
-PORT=5000 ADMIN_SECRET=my_custom_secret npm start
+PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
 ```
 
 ---
@@ -87,9 +87,9 @@ PORT=5000 ADMIN_SECRET=my_custom_secret npm start
 
 | Role | Target Machine | Local LAN URL | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Scholar Portal** | 60+ Student Laptops | `http://<HOST_LAN_IP>:5000` | Enrollment, fellowship convocation, turn-locked challenges, zero-timer screen. |
-| **Grand Hall Display** | Low-GPU Projector Laptop | `http://<HOST_LAN_IP>:5000/display` | High-contrast classical projection, brass countdown timer, rank-animated leaderboard. |
-| **High Proctor’s Desk** | Tournament Director Laptop | `http://<HOST_LAN_IP>:5000/admin` | Master 1-click stage progression, fellowship induction, turn bypass, score overrides. |
+| **Scholar Portal** | 60+ Student Laptops | `http://172.16.10.5:5000` | Enrollment, fellowship convocation, turn-locked challenges, zero-timer screen. |
+| **Grand Hall Display** | Low-GPU Projector Laptop | `http://172.16.10.5:5000/display` | High-contrast classical projection, brass countdown timer, rank-animated leaderboard. |
+| **High Proctor’s Desk** | Tournament Director Laptop | `http://172.16.10.5:5000/admin` | Master 1-click stage progression, fellowship induction, turn bypass, score overrides. |
 
 > **Default High Proctor Password**: `campus_admin_2026`
 

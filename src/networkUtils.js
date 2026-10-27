@@ -9,11 +9,12 @@ function getLocalIpAddresses() {
   const interfaces = os.networkInterfaces();
   const addresses = [];
 
-  // 1. Allow manual override via HOST_IP environment variable
-  if (process.env.HOST_IP && process.env.HOST_IP.trim()) {
+  // 1. Primary Designated Game Host IP (Campus LAN IP: 172.16.10.5 or HOST_IP override)
+  const designatedIp = (process.env.HOST_IP || '172.16.10.5').trim();
+  if (designatedIp) {
     addresses.push({
-      interface: 'Custom Host IP (Environment Override)',
-      address: process.env.HOST_IP.trim()
+      interface: 'Campus LAN Game IP (Designated Host)',
+      address: designatedIp
     });
   }
 

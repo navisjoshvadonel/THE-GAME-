@@ -85,9 +85,9 @@
       const res = await fetch('/api/lan-ips');
       const data = await res.json();
       if (data && data.ips && data.ips.length > 0) {
-        // Prefer Wi-Fi or first available interface
-        const wifiObj = data.ips.find(i => (i.interface || '').toLowerCase().includes('wi-fi')) || data.ips[0];
-        const ipStr = typeof wifiObj === 'object' ? wifiObj.address : wifiObj;
+        // Prioritize designated game host IP (data.ips[0])
+        const primaryObj = data.ips[0];
+        const ipStr = typeof primaryObj === 'object' ? primaryObj.address : primaryObj;
         lanHostUrl = `http://${ipStr}:${data.port || 5000}`;
       }
     } catch (e) {
