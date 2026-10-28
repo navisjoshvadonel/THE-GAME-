@@ -33,7 +33,31 @@ function ageTurn(state, team, token, seconds) {
   state.players.get(token).lastSubmitTime = 0;
 }
 
-console.log('--- [PUZZLE DATA] ---');
+console.log('--- [BROWSER SCRIPTS PARSE] ---');
+{
+  const { spawnSync } = require('child_process');
+  const fs = require('fs');
+  const path = require('path');
+  const dir = path.join(__dirname, 'public', 'js');
+  for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.js'))) {
+    const check = spawnSync(process.execPath, ['--check', path.join(dir, file)], { encoding: 'utf8' });
+    assert(check.status === 0, `JS-1: public/js/${file} has no syntax errors`, (check.stderr || '').split('\n').slice(0, 4).join(' '));
+  }
+}
+
+console.log('\n--- [ROUND 3 CASE] ---');
+{
+  const { PUZZLE_SETS: SETS } = require('./src/puzzles');
+  const kc = SETS[3][0];
+  assert(kc.steps.length === 5, 'R3-CASE-1: Round 3 has five evidence exhibits');
+  const answers = kc.steps.map(s => s.expectedFragment.toLowerCase());
+  assert(!answers.some(a => /sharma|rohan/.test(a)), 'R3-CASE-2: No exhibit answer names the killer');
+  assert(kc.steps.every(s => Array.isArray(s.exhibit) && s.exhibit.length >= 3), 'R3-CASE-3: Every exhibit has a typed document');
+  const check = require('./src/puzzles').checkLeaderExactCode;
+  assert(/1 of 3/.test(check(3, kc.setId, 'PETER:STRYCHNINE:LEDGER').message), 'R3-CASE-4: Warrant feedback counts charges without naming them');
+}
+
+console.log('\n--- [PUZZLE DATA] ---');
 for (const set of PUZZLE_SETS[2]) {
   set.steps.forEach((step, i) => {
     if (!/^[A-Z]+$/.test(step.targetWord) || step.targetWord.length !== step.length) {

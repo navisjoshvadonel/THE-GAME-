@@ -121,9 +121,13 @@ PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
   • Remaining squads transition into Honorary Fellowship Spectator Mode.
          │
          ▼
-[Stage 3: Sher"unlocking" Homies — The Baker Street Mystery] (~10 min)
-  • Top 5 finalists investigate the death of Lord Alistair Blackwood at 221B Kensington Crescent.
-  • Gather forensic autopsy reports, decode the burnt grate cipher, expose forged alibis, and file the official Scotland Yard Indictment warrant.
+[Stage 3: Sher"unlocking" Homies — The Kensington Crescent Affair] (~15 min)
+  • Top 5 finalists investigate the death of Lord Alistair Blackwood from a typed police case file:
+    case summary, 5 suspects with alibis, and 5 witness statements.
+  • Squad members crack 5 exhibits in turn (poison, time of death, footprints, cipher, locked room).
+    No single answer names the killer; forensic hints unlock after 1:30.
+  • The leader files the arrest warrant SURNAME : POISON : MOTIVE. The magistrate only says how
+    many of the 3 charges hold. The case lives in src/round3Case.js.
          │
          ▼
 [Grand Championship Honors Ceremony]

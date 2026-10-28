@@ -608,8 +608,7 @@ body.display-classic.theme-finished {
 .podium-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(247, 245, 238, 0.94);
-  backdrop-filter: blur(8px);
+  background: rgba(247, 245, 238, 0.97);
   display: flex;
   align-items: center;
   justify-content: center;

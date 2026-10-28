@@ -446,7 +446,7 @@ class GameStateManager {
         attemptsByNode: {},
         collectedWords: [],
         nodesBreached: 0,
-        totalNodes: puzzleSet.steps ? puzzleSet.steps.length : (this.currentRound === 2 ? 10 : 4),
+        totalNodes: this.getTotalStepCount(this.currentRound),
         isRoundCompleted: false,
         completedAt: null,
         assembledSubmission: null
@@ -719,7 +719,7 @@ class GameStateManager {
         attemptsByNode: {},
         collectedWords: [],
         nodesBreached: 0,
-        totalNodes: roundNumber === 2 ? 10 : 4,
+        totalNodes: this.getTotalStepCount(roundNumber),
         isRoundCompleted: false,
         completedAt: null,
         assembledSubmission: null
@@ -1285,7 +1285,7 @@ class GameStateManager {
 
     const totalRiddleSteps = puzzleSet?.steps?.length || 3;
     const currentTurn = progress.currentTurnIndex;
-    const isLeaderTurn = currentTurn >= totalRiddleSteps || (team.members.length >= 4 && currentTurn === team.members.length - 1);
+    const isLeaderTurn = currentTurn >= totalRiddleSteps;
 
     if (!isLeaderTurn) {
       const expectedFrag = puzzleSet?.steps[currentTurn]?.expectedFragment || 'FRAG';
@@ -1389,23 +1389,48 @@ class GameStateManager {
       }
     }
 
-    // Default Round 1 logic
-    if (len === 4) {
-      if (turnIndex === 0) return { scholar: teammates[0] || leader, role: '🎮 MEMBER 1 • GAME 1', badge: 'P1' };
-      if (turnIndex === 1) return { scholar: teammates[1] || leader, role: '⚡ MEMBER 2 • GAME 2', badge: 'P2' };
-      if (turnIndex === 2) return { scholar: teammates[2] || leader, role: '🌟 MEMBER 3 • GAME 3', badge: 'P3' };
-      return { scholar: leader, role: '👑 SQUAD LEADER • FINAL BOSS', badge: 'BOSS' };
-    } else if (len === 3) {
-      if (turnIndex === 0) return { scholar: teammates[0] || leader, role: '🎮 MEMBER 1 • GAME 1', badge: 'P1' };
-      if (turnIndex === 1) return { scholar: teammates[1] || leader, role: '⚡ MEMBER 2 • GAME 2', badge: 'P2' };
-      if (turnIndex === 2) return { scholar: leader, role: '👑 SQUAD LEADER • GAME 3', badge: 'LEADER' };
-      return { scholar: leader, role: '👑 SQUAD LEADER • FINAL BOSS', badge: 'BOSS' };
-    } else {
-      if (turnIndex === 0) return { scholar: teammates[0] || leader, role: '🎮 MEMBER 1 • GAME 1', badge: 'P1' };
-      if (turnIndex === 1) return { scholar: leader, role: '👑 SQUAD LEADER • GAME 2', badge: 'LEADER' };
-      if (turnIndex === 2) return { scholar: teammates[0] || leader, role: '🎮 MEMBER 1 • GAME 3', badge: 'P1' };
-      return { scholar: leader, role: '👑 SQUAD LEADER • FINAL BOSS', badge: 'BOSS' };
+    // Rounds 1 & 3: riddle steps rotate Member 1 → Member 2 → … → Leader → Member 1 …,
+    // then the leader alone takes the final step (Round 1 boss / Round 3 arrest warrant).
+    const riddleSteps = this.getRiddleStepCount(roundNumber);
+    const unit = roundNumber === 3 ? 'EVIDENCE' : 'GAME';
+    if (turnIndex >= riddleSteps) {
+      return { scholar: leader, role: roundNumber === 3 ? '👑 SQUAD LEADER • ARREST WARRANT' : '👑 SQUAD LEADER • FINAL BOSS', badge: 'BOSS' };
     }
+    const cycle = [...teammates, leader];
+    const scholar = cycle[turnIndex % cycle.length];
+    if (scholar === leader) {
+      return { scholar, role: `👑 SQUAD LEADER • ${unit} ${turnIndex + 1}`, badge: 'LEADER' };
+    }
+    const memberIdx = teammates.indexOf(scholar);
+    return {
+      scholar,
+      role: `${['🎮', '⚡', '🌟'][memberIdx] || '🎮'} MEMBER ${memberIdx + 1} • ${unit} ${turnIndex + 1}`,
+      badge: `P${memberIdx + 1}`
+    };
+  }
+
+  // Number of member-solved steps before the leader's final step (Round 1: 3, Round 3: 5)
+  getRiddleStepCount(roundNumber) {
+    if (roundNumber === 3) return PUZZLE_SETS[3]?.[0]?.steps?.length || 3;
+    return 3;
+  }
+
+  // Total steps a team plays in a round (Round 2: 10 nodes; otherwise riddles + leader step)
+  getTotalStepCount(roundNumber) {
+    return roundNumber === 2 ? 10 : this.getRiddleStepCount(roundNumber) + 1;
+  }
+
+  // The shared Round 3 case file shown beside every evidence step
+  getCaseDossier(puzzleSet) {
+    return {
+      fileNumber: puzzleSet?.fileNumber || '',
+      dossierTitle: puzzleSet?.dossierTitle,
+      incidentDate: puzzleSet?.incidentDate,
+      location: puzzleSet?.location,
+      caseSummary: puzzleSet?.caseSummary,
+      suspects: puzzleSet?.suspects || [],
+      witnessStatements: puzzleSet?.witnessStatements || []
+    };
   }
 
   /* -------------------------------------------------------------
@@ -1505,13 +1530,9 @@ class GameStateManager {
               image: stepObj?.image || null,
               wordPattern,
               totalLetters,
-              caseDossier: this.currentRound === 3 ? {
-                dossierTitle: puzzleSet?.dossierTitle,
-                incidentDate: puzzleSet?.incidentDate,
-                location: puzzleSet?.location,
-                caseSummary: puzzleSet?.caseSummary,
-                suspects: puzzleSet?.suspects || []
-              } : null,
+              caseDossier: this.currentRound === 3 ? this.getCaseDossier(puzzleSet) : null,
+              exhibit: stepObj?.exhibit || null,
+              hintUnlockSec: this.currentRound === 3 ? 90 : 0,
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150, // 2.5 minutes per operative turn
               clueUnlockDelaySec: 120, // Clue unlocks at 2:00 mark (120s)
@@ -1530,14 +1551,9 @@ class GameStateManager {
               hint: puzzleSet.leaderTask?.hint || '',
               image: puzzleSet.leaderTask?.image || null,
               collectedFragments: progress.collectedFragments,
+              findingLabels: this.currentRound === 3 ? (puzzleSet.steps || []).map(s => s.category) : null,
               roundType: this.currentRound === 1 ? 'phrase' : 'code',
-              caseDossier: this.currentRound === 3 ? {
-                dossierTitle: puzzleSet?.dossierTitle,
-                incidentDate: puzzleSet?.incidentDate,
-                location: puzzleSet?.location,
-                caseSummary: puzzleSet?.caseSummary,
-                suspects: puzzleSet?.suspects || []
-              } : null,
+              caseDossier: this.currentRound === 3 ? this.getCaseDossier(puzzleSet) : null,
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150,
               clueUnlockDelaySec: 0
@@ -1625,10 +1641,10 @@ class GameStateManager {
         puzzleView = {
           type: 'sherlock_round3_completed',
           roundNumber: 3,
-          dossierTitle: puzzleSet?.dossierTitle || 'The Kensington Crescent Mystery',
-          culpritName: 'Rohan Sharma',
-          weapon: 'Cyanide',
-          motive: 'Blackmail',
+          dossierTitle: puzzleSet?.dossierTitle || 'The Kensington Crescent Affair',
+          culpritName: puzzleSet?.verdict?.culprit || '',
+          weapon: puzzleSet?.verdict?.weapon || '',
+          motive: puzzleSet?.verdict?.motive || '',
           totalScore: team.totalScore,
           assembledSubmission: progress.assembledSubmission,
           isCompleted: true
@@ -1692,8 +1708,7 @@ class GameStateManager {
       const prog = t.currentRoundProgress;
       const memberDetails = t.members.map(tok => this.players.get(tok)).filter(Boolean);
       const membersTurnOrder = [];
-      const isR2 = this.currentRound === 2;
-      const totalStepsToMap = isR2 ? 10 : 4;
+      const totalStepsToMap = this.getTotalStepCount(this.currentRound);
 
       for (let g = 0; g < totalStepsToMap; g++) {
         const turnAssignment = this.getTurnPlayer(memberDetails, g, this.currentRound);
@@ -1805,7 +1820,7 @@ class GameStateManager {
         const memberDetails = t.members.map(tok => this.players.get(tok)).filter(Boolean);
         const activeAssignment = prog ? this.getTurnPlayer(memberDetails, prog.currentTurnIndex, this.currentRound) : null;
         const nodesBreached = prog ? (prog.nodesBreached !== undefined ? prog.nodesBreached : Object.keys(prog.stepSolved || {}).length) : 0;
-        const totalNodes = prog?.totalNodes || (this.currentRound === 2 ? 10 : 4);
+        const totalNodes = prog?.totalNodes || this.getTotalStepCount(this.currentRound);
         const activeNodeNumber = prog ? Math.min(prog.currentTurnIndex + 1, totalNodes) : 1;
 
         return {

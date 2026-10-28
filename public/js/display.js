@@ -137,11 +137,12 @@
       roundTitleDisplay.textContent = 'STAGE 2: THE 10-NODE CYBER TERMINAL HACK';
       roundSubtitleDisplay.textContent = data.isPaused
         ? '⏸ MATCH IS CURRENTLY PAUSED BY GAME MASTER'
+        : '⚡ STAGE 2: 10-NODE CYBER RELAY — CRACK THE CHAIN, FEWER GUESSES = MORE POINTS!';
     } else if (data.status === 'ROUND_3') {
       roundTitleDisplay.textContent = 'SHER"UNLOCKING" HOMIES: THE BAKER STREET MYSTERY';
       roundSubtitleDisplay.textContent = data.isPaused
         ? '⏸ MATCH IS CURRENTLY PAUSED BY GAME MASTER'
-        : '🕵️ SHER"UNLOCKING" HOMIES — THE 10-MINUTE BAKER STREET COLD CASE DEDUCTION FINALS!';
+        : '🕵️ SHER"UNLOCKING" HOMIES — THE BAKER STREET COLD CASE DEDUCTION FINALS!';
     } else if (data.status === 'INTERMEDIATE_1') {
       roundTitleDisplay.textContent = 'STAGE 1 CONCLUDED — OFFICIAL SQUAD STANDINGS';
       roundSubtitleDisplay.textContent = '🏆 10-Minute Battle Complete! Final Round 1 Leaderboard locked. Standing by for Game Master...';
@@ -169,12 +170,21 @@
     renderPodium(data);
   }
 
+  // Skip the rebuild entirely when nothing visible changed since the last push
+  let lastLeaderboardSig = '';
   function renderLeaderboard(teams) {
+    const sig = currentStageStatus + '|' + lanHostUrl + '|' + JSON.stringify(teams.map(t => [
+      t.teamId, t.name, t.totalScore, t.roundScores, t.isRoundCompleted, t.isEliminated, t.collectedCount, t.nodesBreached,
+      (t.membersTurnOrder || []).map(m => m.turnStatus).join('')
+    ]));
+    if (sig === lastLeaderboardSig) return;
+    lastLeaderboardSig = sig;
+
     if (teams.length === 0) {
       leaderboardList.innerHTML = `
         <div class="lobby-broadcast-box">
           <div class="lobby-crest">🕹️</div>
-          <div class="lobby-title">JD'S ARENA // CAMPUS LAN PUZZLE TOURNAMENT</div>
+          <div class="lobby-title">❄️ SNOW'S ARENA // CAMPUS LAN PUZZLE TOURNAMENT</div>
           <div class="lobby-instruction-sub">Team Leaders, connect your device to the arena using the address below:</div>
           <div class="lobby-ip-chip">
             <span class="ip-label">LEADER PORTAL ADDRESS</span>
@@ -202,7 +212,7 @@
 
       // Progress Calculation
       const isRound2 = currentStageStatus === 'ROUND_2';
-      const totalSteps = isRound2 ? 10 : 3;
+      const totalSteps = isRound2 ? 10 : Math.max(1, ((team.membersTurnOrder || []).length || 4) - 1);
       const currentStepCount = isRound2 ? (team.nodesBreached || 0) : (team.collectedCount || 0);
       const progressRatio = Math.min(100, Math.round((currentStepCount / totalSteps) * 100));
 
@@ -233,10 +243,16 @@
         if (team.isRoundCompleted) {
           statusHtml = '<span class="display-status-pill status-completed">✓ Case Solved</span>';
           activeSolverInfo = '🏛️ Warrant Verified! Criminal Convicted!';
+        } else if (team.isEliminated) {
+          statusHtml = '<span class="display-status-pill status-eliminated">Spectating</span>';
+          activeSolverInfo = 'Did not reach the Top 5';
         } else {
-          const nextStep = Math.min(4, (team.collectedCount || 0) + 1);
-          statusHtml = `<span class="display-status-pill status-solving">Evidence ${nextStep}/4</span>`;
-          activeSolverInfo = `Proofs: ${team.collectedCount || 0}/3 (R1: ${team.roundScores?.[1] || 0} + R2: ${team.roundScores?.[2] || 0} + R3: ${team.roundScores?.[3] || 0})`;
+          const exhibits = Math.max(1, ((team.membersTurnOrder || []).length || 6) - 1);
+          const found = team.collectedCount || 0;
+          statusHtml = found >= exhibits
+            ? '<span class="display-status-pill status-solving">Filing warrant</span>'
+            : `<span class="display-status-pill status-solving">Exhibit ${found + 1}/${exhibits}</span>`;
+          activeSolverInfo = `Findings: ${found}/${exhibits} (R1: ${team.roundScores?.[1] || 0} + R2: ${team.roundScores?.[2] || 0} + R3: ${team.roundScores?.[3] || 0})`;
         }
       } else {
         if (team.isRoundCompleted) {
@@ -289,17 +305,22 @@
     });
   }
 
+  let lastPodiumSig = '';
   function renderPodium(data) {
     // Only show modal popup when tournament is completely FINISHED
     if (data.status !== 'FINISHED') {
       podiumOverlay.classList.add('hidden');
+      lastPodiumSig = '';
       return;
     }
+    const podiumSig = JSON.stringify((data.leaderboard || []).slice(0, 5).map(t => [t.teamId, t.totalScore]));
+    if (podiumSig === lastPodiumSig) return;
+    lastPodiumSig = podiumSig;
 
     podiumOverlay.classList.remove('hidden');
     podiumBadge.textContent = 'GRAND LAUREL RESULTS';
     podiumHeading.textContent = '🏆 TOURNAMENT CHAMPIONS';
-    podiumSub.textContent = "Official final standings of JD's Arena Tournament Championship:";
+    podiumSub.textContent = "Official final standings of the Snow's Arena Tournament Championship:";
 
     const topTeams = (data.leaderboard || []).slice(0, 5);
     podiumTopList.innerHTML = '';

@@ -1082,254 +1082,170 @@
            VIEW 3.6: ROUND 3 SHER"UNLOCKING" HOMIES (THE BAKER STREET MYSTERY)
            ======================================================== -->
       <section id="viewRound3Game" class="view-screen hidden">
-        <!-- Scotland Yard Pre-Game Mission Briefing Modal -->
-        <div id="modalR3Briefing" class="modal-overlay hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px;">
-          <div class="modal-dialog" style="max-width: 680px; width: 100%; background: #12100e; border: 2px solid #d4a017; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); color: #e6dfd3; padding: 26px; font-family: 'Cinzel', serif, system-ui; max-height: 90vh; overflow-y: auto;">
-            <div style="text-align: center; margin-bottom: 16px;">
-              <div style="font-size: 2.2rem; margin-bottom: 4px;">🏛️ 🕵️‍♂️ ⚖️</div>
-              <h2 style="font-size: 1.5rem; color: #d4a017; margin: 0 0 4px 0; letter-spacing: 2px; text-transform: uppercase;">Scotland Yard Detective Briefing</h2>
-              <p style="margin: 0; font-size: 0.8rem; color: #a89f91; letter-spacing: 1px;">ROUND 3 GRAND FINALE // THE KENSINGTON CRESCENT MURDER</p>
+        <!-- Detective briefing (shown once when the finals open) -->
+        <div id="modalR3Briefing" class="cf-modal hidden" role="dialog" aria-label="Detective briefing">
+          <div class="cf-paper cf-briefing">
+            <div class="cf-letterhead">
+              <span>METROPOLITAN POLICE • CRIMINAL INVESTIGATION DEPARTMENT</span>
+              <span class="cf-stamp cf-stamp-red">FINALS</span>
             </div>
-
-            <div style="border-top: 1px solid rgba(212, 160, 23, 0.3); border-bottom: 1px solid rgba(212, 160, 23, 0.3); padding: 14px 0; margin-bottom: 18px; font-size: 0.9rem; line-height: 1.6; color: #d8d0c5;">
-              <p style="margin: 0 0 10px 0;">
-                <strong style="color: #ffd700;">THE CRIME:</strong> Lord Alistair Blackwood was found poisoned in his study at 11:22 PM. His 120-carat sapphire is missing. Five suspects are detained at the scene.
-              </p>
-              <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px;">
-                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #d4a017; padding: 8px 12px; border-radius: 0 6px 6px 0;">
-                  <strong style="color: #ffd700;">1. TEAMWORK DYNAMICS:</strong>
-                  All detectives share the crime scene and suspect board. While one detective operates the console as Lead Investigator, teammates must examine the 5 suspects and cross-check facts.
-                </div>
-                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #00e5ff; padding: 8px 12px; border-radius: 0 6px 6px 0;">
-                  <strong style="color: #00e5ff;">2. THE 3 FORENSIC PROOFS:</strong>
-                  Your detectives must solve 3 specific forensic files in sequence:
-                  <br>• <strong>File 1 (Toxicology)</strong>: Deduce the chemical poison compound.
-                  <br>• <strong>File 2 (Cryptography)</strong>: Decrypt the burnt fireplace telegram cipher.
-                  <br>• <strong>File 3 (Interrogation)</strong>: Catch the suspect in an impossible alibi lie.
-                </div>
-                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid #ff5252; padding: 8px 12px; border-radius: 0 6px 6px 0;">
-                  <strong style="color: #ff5252;">3. CHIEF INSPECTOR ARREST WARRANT:</strong>
-                  Once all 3 proofs are gathered, the Squad Leader files the official warrant in the notation:
-                  <br><code style="background: #000; color: #ffd700; padding: 2px 8px; border-radius: 4px; font-weight: bold;">[CULPRIT_SURNAME]:[WEAPON]:[MOTIVE]</code>
-                </div>
-              </div>
-              <p style="margin: 0; font-size: 0.8rem; color: #aaa; font-style: italic;">
-                💡 Interactive Rule-Out: Click any suspect card on the left panel to strike them out as your investigation proceeds!
-              </p>
-            </div>
-
-            <div style="text-align: center;">
-              <button type="button" id="btnR3DismissBriefing" class="btn btn-baker-gold" style="padding: 10px 28px; font-size: 0.95rem; font-weight: bold; letter-spacing: 1.5px; border-radius: 8px; cursor: pointer;">
-                🔍 COMMENCE INVESTIGATION ➔
-              </button>
-            </div>
+            <h2 class="cf-doc-title">Detective Briefing — The Kensington Crescent Affair</h2>
+            <ol class="cf-briefing-list">
+              <li><strong>Read the case file.</strong> Case summary, five suspects with their alibis, and five witness statements. Everyone on the squad can read it — talk it through.</li>
+              <li><strong>Crack five exhibits in turn.</strong> Each answer is one word or a time. None of them names the killer on its own.</li>
+              <li><strong>Hints are earned.</strong> The advisory note is always shown; the stronger forensic hint unlocks after 1:30. After 2:30 you may reveal the answer for 0 points.</li>
+              <li><strong>The leader files the warrant:</strong> <code>SURNAME : POISON : MOTIVE</code>. The magistrate only tells you how many of the three charges hold.</li>
+            </ol>
+            <p class="cf-note">Somebody in this file is lying. Rule suspects out on the suspect cards as you go.</p>
+            <button type="button" id="btnR3DismissBriefing" class="cf-btn cf-btn-primary">Open the case file ➔</button>
           </div>
         </div>
 
-        <div class="baker-street-window">
+        <div class="cf-desk">
 
-          <!-- Vintage Topbar -->
-          <div class="baker-topbar">
-            <div class="baker-top-left">
-              <span class="wax-seal-tag">🕵️ SCOTLAND YARD</span>
-              <strong id="r3GameTeamName" class="baker-team-name">--</strong>
-              <span class="baker-sep">|</span>
-              <span class="baker-case-subtitle">SHER"UNLOCKING" HOMIES: THE BAKER STREET MYSTERY</span>
-              <button type="button" id="btnR3ShowBriefing" class="btn btn-sm" style="margin-left: 10px; border: 1px solid rgba(212, 160, 23, 0.4); color: #d4a017; background: rgba(0,0,0,0.4); font-size: 0.75rem; padding: 3px 8px; border-radius: 5px; cursor: pointer;">📋 BRIEFING &amp; RULES</button>
+          <!-- Top bar -->
+          <div class="cf-topbar">
+            <div class="cf-topbar-left">
+              <span class="cf-badge">SCOTLAND YARD</span>
+              <strong id="r3GameTeamName" class="cf-team-name">--</strong>
+              <span class="cf-topbar-case">The Kensington Crescent Affair</span>
+              <button type="button" id="btnR3ShowBriefing" class="cf-btn cf-btn-ghost">Briefing</button>
             </div>
-            <div class="baker-top-right">
-              <div class="baker-score-pill">
-                <span class="baker-score-lbl">CUMULATIVE SCORE:</span>
-                <span id="r3GameTeamScore" class="baker-score-val">0</span>
-                <span class="baker-score-unit">PTS</span>
-              </div>
-            </div>
+            <div class="cf-score">SCORE <strong id="r3GameTeamScore">0</strong> PTS</div>
           </div>
 
-          <!-- Investigation Progress Ribbon -->
-          <div class="baker-progress-ribbon">
-            <div class="baker-ribbon-label">FORENSIC DOSSIER PROGRESS:</div>
-            <div id="r3EvidencePipeline" class="baker-pipeline-row">
-              <!-- Evidence 1 (Forensics) -> Evidence 2 (Cipher) -> Evidence 3 (Alibis) -> Boss (Indictment Warrant) -->
-            </div>
+          <!-- Progress: exhibit folder tabs -->
+          <div class="cf-progress">
+            <span class="cf-progress-label">CASE PROGRESS</span>
+            <div id="r3EvidencePipeline" class="cf-progress-row"></div>
           </div>
 
-          <!-- Main Layout: Left Suspect Board & Case File, Right Active Investigation Console -->
-          <div class="baker-workspace-layout">
+          <div class="cf-workspace">
 
-            <!-- Left: Case File Summary & The 5 Suspects Board -->
-            <div class="baker-dossier-col">
-              <!-- Case File Sheet -->
-              <div class="parchment-sheet case-summary-sheet">
-                <div class="parchment-header">
-                  <span class="parchment-seal">⚖️</span>
-                  <div>
-                    <h3 class="parchment-title" id="r3CaseTitle">The Mysterious Death of Lord Alistair Blackwood</h3>
-                    <span class="parchment-meta" id="r3CaseMeta">November 14, 1891 • 11:22 PM • 221B Kensington Crescent</span>
-                  </div>
+            <!-- LEFT: the shared case file -->
+            <div class="cf-file-col">
+              <div class="cf-tabs" role="tablist">
+                <button type="button" class="cf-tab active" data-cf-tab="summary" role="tab">Case Summary</button>
+                <button type="button" class="cf-tab" data-cf-tab="suspects" role="tab">Suspects (5)</button>
+                <button type="button" class="cf-tab" data-cf-tab="statements" role="tab">Statements</button>
+              </div>
+
+              <div class="cf-paper cf-file-panel" data-cf-panel="summary">
+                <div class="cf-letterhead">
+                  <span id="r3FileNumber">C.I.D. FILE</span>
+                  <span class="cf-stamp cf-stamp-red">CONFIDENTIAL</span>
                 </div>
-                <p class="parchment-body" id="r3CaseSummary">
-                  Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet emitting an acrid aroma of bitter almonds lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.
-                </p>
+                <h3 class="cf-doc-title" id="r3CaseTitle">The Kensington Crescent Affair</h3>
+                <dl class="cf-fields">
+                  <dt>DATE</dt><dd id="r3CaseMeta">--</dd>
+                  <dt>PLACE</dt><dd id="r3CaseLocation">--</dd>
+                </dl>
+                <p class="cf-typed" id="r3CaseSummary">Loading case file…</p>
               </div>
 
-              <!-- Suspect Board Header -->
-              <div class="suspects-board-header">
-                <span class="board-title">THE 5 PRIME SUSPECTS (Click card to strike out eliminated suspects):</span>
+              <div class="cf-paper cf-file-panel hidden" data-cf-panel="suspects">
+                <div class="cf-letterhead">
+                  <span>PERSONS OF INTEREST</span>
+                  <span class="cf-muted">tap "Rule out" to strike a suspect</span>
+                </div>
+                <div id="r3SuspectsGrid" class="cf-suspects"></div>
               </div>
 
-              <!-- Suspects Grid -->
-              <div id="r3SuspectsGrid" class="suspects-grid">
-                <!-- 5 Suspect Cards populated via JS -->
+              <div class="cf-paper cf-file-panel hidden" data-cf-panel="statements">
+                <div class="cf-letterhead">
+                  <span>WITNESS STATEMENTS</span>
+                  <span class="cf-muted">taken 15 Nov 1891</span>
+                </div>
+                <div id="r3Statements" class="cf-statements"></div>
               </div>
             </div>
 
-            <!-- Right: Active Investigation Console (Member Turn or Leader Warrant) -->
-            <div class="baker-console-col">
+            <!-- RIGHT: the exhibit being worked on -->
+            <div class="cf-console-col">
 
-              <!-- Active Investigator Bar -->
-              <div class="investigator-card">
-                <div class="investigator-header">
-                  <span class="investigator-badge">🔎 LEAD INVESTIGATOR AT CONSOLE</span>
-                  <div class="ink-dot"></div>
-                </div>
-                <div class="investigator-body">
-                  <h3 id="r3ActivePlayerName" class="investigator-name">--</h3>
-                  <span id="r3ActivePlayerRole" class="investigator-role">OPERATIVE</span>
-                </div>
-                <p class="investigator-note">Confer with your fellow detectives and submit your forensic deduction below.</p>
+              <div class="cf-console-strip">
+                <span class="cf-muted">AT THE CONSOLE</span>
+                <strong id="r3ActivePlayerName">--</strong>
+                <span id="r3ActivePlayerRole" class="cf-muted">--</span>
               </div>
 
-              <!-- Member Evidence Card (Clue 1, 2, 3) -->
-              <div id="boxR3MemberGame" class="parchment-sheet evidence-sheet">
-                <div class="evidence-header-tag">
-                  <span id="r3EvidenceNumber" class="evidence-pill">EVIDENCE FILE 1 OF 3</span>
-                  <span id="r3EvidenceCategory" class="evidence-cat">Forensic Science</span>
+              <!-- Evidence exhibit (member turns) -->
+              <div id="boxR3MemberGame" class="cf-paper cf-exhibit">
+                <div class="cf-letterhead">
+                  <span id="r3EvidenceNumber">EXHIBIT A • FILE 1 OF 5</span>
+                  <span id="r3EvidenceCategory" class="cf-stamp">TOXICOLOGY</span>
                 </div>
-                <h2 id="r3EvidenceTitle" class="evidence-title">Forensic Autopsy &amp; Balcony Footprints</h2>
-                <div id="r3TurnTimer" class="r3-turn-timer">
-                  <span>⏱️ TURN TIME <strong id="r3TurnTimeRemaining">02:30</strong></span>
-                  <span id="r3LiveBounty" class="r3-live-bounty">⚡ BOUNTY 250 PTS</span>
+                <h3 id="r3EvidenceTitle" class="cf-doc-title">--</h3>
+                <div id="r3TurnTimer" class="cf-timer">
+                  <span>TURN <strong id="r3TurnTimeRemaining">02:30</strong></span>
+                  <span id="r3LiveBounty">BOUNTY 250 PTS</span>
                 </div>
-
-                <!-- Forensic Evidence Image Display -->
-                <div id="r3EvidenceImgContainer" class="evidence-img-container hidden" style="margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(212, 160, 23, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
-                  <img id="r3EvidenceImg" src="" alt="Forensic Evidence" style="width: 100%; height: auto; max-height: 220px; object-fit: cover; display: block;" />
+                <ul id="r3ExhibitLines" class="cf-exhibit-lines"></ul>
+                <p class="cf-question"><span>QUESTION</span> <span id="r3EvidencePrompt">--</span></p>
+                <div class="cf-note"><strong>Advisory:</strong> <span id="r3EvidenceClue">--</span></div>
+                <div id="r3EvidenceHintBox" class="cf-note cf-hint">
+                  <strong>Forensic hint:</strong> <span id="r3EvidenceHint">--</span>
                 </div>
-
-                <div class="evidence-prompt-box">
-                  <p id="r3EvidencePrompt" class="evidence-prompt">Prompt...</p>
-                </div>
-
-                <div id="r3EvidenceClueBox" class="clue-box">
-                  <span class="clue-tag">SCOTLAND YARD ADVISORY:</span>
-                  <p id="r3EvidenceClue" class="clue-text">Clue...</p>
-                </div>
-
-                <div id="r3EvidenceHintBox" class="hint-box">
-                  <span class="hint-tag">FORENSIC HINT:</span>
-                  <p id="r3EvidenceHint" class="hint-text">Hint...</p>
-                </div>
-
-                <form id="r3MemberForm" onsubmit="return false;" class="evidence-form">
-                  <div class="form-group">
-                    <label for="r3MemberInput">YOUR FORENSIC DEDUCTION / KEYWORD:</label>
-                    <input type="text" id="r3MemberInput" class="baker-input" placeholder="Enter deduction..." autocomplete="off">
+                <form id="r3MemberForm" onsubmit="return false;" class="cf-form">
+                  <label for="r3MemberInput">YOUR FINDING</label>
+                  <div class="cf-form-row">
+                    <input type="text" id="r3MemberInput" class="cf-input" placeholder="Type your answer…" autocomplete="off" maxlength="60">
+                    <button type="submit" id="btnR3MemberSubmit" class="cf-btn cf-btn-primary">Submit ➔</button>
                   </div>
-                  <button type="submit" id="btnR3MemberSubmit" class="btn btn-baker-primary btn-block">
-                    <span>🔍 SUBMIT FORENSIC PROOF ➔</span>
-                  </button>
-                  <button type="button" id="btnR3SkipTurn" class="btn btn-secondary btn-block btn-skip-turn hidden" title="Reveal this proof and move on for 0 points">
-                    <span>⏭ STUCK? REVEAL THIS PROOF (0 PTS)</span>
-                  </button>
+                  <button type="button" id="btnR3SkipTurn" class="cf-btn cf-btn-skip btn-skip-turn hidden">Stuck? Reveal this finding (0 pts)</button>
                   <div id="r3MemberFeedback" class="alert-box hidden"></div>
                 </form>
               </div>
 
-              <!-- Leader Grand Indictment Warrant Card (Boss) -->
-              <div id="boxR3LeaderGame" class="parchment-sheet warrant-sheet hidden">
-                <div class="evidence-header-tag">
-                  <span class="evidence-pill warrant-pill">👑 FINAL INDICTMENT</span>
-                  <span class="evidence-cat">Chief Inspector Chamber</span>
+              <!-- Arrest warrant (leader) -->
+              <div id="boxR3LeaderGame" class="cf-paper cf-exhibit hidden">
+                <div class="cf-letterhead">
+                  <span>CHARGE SHEET • FORM 27</span>
+                  <span class="cf-stamp cf-stamp-red">ARREST WARRANT</span>
                 </div>
-                <h2 class="evidence-title">Scotland Yard Official Arrest Warrant</h2>
-
-                <!-- Warrant Visual Image -->
-                <div id="r3LeaderImgContainer" class="evidence-img-container" style="margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(212, 160, 23, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
-                  <img id="r3LeaderImg" src="/images/sherlock_arrest_warrant.jpg" alt="Official Arrest Warrant" style="width: 100%; height: auto; max-height: 190px; object-fit: cover; display: block;" />
-                </div>
-
-                <p class="warrant-instructions">
-                  Chief Inspector (Squad Leader): Gather your detectives. Assemble your 3 unlocked forensic proofs to indict the guilty criminal before the magistrate.
-                </p>
-
-                <!-- Gathered Proofs Bank -->
-                <div class="gathered-proofs-box">
-                  <span class="proofs-title">COLLECTED INVESTIGATION PROOFS:</span>
-                  <div id="r3GatheredProofs" class="proofs-row">
-                    <!-- Populated via JS: Proof 1 (Cyanide), Proof 2 (Blackmail), Proof 3 (Sharma) -->
+                <h3 class="cf-doc-title">Charge the killer</h3>
+                <p class="cf-typed">Your detectives have the facts, but not the name. Compare the findings below with the time of death, the alibis and the witness statements in the case file.</p>
+                <div class="cf-findings-title">YOUR SQUAD'S FINDINGS</div>
+                <ul id="r3GatheredProofs" class="cf-findings"></ul>
+                <form id="r3LeaderForm" onsubmit="return false;" class="cf-form">
+                  <label for="r3LeaderInput">WARRANT — SURNAME : POISON : MOTIVE</label>
+                  <div class="cf-form-row">
+                    <input type="text" id="r3LeaderInput" class="cf-input" placeholder="e.g. SURNAME : POISON : MOTIVE" autocomplete="off" maxlength="80">
+                    <button type="submit" id="btnR3LeaderSubmit" class="cf-btn cf-btn-primary">File ➔</button>
                   </div>
-                </div>
-
-                <form id="r3LeaderForm" onsubmit="return false;" class="evidence-form">
-                  <div class="form-group">
-                    <label for="r3LeaderInput">ENTER ARREST WARRANT: [CULPRIT] : [WEAPON] : [MOTIVE]</label>
-                    <input type="text" id="r3LeaderInput" class="baker-input warrant-input" placeholder="SURNAME:WEAPON:MOTIVE" autocomplete="off">
-                    <span class="field-hint">Format: [CULPRIT_SURNAME]:[WEAPON]:[MOTIVE] (Assemble your squad's 3 unlocked proof chips)</span>
-                  </div>
-                  <button type="submit" id="btnR3LeaderSubmit" class="btn btn-baker-gold btn-block">
-                    <span>⚖️ ISSUE OFFICIAL ARREST WARRANT &amp; CLOSE CASE ➔</span>
-                  </button>
+                  <span class="cf-muted">Motive in one word. The magistrate tells you how many charges hold, not which.</span>
                   <div id="r3LeaderFeedback" class="alert-box hidden"></div>
                 </form>
               </div>
 
-              <!-- Waiting for Teammate / Not Your Turn Card -->
-              <div id="boxR3WaitingTurn" class="parchment-sheet waiting-sheet hidden">
-                <div class="waiting-crest">🕰️</div>
-                <h3 class="waiting-title">Awaiting Fellow Detective</h3>
-                <p id="r3WaitingSub" class="waiting-sub">Operative -- is currently examining Evidence File -- at the console.</p>
-                <div class="waiting-collaborate-tip">
-                  <span>💡 Tip: All detectives share the same crime dossier! Assist your teammate with timeline calculations and suspect elimination!</span>
-                </div>
+              <!-- Waiting / spectators -->
+              <div id="boxR3WaitingTurn" class="cf-paper cf-exhibit cf-waiting hidden">
+                <div class="cf-letterhead"><span>NOTICE</span><span class="cf-stamp">STANDBY</span></div>
+                <h3 class="waiting-title cf-doc-title">Awaiting Fellow Detective</h3>
+                <p id="r3WaitingSub" class="cf-typed">--</p>
               </div>
 
-              <!-- Round 3 Completed / Case Solved Victory Card -->
-              <div id="boxR3Completed" class="parchment-sheet victory-dossier-sheet hidden">
-                <div class="victory-wax-seal">🏆</div>
-                <h2 class="victory-dossier-title">CASE SOLVED // MAGISTRATE CONVICTION!</h2>
-                <p class="victory-dossier-sub">Congratulations! Your squad exposed the true killer and brought justice to London!</p>
-                
-                <div class="conviction-summary-box">
-                  <div class="conviction-item">
-                    <span class="conviction-label">CONVICTED CRIMINAL:</span>
-                    <strong class="conviction-val" id="r3VictoryCulprit">ROHAN SHARMA</strong>
-                  </div>
-                  <div class="conviction-item">
-                    <span class="conviction-label">MURDER WEAPON:</span>
-                    <strong class="conviction-val" id="r3VictoryWeapon">POTASSIUM CYANIDE</strong>
-                  </div>
-                  <div class="conviction-item">
-                    <span class="conviction-label">PRIMARY MOTIVE:</span>
-                    <strong class="conviction-val" id="r3VictoryMotive">BLACKMAIL OVER FORGED SHIPPING LEDGER</strong>
-                  </div>
+              <!-- Case closed -->
+              <div id="boxR3Completed" class="cf-paper cf-exhibit hidden">
+                <div class="cf-letterhead">
+                  <span>CENTRAL CRIMINAL COURT</span>
+                  <span class="cf-stamp cf-stamp-green">CASE CLOSED</span>
                 </div>
-
-                <div class="baker-final-score-box">
-                  <span>GRAND TOURNAMENT CUMULATIVE SCORE</span>
-                  <div id="r3VictoryTotalScore" class="baker-pts-large">0 PTS</div>
-                </div>
-
-                <div class="victory-standby-pill">
-                  <span>STANDBY FOR HIGH PROCTOR // GRAND HONORS &amp; PODIUM CEREMONY</span>
-                </div>
+                <h3 class="cf-doc-title">Verdict: guilty</h3>
+                <dl class="cf-fields">
+                  <dt>CONVICTED</dt><dd id="r3VictoryCulprit">--</dd>
+                  <dt>WEAPON</dt><dd id="r3VictoryWeapon">--</dd>
+                  <dt>MOTIVE</dt><dd id="r3VictoryMotive">--</dd>
+                </dl>
+                <div class="cf-final-score">TOURNAMENT TOTAL <strong id="r3VictoryTotalScore">0 PTS</strong></div>
+                <p class="cf-muted">Stand by for the honours ceremony on the Grand Hall projector.</p>
               </div>
 
             </div>
-
           </div>
         </div>
       </section>
+
 
       <!-- VIEW 4: CHAMPIONSHIP CONCLUDED SCREEN -->
       <section id="viewFinished" class="view-screen hidden">

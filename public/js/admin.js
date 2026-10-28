@@ -341,22 +341,138 @@
     }, 3200);
   }
 
+  // One DOM card per team, kept between updates. A card is only re-rendered when its own
+  // data changed, and only moved when the ranking order changed — so a low-end host laptop
+  // isn't rebuilding 20+ cards every second, and buttons are never swapped out mid-click.
+  const teamCardCache = new Map(); // teamId -> { el, sig }
+
+  function buildTeamCardHtml(team, rank, isRound2, isRound3, isScoreNew) {
+    const members = team.membersDetail || [];
+    const allSlotsHtml = [];
+
+    members.forEach((mem, idx) => {
+      let statusClass = 'status-locked';
+      let statusIcon = '🔒';
+      let label = 'Locked';
+
+      if (mem.turnStatus === 'SOLVED') {
+        statusClass = 'status-solved';
+        statusIcon = '✓';
+        label = mem.fragment ? `[${escapeHtml(mem.fragment)}]` : 'Solved';
+      } else if (mem.turnStatus === 'ACTIVE') {
+        statusClass = 'status-active';
+        statusIcon = '<span class="active-pulse"></span>';
+        label = 'SOLVING NOW';
+      } else if (mem.turnStatus === 'LOBBY') {
+        statusClass = 'status-lobby';
+        statusIcon = mem.isOnline ? '🟢' : '⚪';
+        label = mem.isLeader ? 'Leader' : 'Ready';
+      } else {
+        label = mem.isLeader ? 'Leader' : 'Waiting';
+      }
+
+      const leaderBadge = mem.isLeader ? '<span class="leader-crown-tag" title="Squad Leader">👑</span>' : '';
+      allSlotsHtml.push(`
+        <div class="member-unlock-pill ${statusClass}" title="${escapeHtml(mem.name)} (${mem.turnStatus})">
+          <span class="member-order-tag">OD ${idx + 1}</span>
+          <span>${statusIcon}</span>
+          <span class="member-name-tag">${escapeHtml(mem.name)}</span>
+          ${leaderBadge}
+          <span class="member-stage-label">${label}</span>
+        </div>
+      `);
+    });
+
+    // Display vacant slots up to 4 if team is still forming
+    for (let emptyIdx = members.length; emptyIdx < 4; emptyIdx++) {
+      allSlotsHtml.push(`
+        <div class="member-unlock-pill status-vacant" title="Slot ${emptyIdx + 1}: Waiting for student">
+          <span class="member-order-tag">OD ${emptyIdx + 1}</span>
+          <span style="opacity: 0.5;">⚪</span>
+          <span class="member-name-tag" style="opacity: 0.6; font-style: italic;">[Open Slot]</span>
+        </div>
+      `);
+    }
+
+    let roundBadge = '';
+    if (isRound2) {
+      if (team.isRoundCompleted || (team.nodesBreached !== undefined && team.nodesBreached >= 10)) {
+        roundBadge = `<span style="background:rgba(16,185,129,0.18); color:#34d399; border:1px solid #10b981; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;">✓ 10/10 NODES BREACHED</span>`;
+      } else {
+        const curN = team.activeNodeNumber || ((team.nodesBreached || 0) + 1);
+        roundBadge = `<span style="background:rgba(0,245,255,0.15); color:#00f5ff; border:1px solid rgba(0,245,255,0.35); font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;">⚡ NODE ${curN}/10 (${team.nodesBreached || 0} Breached)</span>`;
+      }
+    } else if (isRound3) {
+      const r3Style = 'background:#fef3c7; color:#92400e; border:1px solid #f59e0b; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;';
+      if (team.isEliminated) {
+        roundBadge = `<span style="${r3Style} opacity:0.6;">SPECTATOR</span>`;
+      } else if (team.isRoundCompleted) {
+        roundBadge = `<span style="${r3Style}">⚖️ CASE SOLVED</span>`;
+      } else {
+        const total = team.totalNodes || 6;
+        const step = team.activeNodeNumber || 1;
+        roundBadge = `<span style="${r3Style}">🕵️ ${step >= total ? 'WARRANT' : `EXHIBIT ${step}/${total - 1}`}</span>`;
+      }
+    }
+
+    return `
+      <!-- Left: Team Identity & Seal -->
+      <div class="team-meta-col">
+        <div class="team-rank-num">#${rank}</div>
+        <div class="team-name-block">
+          <span class="team-name-title">${team.benchNumber ? `<span class="bench-tag" style="background:#0f223d; color:#fbbf24; font-size:0.75rem; padding:2px 7px; border-radius:4px; font-weight:800; margin-right:6px;">${escapeHtml(team.benchNumber)}</span>` : ''}${escapeHtml(team.name)}</span>
+          <div class="team-seal-tag">
+            <span class="seal-badge">${escapeHtml(team.teamId)}</span>
+            <span class="gender-badge ${escapeHtml(team.gender)}">${escapeHtml(team.gender)}</span>
+            <span style="color: #64748b; font-weight: 600;">${members.length} Players</span>
+            ${roundBadge}
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Live Member Turn Sequence & Real-Time Unlocks -->
+      <div class="team-members-pipeline">
+        ${allSlotsHtml.join('<span class="pipeline-arrow">➔</span>')}
+      </div>
+
+      <!-- Right: Dynamic Cumulative Score & Quick Action Buttons -->
+      <div class="team-score-actions-col">
+        <div class="team-score-display-box">
+          <div class="team-score-num ${isScoreNew ? 'score-updated' : ''}">
+            ${team.totalScore.toLocaleString()}<span class="score-pts-lbl">TOTAL PTS</span>
+          </div>
+          <div class="round-scores-breakdown">
+            <span class="breakdown-pill r1-pill" title="Stage 1 Marks">R1: ${(team.roundScores?.[1] || 0).toLocaleString()}</span>
+            <span class="breakdown-pill r2-pill" title="Stage 2 Marks">R2: ${(team.roundScores?.[2] || 0).toLocaleString()}</span>
+            <span class="breakdown-pill r3-pill" title="Stage 3 Marks">R3: ${(team.roundScores?.[3] || 0).toLocaleString()}</span>
+          </div>
+        </div>
+        <div class="team-action-buttons">
+          <button class="action-icon-btn btn-advance" data-team="${escapeHtml(team.teamId)}" data-name="${escapeHtml(team.name)}" title="Unlock / force-advance next member's turn">
+            ${isRound2 ? '⚡ Skip Node' : (isRound3 ? '⚖️ Skip Evidence' : '⚡ Skip')}
+          </button>
+          <button class="action-icon-btn btn-override" data-team="${escapeHtml(team.teamId)}" data-name="${escapeHtml(team.name)}" title="Adjust score">
+            ✏️
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   function renderTeamsPipeline(teams) {
     const filter = (squadFilterInput.value || '').toLowerCase().trim();
 
     // Sort by Total Score descending (Live Rank Order)
-    const sortedTeams = [...teams].sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-      return 0;
-    });
+    const sortedTeams = [...teams].sort((a, b) => b.totalScore - a.totalScore);
 
-    const filtered = sortedTeams.filter(t => 
-      t.name.toLowerCase().includes(filter) || 
+    const filtered = sortedTeams.filter(t =>
+      t.name.toLowerCase().includes(filter) ||
       t.teamId.toLowerCase().includes(filter) ||
       (t.membersDetail || []).some(m => m.name.toLowerCase().includes(filter))
     );
 
     if (filtered.length === 0) {
+      teamCardCache.clear();
       teamsCardList.innerHTML = `
         <div class="loading-state">
           <span>No squads registered or matching filter.</span>
@@ -364,163 +480,80 @@
       `;
       return;
     }
+    const emptyState = teamsCardList.querySelector('.loading-state');
+    if (emptyState) emptyState.remove();
 
-    teamsCardList.innerHTML = '';
+    const isRound2 = adminState?.status === 'ROUND_2' || adminState?.currentRound === 2;
+    const isRound3 = adminState?.status === 'ROUND_3' || adminState?.currentRound === 3;
+    const visible = new Set();
 
     filtered.forEach((team, index) => {
       const rank = index + 1;
-      const isFirst = rank === 1;
-      const card = document.createElement('div');
-      card.className = `team-card-row ${isFirst ? 'rank-first' : ''}`;
+      visible.add(team.teamId);
 
-      // Check if score changed to trigger visual pulse
       const prevScore = previousScores.get(team.teamId);
       const isScoreNew = prevScore !== undefined && team.totalScore > prevScore;
       previousScores.set(team.teamId, team.totalScore);
 
-      // Members Turn Order Pipeline ("the team members od / live unlocks")
-      const members = team.membersDetail || [];
-      const allSlotsHtml = [];
+      const sig = JSON.stringify([
+        rank, isRound2, isRound3, team.name, team.benchNumber, team.gender, team.totalScore, team.roundScores,
+        team.isRoundCompleted, team.isEliminated, team.nodesBreached, team.activeNodeNumber, team.totalNodes,
+        (team.membersDetail || []).map(m => [m.name, m.turnStatus, m.isOnline, m.isLeader, m.fragment])
+      ]);
 
-      members.forEach((mem, idx) => {
-        let statusClass = 'status-locked';
-        let statusIcon = '🔒';
-        let label = 'Locked';
-
-        if (mem.turnStatus === 'SOLVED') {
-          statusClass = 'status-solved';
-          statusIcon = '✓';
-          label = mem.fragment ? `[${escapeHtml(mem.fragment)}]` : 'Solved';
-        } else if (mem.turnStatus === 'ACTIVE') {
-          statusClass = 'status-active';
-          statusIcon = '<span class="active-pulse"></span>';
-          label = 'SOLVING NOW';
-        } else if (mem.turnStatus === 'LOBBY') {
-          statusClass = 'status-lobby';
-          statusIcon = mem.isOnline ? '🟢' : '⚪';
-          label = mem.isLeader ? 'Leader' : 'Ready';
-        } else {
-          statusClass = 'status-locked';
-          statusIcon = '🔒';
-          label = mem.isLeader ? 'Leader' : 'Waiting';
-        }
-
-        const leaderBadge = mem.isLeader ? '<span class="leader-crown-tag" title="Squad Leader">👑</span>' : '';
-        const orderNumber = `OD ${idx + 1}`;
-
-        allSlotsHtml.push(`
-          <div class="member-unlock-pill ${statusClass}" title="${escapeHtml(mem.name)} (${mem.turnStatus})">
-            <span class="member-order-tag">${orderNumber}</span>
-            <span>${statusIcon}</span>
-            <span class="member-name-tag">${escapeHtml(mem.name)}</span>
-            ${leaderBadge}
-            <span class="member-stage-label">${label}</span>
-          </div>
-        `);
-      });
-
-      // Display vacant slots up to 4 if team is still forming
-      for (let emptyIdx = members.length; emptyIdx < 4; emptyIdx++) {
-        allSlotsHtml.push(`
-          <div class="member-unlock-pill status-vacant" title="Slot ${emptyIdx + 1}: Waiting for student">
-            <span class="member-order-tag">OD ${emptyIdx + 1}</span>
-            <span style="opacity: 0.5;">⚪</span>
-            <span class="member-name-tag" style="opacity: 0.6; font-style: italic;">[Open Slot]</span>
-          </div>
-        `);
+      let entry = teamCardCache.get(team.teamId);
+      if (!entry) {
+        entry = { el: document.createElement('div'), sig: null };
+        teamCardCache.set(team.teamId, entry);
+      }
+      if (entry.sig !== sig) {
+        entry.el.className = `team-card-row ${rank === 1 ? 'rank-first' : ''}`;
+        entry.el.innerHTML = buildTeamCardHtml(team, rank, isRound2, isRound3, isScoreNew);
+        entry.sig = sig;
       }
 
-      const isRound2 = adminState?.status === 'ROUND_2' || adminState?.currentRound === 2;
-      const isRound3 = adminState?.status === 'ROUND_3' || adminState?.currentRound === 3;
-      let roundBadge = '';
-      if (isRound2) {
-        if (team.isRoundCompleted || (team.nodesBreached !== undefined && team.nodesBreached >= 10)) {
-          roundBadge = `<span style="background:rgba(16,185,129,0.18); color:#34d399; border:1px solid #10b981; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;">✓ 10/10 NODES BREACHED</span>`;
-        } else {
-          const curN = team.activeNodeNumber || ((team.nodesBreached || 0) + 1);
-          roundBadge = `<span style="background:rgba(0,245,255,0.15); color:#00f5ff; border:1px solid rgba(0,245,255,0.35); font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;">⚡ NODE ${curN}/10 (${team.nodesBreached || 0} Breached)</span>`;
-        }
-      } else if (isRound3) {
-        if (team.isRoundCompleted) {
-          roundBadge = `<span style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;">⚖️ CASE SOLVED</span>`;
-        } else {
-          roundBadge = `<span style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:800; font-family:monospace;">🕵️ EVIDENCE ${team.activeNodeNumber || 1}/4</span>`;
-        }
+      // Only touch the DOM order when this card isn't already in the right slot
+      const slot = teamsCardList.children[index];
+      if (slot !== entry.el) teamsCardList.insertBefore(entry.el, slot || null);
+    });
+
+    for (const [teamId, entry] of teamCardCache) {
+      if (!visible.has(teamId)) {
+        entry.el.remove();
+        teamCardCache.delete(teamId);
       }
-
-      const pipelineHtml = allSlotsHtml.join('<span class="pipeline-arrow">➔</span>');
-
-      card.innerHTML = `
-        <!-- Left: Team Identity & Seal -->
-        <div class="team-meta-col">
-          <div class="team-rank-num">#${rank}</div>
-          <div class="team-name-block">
-            <span class="team-name-title">${team.benchNumber ? `<span class="bench-tag" style="background:#0f223d; color:#fbbf24; font-size:0.75rem; padding:2px 7px; border-radius:4px; font-weight:800; margin-right:6px;">${escapeHtml(team.benchNumber)}</span>` : ''}${escapeHtml(team.name)}</span>
-            <div class="team-seal-tag">
-              <span class="seal-badge">${team.teamId}</span>
-              <span class="gender-badge ${team.gender}">${team.gender}</span>
-              <span style="color: #64748b; font-weight: 600;">${members.length} Players</span>
-              ${roundBadge}
-            </div>
-          </div>
-        </div>
-
-        <!-- Center: Live Member Turn Sequence & Real-Time Unlocks -->
-        <div class="team-members-pipeline">
-          ${pipelineHtml}
-        </div>
-
-        <!-- Right: Dynamic Cumulative Score & Quick Action Buttons -->
-        <div class="team-score-actions-col">
-          <div class="team-score-display-box">
-            <div class="team-score-num ${isScoreNew ? 'score-updated' : ''}">
-              ${team.totalScore.toLocaleString()}<span class="score-pts-lbl">TOTAL PTS</span>
-            </div>
-            <div class="round-scores-breakdown">
-              <span class="breakdown-pill r1-pill" title="Stage 1 Marks">R1: ${(team.roundScores?.[1] || 0).toLocaleString()}</span>
-              <span class="breakdown-pill r2-pill" title="Stage 2 Marks">R2: ${(team.roundScores?.[2] || 0).toLocaleString()}</span>
-              <span class="breakdown-pill r3-pill" title="Stage 3 Marks">R3: ${(team.roundScores?.[3] || 0).toLocaleString()}</span>
-            </div>
-          </div>
-          <div class="team-action-buttons">
-            <button class="action-icon-btn btn-advance" data-team="${team.teamId}" data-name="${escapeHtml(team.name)}" title="Unlock / force-advance next member's turn">
-              ${isRound2 ? '⚡ Skip Node' : (isRound3 ? '⚖️ Skip Evidence' : '⚡ Skip')}
-            </button>
-            <button class="action-icon-btn btn-override" data-team="${team.teamId}" data-name="${escapeHtml(team.name)}" title="Adjust score">
-              ✏️
-            </button>
-          </div>
-        </div>
-      `;
-
-      teamsCardList.appendChild(card);
-    });
-
-    // Attach row action listeners
-    document.querySelectorAll('.btn-advance').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const teamId = btn.getAttribute('data-team');
-        const teamName = btn.getAttribute('data-name');
-        const isR2 = adminState?.status === 'ROUND_2' || adminState?.currentRound === 2;
-        sendAdminAction('force_advance', { teamId, reason: 'Proctor bypass' });
-        showToast(isR2 ? `⚡ Node unlocked for ${teamName} [${teamId}]` : `⚡ Turn unlocked for ${teamName} [${teamId}]`, 'warning');
-      });
-    });
-
-    document.querySelectorAll('.btn-override').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const teamId = btn.getAttribute('data-team');
-        const teamName = btn.getAttribute('data-name');
-        selectedSquadForOverride = teamId;
-        scoreModalSquadName.textContent = `Team: ${teamName} [${teamId}]`;
-        scoreDeltaInput.value = '';
-        scoreReasonInput.value = '';
-        scoreOverrideModal.classList.remove('hidden');
-      });
-    });
+    }
   }
+
+  // One delegated listener for every card's buttons (cards re-render, the list does not)
+  teamsCardList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-advance, .btn-override');
+    if (!btn) return;
+    e.stopPropagation();
+    const teamId = btn.getAttribute('data-team');
+    const teamName = btn.getAttribute('data-name');
+    if (btn.classList.contains('btn-advance')) {
+      const isR2 = adminState?.status === 'ROUND_2' || adminState?.currentRound === 2;
+      sendAdminAction('force_advance', { teamId, reason: 'Proctor bypass' });
+      showToast(isR2 ? `⚡ Node unlocked for ${teamName} [${teamId}]` : `⚡ Turn unlocked for ${teamName} [${teamId}]`, 'warning');
+    } else {
+      selectedSquadForOverride = teamId;
+      scoreModalSquadName.textContent = `Team: ${teamName} [${teamId}]`;
+      scoreDeltaInput.value = '';
+      scoreReasonInput.value = '';
+      scoreOverrideModal.classList.remove('hidden');
+    }
+  });
+
+  // The server only pushes on changes, so tick the round clock locally between pushes
+  setInterval(() => {
+    const rs = adminState?.roundState;
+    if (rs && rs.active && !rs.isPaused && metricTimer) {
+      metricTimer.textContent = formatTime(Math.max(0, rs.endTime - Date.now()));
+    } else if (adminState?.status === 'LOBBY' && adminState.lobbyTimer?.active && metricTimer) {
+      metricTimer.textContent = `${formatTime(Math.max(0, adminState.lobbyTimer.endTime - Date.now()))} (LOBBY)`;
+    }
+  }, 1000);
 
   /* -------------------------------------------------------------
    * ACTIONS & BUTTON LISTENERS

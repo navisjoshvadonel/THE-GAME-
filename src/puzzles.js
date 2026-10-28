@@ -4,6 +4,8 @@
  * Supports up to 20+ Teams with 100% Unique Sets for every team!
  */
 
+const { ROUND3_CASE } = require('./round3Case');
+
 const ROUND_CONFIGS = {
   "1": {
     "roundNumber": 1,
@@ -26,11 +28,11 @@ const ROUND_CONFIGS = {
   "3": {
     "roundNumber": 3,
     "title": "Sher\"unlocking\" Homies: The Baker Street Mystery",
-    "description": "A 10-minute Victorian cold case mystery. All finalist squads investigate the same crime scene. Analyze forensic autopsy, decrypt the fireplace cipher, expose the forged alibi, and file the Scotland Yard Grand Indictment!",
-    "durationSec": 600,
+    "description": "A 15-minute Victorian murder case. All finalist squads investigate the same crime: five evidence files, witness statements and alibis, then the leader files the arrest warrant.",
+    "durationSec": 900,
     "type": "exact_code",
     "requiresNLP": false,
-    "maxScore": 1000
+    "maxScore": 1500
   }
 };
 
@@ -3759,148 +3761,7 @@ const PUZZLE_SETS = {
     ]
   }
 ],
-  3: [
-  {
-    "setId": "r3_sherlock_blackwood",
-    "theme": "Sher\"unlocking\" Homies: The Kensington Crescent Mystery",
-    "dossierTitle": "The Mysterious Death of Lord Alistair Blackwood",
-    "incidentDate": "November 14, 1891 • 11:22 PM",
-    "location": "221B Kensington Crescent, London",
-    "caseSummary": "Lord Alistair Blackwood, distinguished antiquarian, was discovered poisoned at his mahogany desk at 11:22 PM. A crystal wine goblet emitting an acrid aroma of bitter almonds lay shattered beside him. Heavy rain drenched London that night; fresh mud marks on the French balcony ledge indicate the killer entered from the garden trellis. In his coat pocket, the velvet box for the 120-carat 'Eye of Bengal' sapphire was found empty. Scotland Yard has detained 5 prime suspects at the scene.",
-    "suspects": [
-      {
-        "id": "suspect_arun",
-        "name": "Arun Kumar",
-        "occupation": "Ex-Army Marksman & Heavy Gambler",
-        "bootsGait": "Size 10 boots; pronounced heavy limp on right leg",
-        "motive": "Severe gambling debts totaling £8,000 to East End bookmakers",
-        "weaponPossession": "Concealed cane air-rifle and hunting dagger",
-        "alibi": "Claims he was at the Anglo-Indian Club drinking gin and playing billiards until 1:00 AM."
-      },
-      {
-        "id": "suspect_rahul",
-        "name": "Dr. Rahul Verma",
-        "occupation": "Disgruntled Physician & Former Protégé",
-        "bootsGait": "Size 8 oxfords; light, brisk surgeon's stride",
-        "motive": "Disinherited from the Blackwood antiquities collection",
-        "weaponPossession": "Medical bag containing strychnine, chloroform, and morphine",
-        "alibi": "Claims he was administering cholera vaccinations at St. Bartholomew's Charity Hospital from 10:00 PM until midnight."
-      },
-      {
-        "id": "suspect_priya",
-        "name": "Priya Nair",
-        "occupation": "The Estranged Wealthy Relative",
-        "bootsGait": "Size 5 silk evening slippers; frail stature (cannot climb)",
-        "motive": "Inherits the £50,000 estate if Blackwood dies prior to their contested estate settlement",
-        "weaponPossession": "Crystal atomizer perfume bottle smelling of lavender and ether",
-        "alibi": "Claims she was attending the grand opera performance of Faust at Covent Garden until 11:30 PM with Countess Morcar."
-      },
-      {
-        "id": "suspect_joshva",
-        "name": "Joshva Peter",
-        "occupation": "Theatrical Infiltrator & Antiquities Collector",
-        "bootsGait": "Size 7 equestrian riding boots; nimble acrobat",
-        "motive": "Contracted by an international collector to retrieve the 'Eye of Bengal' sapphire",
-        "weaponPossession": "Diamond glass-cutter, lockpicks, and smoke pellets",
-        "alibi": "Claims he was dining publicly at the Savoy Hotel dining salon until 11:00 PM, then retired to his suite."
-      },
-      {
-        "id": "suspect_sharma",
-        "name": "Rohan Sharma",
-        "occupation": "The Head Valet & Syndicate Smuggler",
-        "bootsGait": "Size 10 leather boots; completely symmetrical, athletic gait (no limp)",
-        "motive": "Blackwood discovered Sharma's secret forged ledger and threatened to expose him to Scotland Yard at dawn",
-        "weaponPossession": "Empty glass apothecary phial bearing white crystalline residue; heavy brass pocket key",
-        "alibi": "Claims he was down in the subterranean wine cellar conducting bottle inventory from 11:10 PM until 11:35 PM."
-      }
-    ],
-    "steps": [
-      {
-        "id": "r3_step_1",
-        "title": "Forensic Autopsy & Balcony Footprints",
-        "category": "🔬 Forensic Science",
-        "investigatorRole": "Operative 1 • Forensic Specialist",
-        "prompt": "The police surgeon found traces of a fast-acting crystalline salt on the shattered crystal goblet rim, emitting a distinct pungent aroma of bitter almonds and triggering instantaneous cellular hypoxia. Furthermore, muddy balcony tracks measure 29 cm (Men's Size 10 boots) with completely symmetrical stride depth. Deduce the 7-letter lethal compound.",
-        "clue": "Forensic Toxicology: A deadly salt of prussic acid, widely utilized in Victorian electroplating and metallurgy.",
-        "hint": "Examine the chemical hallmarks: 7 letters, bitter-almond odor, highly toxic crystalline salt often formulated with potassium (KCN).",
-        "image": "/images/sherlock_crime_scene.jpg",
-        "expectedFragment": "CYANIDE",
-        "acceptedAnswers": [
-          "cyanide",
-          "CYANIDE",
-          "potassium cyanide",
-          "POTASSIUM CYANIDE",
-          "kcn",
-          "KCN",
-          "prussic acid"
-        ]
-      },
-      {
-        "id": "r3_step_2",
-        "title": "The Grate Cryptogram (Moriarty's Intercept)",
-        "category": "📜 Cryptography",
-        "investigatorRole": "Operative 2 • Cryptanalyst",
-        "prompt": "A half-charred telegram strip retrieved from the study fireplace reveals an intercepted cipher: \"EODFNPDLO\". The cipher system shifts letters forward by 3 alphabet positions (Caesar shift). Decrypt the 9-letter motive that drove the killer to murder Lord Blackwood.",
-        "clue": "Caesar Cryptographic Key: Revert each letter 3 positions backward in the alphabet (D → A, E → B, F → C ...). What motive emerges?",
-        "hint": "The decrypted term signifies the illegal extortion of money or silence through threats of exposure.",
-        "image": "/images/sherlock_burnt_cipher.jpg",
-        "expectedFragment": "BLACKMAIL",
-        "acceptedAnswers": [
-          "blackmail",
-          "BLACKMAIL",
-          "extortion",
-          "EXTORTION"
-        ]
-      },
-      {
-        "id": "r3_step_3",
-        "title": "The Shattered Alibi (Knights & Knaves)",
-        "category": "⚖️ Deductive Logic",
-        "investigatorRole": "Operative 3 • Interrogation Detective",
-        "prompt": "Cross-examine the 5 suspect alibis against Scotland Yard's evidence: Dr. Rahul's hospital log is verified until 12:30 AM; Arun Kumar was snoring at the club; Priya's opera ended at 10:45 PM but size 5 slippers rule her out; Joshva was at the Savoy. Meanwhile, one suspect claims they were locked inside the subterranean cellar from 11:10 to 11:35 PM—yet the Butler swears the ONLY cellar key was locked inside the victim's study desk since 9:00 PM! Which suspect is caught in an impossible lie? Enter their surname.",
-        "clue": "Interrogation Logic: A suspect claiming to be locked inside an underground location without the physical key found on the dead man's desk cannot be telling the truth.",
-        "hint": "Compare the suspect alibis carefully: which individual claimed to be inside a locked room that required the study desk key during the murder window?",
-        "expectedFragment": "SHARMA",
-        "acceptedAnswers": [
-          "sharma",
-          "SHARMA",
-          "rohan sharma",
-          "ROHAN SHARMA",
-          "vance",
-          "VANCE",
-          "silas vance"
-        ]
-      }
-    ],
-    "leaderTask": {
-      "title": "Scotland Yard Official Indictment Warrant",
-      "instructions": "Chief Inspector (Squad Leader): Review the gathered evidence proofs. File the official indictment before the magistrate in the standard notation: [CULPRIT]:[WEAPON]:[MOTIVE] (e.g. SURNAME:WEAPON:MOTIVE).",
-      "image": "/images/sherlock_arrest_warrant.jpg",
-      "expectedMasterCode": "SHARMA:CYANIDE:BLACKMAIL",
-      "acceptedWarrants": [
-        "SHARMA:CYANIDE:BLACKMAIL",
-        "ROHAN SHARMA:CYANIDE:BLACKMAIL",
-        "SHARMA-CYANIDE-BLACKMAIL",
-        "ROHAN SHARMA-CYANIDE-BLACKMAIL",
-        "SHARMA : CYANIDE : BLACKMAIL",
-        "ROHAN SHARMA : CYANIDE : BLACKMAIL",
-        "SHARMA, CYANIDE, BLACKMAIL",
-        "SHARMA CYANIDE BLACKMAIL",
-        "VANCE:CYANIDE:BLACKMAIL",
-        "SILAS VANCE:CYANIDE:BLACKMAIL",
-        "VANCE-CYANIDE-BLACKMAIL",
-        "SILAS VANCE-CYANIDE-BLACKMAIL",
-        "VANCE : CYANIDE : BLACKMAIL",
-        "SILAS VANCE : CYANIDE : BLACKMAIL",
-        "VANCE, CYANIDE, BLACKMAIL",
-        "VANCE CYANIDE BLACKMAIL",
-        "JOSHVA:CYANIDE:BLACKMAIL"
-      ],
-      "hint": "Format: [CULPRIT_SURNAME]:[WEAPON]:[MOTIVE] (Assemble the 3 forensic proofs unlocked by your detectives)",
-      "errorMessage": "Warrant Rejected by Magistrate! Double-check your Culprit Surname, Murder Weapon, and Motive against your squad's unlocked proof badges."
-    }
-  }
-]
+  3: [ROUND3_CASE]
 };
 
 /**
@@ -3961,6 +3822,28 @@ function checkLeaderExactCode(roundNumber, setId, userCode) {
   if (!puzzleSet || !puzzleSet.leaderTask) {
     return { success: false, message: 'Leader task not found' };
   }
+  // Charge-by-charge warrant (Round 3): tell the squad how many charges hold, never which ones
+  const task = puzzleSet.leaderTask;
+  if (Array.isArray(task.culprit) && Array.isArray(task.weapon) && Array.isArray(task.motive)) {
+    const raw = (userCode || '').toString().trim();
+    // Spaces only act as separators when there are exactly three words and no other separator
+    const pieces = /[:|,;\/\-]/.test(raw) ? raw.split(/[:|,;\/\-]+/) : (raw.split(/\s+/).length === 3 ? raw.split(/\s+/) : [raw]);
+    const parts = pieces.map(p => p.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean);
+    if (parts.length !== 3) {
+      return { success: false, message: 'File the warrant as SURNAME : POISON : MOTIVE (three parts separated by colons).' };
+    }
+    const matches = (list, value) => list.some(item => item.toLowerCase().replace(/[^a-z]/g, '') === value);
+    const held = [matches(task.culprit, parts[0]), matches(task.weapon, parts[1]), matches(task.motive, parts[2])].filter(Boolean).length;
+    if (held === 3) {
+      return { success: true, message: 'Warrant granted! The magistrate convicts the killer. Case closed.' };
+    }
+    return {
+      success: false,
+      chargesHeld: held,
+      message: `Warrant rejected by the magistrate: only ${held} of 3 charges hold up. Re-examine the exhibits and alibis.`
+    };
+  }
+
   const rawInput = (userCode || '').toString().trim().toUpperCase();
   const normalizedInput = rawInput.replace(/[\s\-_,]+/g, ':');
 

@@ -344,44 +344,49 @@ async function runAllTests() {
   const goodEv1 = state.submitTurnAnswer(team4p.members[0], 0, 'cyanide');
   assert(goodEv1.success && goodEv1.fragment === 'CYANIDE', 'TC-R3-2b: Accepts "cyanide" and stores CYANIDE proof');
 
-  // TC-R3-3: Evidence 2 (BLACKMAIL)
-  state.players.forEach(p => p.lastSubmitTime = 0);
-  const goodEv2 = state.submitTurnAnswer(team4p.members[1], 1, 'blackmail');
-  assert(goodEv2.success && goodEv2.fragment === 'BLACKMAIL', 'TC-R3-3: Evidence 2 solves with "blackmail"');
+  // TC-R3-3: Evidence 2-5 (time of death, prints, cipher, locked room) — none of them names the killer
+  const r3Answers = [[1, '10:40', '10:40 PM'], [2, 'joshva peter', 'PETER'], [3, 'ledger', 'LEDGER'], [4, "servants' passage", 'PASSAGE']];
+  for (const [idx, answer, fragment] of r3Answers) {
+    state.players.forEach(p => p.lastSubmitTime = 0);
+    const res = state.submitTurnAnswer(team4p.leaderSessionToken, idx, answer);
+    assert(res.success && res.fragment === fragment, `TC-R3-3.${idx}: Evidence ${idx + 1} solves with "${answer}"`, res.message);
+  }
 
-  // TC-R3-4: Evidence 3 (SHARMA)
-  state.players.forEach(p => p.lastSubmitTime = 0);
-  const goodEv3 = state.submitTurnAnswer(team4p.members[2], 2, 'sharma');
-  assert(goodEv3.success && (goodEv3.fragment === 'SHARMA' || goodEv3.fragment === 'VANCE'), 'TC-R3-4: Evidence 3 solves with "sharma"');
+  // TC-R3-4: 4-player squads rotate evidence through all members before the leader
+  const r3Members = team4p.members.map(tok => state.players.get(tok));
+  const evidence4 = state.getTurnPlayer(r3Members, 3, 3);
+  const warrantTurn = state.getTurnPlayer(r3Members, 5, 3);
+  assert(evidence4.badge === 'LEADER' && warrantTurn.badge === 'BOSS', 'TC-R3-4: Evidence 4 goes to the leader in rotation; step 6 is the warrant');
 
-  // TC-R3-5: Leader Grand Indictment Warrant Format Checks
+  // TC-R3-5: Leader Arrest Warrant Format Checks (the warrant is step index 5)
   const leaderP4 = team4p.leaderSessionToken;
 
-  // Test 5a: Wrong culprit
+  // Test 5a: Wrong culprit (the thief is a red herring)
   state.players.forEach(p => p.lastSubmitTime = 0);
-  const badWarrantCulprit = state.submitTurnAnswer(leaderP4, 3, 'MORAN:CYANIDE:BLACKMAIL');
-  assert(!badWarrantCulprit.success, 'TC-R3-5a: Rejects indictment with wrong suspect (MORAN)');
+  const badWarrantCulprit = state.submitTurnAnswer(leaderP4, 5, 'PETER:CYANIDE:LEDGER');
+  assert(!badWarrantCulprit.success && /2 of 3/.test(badWarrantCulprit.message), 'TC-R3-5a: Rejects the thief and reports 2 of 3 charges');
 
   // Test 5b: Wrong weapon
   state.players.forEach(p => p.lastSubmitTime = 0);
-  const badWarrantWeapon = state.submitTurnAnswer(leaderP4, 3, 'SHARMA:STRYCHNINE:BLACKMAIL');
+  const badWarrantWeapon = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:STRYCHNINE:LEDGER');
   assert(!badWarrantWeapon.success, 'TC-R3-5b: Rejects indictment with wrong weapon (STRYCHNINE)');
 
   // Test 5c: Wrong motive
   state.players.forEach(p => p.lastSubmitTime = 0);
-  const badWarrantMotive = state.submitTurnAnswer(leaderP4, 3, 'SHARMA:CYANIDE:THEFT');
+  const badWarrantMotive = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:CYANIDE:THEFT');
   assert(!badWarrantMotive.success, 'TC-R3-5c: Rejects indictment with wrong motive (THEFT)');
 
-  // Test 5d: Flexible separators accepted (both SHARMA and VANCE supported)
-  assert(checkLeaderExactCode(3, 'r3_sherlock_blackwood', 'SHARMA:CYANIDE:BLACKMAIL').success || checkLeaderExactCode(3, 'r3_baker_street_01', 'SHARMA:CYANIDE:BLACKMAIL').success, 'TC-R3-5d: Accepts colon format');
-  assert(checkLeaderExactCode(3, 'r3_sherlock_blackwood', 'ROHAN SHARMA:CYANIDE:BLACKMAIL').success || checkLeaderExactCode(3, 'r3_baker_street_01', 'ROHAN SHARMA:CYANIDE:BLACKMAIL').success, 'TC-R3-5e: Accepts full name format');
-  assert(checkLeaderExactCode(3, 'r3_sherlock_blackwood', 'sharma : cyanide : blackmail').success || checkLeaderExactCode(3, 'r3_baker_street_01', 'sharma : cyanide : blackmail').success, 'TC-R3-5f: Accepts spaced colons and lowercase');
-  assert(checkLeaderExactCode(3, 'r3_sherlock_blackwood', 'SHARMA-CYANIDE-BLACKMAIL').success || checkLeaderExactCode(3, 'r3_baker_street_01', 'SHARMA-CYANIDE-BLACKMAIL').success, 'TC-R3-5g: Accepts dash format');
-  assert(checkLeaderExactCode(3, 'r3_sherlock_blackwood', 'SHARMA CYANIDE BLACKMAIL').success || checkLeaderExactCode(3, 'r3_baker_street_01', 'SHARMA CYANIDE BLACKMAIL').success, 'TC-R3-5h: Accepts space separated format');
+  // Test 5d-h: Flexible formats accepted
+  const r3SetId = PUZZLE_SETS[3][0].setId;
+  assert(checkLeaderExactCode(3, r3SetId, 'SHARMA:CYANIDE:LEDGER').success, 'TC-R3-5d: Accepts colon format');
+  assert(checkLeaderExactCode(3, r3SetId, 'ROHAN SHARMA:POTASSIUM CYANIDE:FORGERY').success, 'TC-R3-5e: Accepts full name and motive synonym');
+  assert(checkLeaderExactCode(3, r3SetId, 'sharma : cyanide : ledger').success, 'TC-R3-5f: Accepts spaced colons and lowercase');
+  assert(checkLeaderExactCode(3, r3SetId, 'SHARMA-CYANIDE-LEDGER').success, 'TC-R3-5g: Accepts dash format');
+  assert(checkLeaderExactCode(3, r3SetId, 'SHARMA CYANIDE LEDGER').success, 'TC-R3-5h: Accepts space separated format');
 
   // Conclude warrant for team4p
   state.players.forEach(p => p.lastSubmitTime = 0);
-  const closeCase = state.submitTurnAnswer(leaderP4, 3, 'SHARMA:CYANIDE:BLACKMAIL');
+  const closeCase = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:CYANIDE:LEDGER');
   assert(closeCase.success && closeCase.isRoundCompleted, 'TC-R3-CONVECT: Rohan Sharma convicted and case officially closed!');
 
   // End Round 3

@@ -8,6 +8,8 @@
  * 4. Gamified Flow: Full mechanics tested across 4-player, 3-player, and 2-player squads.
  */
 
+// Keep demo runs away from the live data/snapshot.json
+process.env.SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || require('path').join(require('os').tmpdir(), 'snow-arena-demo-snapshots');
 const GameStateManager = require('./src/state');
 const { PUZZLE_SETS, getPuzzleSetForTeam } = require('./src/puzzles');
 
@@ -218,7 +220,7 @@ async function runFullTournament() {
   // ==============================================================
   printSection('STAGE 3: LAUNCHING ROUND 3 — SHER"UNLOCKING" HOMIES: THE BAKER STREET MYSTERY');
 
-  const startR3 = state.startRound(3, 600);
+  const startR3 = state.startRound(3);
   console.log(`Round 3 Started! Active status: ${state.status}`);
 
   // All squads play the common Victorian mystery dossier
@@ -231,49 +233,26 @@ async function runFullTournament() {
     console.log(`\n▶ Playing Round 3 for [${team.benchNumber}] ${team.name}...`);
     const memberDetails = team.members.map(tok => state.players.get(tok));
 
-    // Step 1: Autopsy & Mud prints -> CYANIDE
-    const turn1 = state.getTurnPlayer(memberDetails, 0, 3);
-    state.players.forEach(p => p.lastSubmitTime = 0);
-    const r3Step1 = state.submitTurnAnswer({
-      sessionToken: turn1.scholar.sessionToken,
-      turnIndex: 0,
-      answer: 'CYANIDE'
-    });
-    if (!r3Step1.success) throw new Error(`R3 Step 1 failed: ${r3Step1.message}`);
-    console.log(`  • Evidence 1 (Autopsy & Toxicology): Verified by ${turn1.scholar.name} -> Deduction: "CYANIDE" (+${r3Step1.pointsAwarded} PTS)`);
+    // Exhibits A-E rotate through the squad; none of the answers names the killer
+    for (let stepIdx = 0; stepIdx < r3PuzzleSet.steps.length; stepIdx++) {
+      const step = r3PuzzleSet.steps[stepIdx];
+      const turn = state.getTurnPlayer(memberDetails, stepIdx, 3);
+      state.players.forEach(p => p.lastSubmitTime = 0);
+      const res = state.submitTurnAnswer({ sessionToken: turn.scholar.sessionToken, turnIndex: stepIdx, answer: step.acceptedAnswers[0] });
+      if (!res.success) throw new Error(`R3 ${step.title} failed: ${res.message}`);
+      console.log(`  • ${step.title}: solved by ${turn.scholar.name} -> "${res.fragment}" (+${res.pointsAwarded} PTS)`);
+    }
 
-    // Step 2: Burnt Cipher in Fireplace -> BLACKMAIL
-    const turn2 = state.getTurnPlayer(memberDetails, 1, 3);
-    state.players.forEach(p => p.lastSubmitTime = 0);
-    const r3Step2 = state.submitTurnAnswer({
-      sessionToken: turn2.scholar.sessionToken,
-      turnIndex: 1,
-      answer: 'BLACKMAIL'
-    });
-    if (!r3Step2.success) throw new Error(`R3 Step 2 failed: ${r3Step2.message}`);
-    console.log(`  • Evidence 2 (Burnt Grate Cipher): Verified by ${turn2.scholar.name} -> Deduction: "BLACKMAIL" (+${r3Step2.pointsAwarded} PTS)`);
-
-    // Step 3: Alibi & Master Key Contradiction -> VANCE
-    const turn3 = state.getTurnPlayer(memberDetails, 2, 3);
-    state.players.forEach(p => p.lastSubmitTime = 0);
-    const r3Step3 = state.submitTurnAnswer({
-      sessionToken: turn3.scholar.sessionToken,
-      turnIndex: 2,
-      answer: 'SHARMA'
-    });
-    if (!r3Step3.success) throw new Error(`R3 Step 3 failed: ${r3Step3.message}`);
-    console.log(`  • Evidence 3 (Cellar Key Alibi Inconsistency): Verified by ${turn3.scholar.name} -> Deduction: "SHARMA" (+${r3Step3.pointsAwarded} PTS)`);
-
-    // Step 4: Leader Grand Indictment Warrant -> SHARMA:CYANIDE:BLACKMAIL
+    // Leader files the arrest warrant by combining the findings with the alibis
     const leaderPlayer = state.players.get(team.leaderSessionToken);
     state.players.forEach(p => p.lastSubmitTime = 0);
     const r3Boss = state.submitTurnAnswer({
       sessionToken: leaderPlayer.sessionToken,
-      turnIndex: 3,
-      answer: 'SHARMA:CYANIDE:BLACKMAIL'
+      turnIndex: r3PuzzleSet.steps.length,
+      answer: 'SHARMA:CYANIDE:LEDGER'
     });
-    if (!r3Boss.success) throw new Error(`R3 Boss failed: ${r3Boss.message}`);
-    console.log(`  • ⚖️ Scotland Yard Official Warrant: Issued by Chief Inspector ${leaderPlayer.name} -> "SHARMA:CYANIDE:BLACKMAIL" (+${r3Boss.pointsAwarded} PTS)`);
+    if (!r3Boss.success) throw new Error(`R3 Warrant failed: ${r3Boss.message}`);
+    console.log(`  • ⚖️ Arrest Warrant: filed by ${leaderPlayer.name} -> "SHARMA:CYANIDE:LEDGER" (+${r3Boss.pointsAwarded} PTS)`);
     console.log(`  ✓ Case Solved! Rohan Sharma convicted! Round 3 Score: ${team.roundScores[3]} PTS`);
   }
 
@@ -315,7 +294,7 @@ async function runFullTournament() {
   printSection('✅ FULL TOURNAMENT SIMULATION COMPLETED WITH 100% SUCCESS!');
 }
 
-runFullTournament().catch(err => {
+runFullTournament().then(() => process.exit(0)).catch(err => {
   console.error('Tournament Simulation Failed:', err);
   process.exit(1);
 });

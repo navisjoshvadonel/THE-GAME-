@@ -2467,8 +2467,16 @@
 
   let r3TimerInterval = null;
   let lastR3StepKey = null;
+  let r3CaseFileBuilt = false;
 
-  // Live turn clock, speed bounty and skip availability for the active evidence file
+  const EXHIBIT_LETTERS = 'ABCDEFGHIJ';
+
+  function formatClock(totalSec) {
+    return `${String(Math.floor(totalSec / 60)).padStart(2, '0')}:${String(totalSec % 60).padStart(2, '0')}`;
+  }
+
+  // Live turn clock, speed bounty, hint lock and skip availability for the open exhibit.
+  // Only text and class toggles happen here, so the 1-second tick stays cheap on slow laptops.
   function updateR3TurnTimer() {
     const puzzle = currentClientState?.puzzle;
     const timerEl = document.getElementById('r3TurnTimer');
@@ -2487,11 +2495,97 @@
       timerEl.classList.remove('hidden');
       timerEl.classList.toggle('urgent', remaining <= 30);
     }
-    if (remainingEl) remainingEl.textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+    if (remainingEl) remainingEl.textContent = formatClock(remaining);
     if (bountyEl) bountyEl.textContent = remaining > 0
-      ? `⚡ BOUNTY ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`
-      : `⌛ TIME'S UP • ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`;
+      ? `BOUNTY ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`
+      : `TIME'S UP • ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`;
     if (skipBtn) skipBtn.classList.toggle('hidden', elapsedSec < (puzzle.skipUnlockSec || durationSec));
+
+    // The forensic hint is earned: it stays sealed for the first part of the turn
+    const hintBox = document.getElementById('r3EvidenceHintBox');
+    const hintText = document.getElementById('r3EvidenceHint');
+    const hintLockSec = puzzle.hintUnlockSec || 0;
+    if (hintBox && hintText) {
+      const sealed = elapsedSec < hintLockSec;
+      hintBox.classList.toggle('cf-hint-sealed', sealed);
+      hintText.textContent = sealed ? `sealed — opens in ${formatClock(hintLockSec - elapsedSec)}` : (puzzle.hint || '—');
+    }
+  }
+
+  // Suspect index cards and witness statements never change during the round: build them once
+  function buildR3CaseFile(dossier) {
+    if (r3CaseFileBuilt || !dossier) return;
+    r3CaseFileBuilt = true;
+
+    const setText = (id, text) => {
+      const el = document.getElementById(id);
+      if (el && text) el.textContent = text;
+    };
+    setText('r3FileNumber', dossier.fileNumber);
+    setText('r3CaseTitle', dossier.dossierTitle);
+    setText('r3CaseMeta', dossier.incidentDate);
+    setText('r3CaseLocation', dossier.location);
+    setText('r3CaseSummary', dossier.caseSummary);
+
+    const grid = document.getElementById('r3SuspectsGrid');
+    if (grid) {
+      grid.innerHTML = (dossier.suspects || []).map(s => {
+        const status = s.alibiStatus || '';
+        const verified = /^VERIFIED/i.test(status);
+        const stampClass = verified ? 'cf-stamp-green' : (/^UNCONFIRMED/i.test(status) ? 'cf-stamp-red' : '');
+        const stampText = verified ? 'ALIBI VERIFIED' : (/^UNCONFIRMED/i.test(status) ? 'NO ALIBI' : 'PARTLY VERIFIED');
+        return `
+          <article class="cf-suspect${r3EliminatedSuspects.has(s.id) ? ' ruled-out' : ''}" data-suspect="${escapeHtml(s.id)}">
+            <header>
+              <div>
+                <strong class="cf-suspect-name">${escapeHtml(s.name)}</strong>
+                <span class="cf-muted">${escapeHtml(s.occupation)}</span>
+              </div>
+              <button type="button" class="cf-btn cf-btn-ghost cf-rule-out">${r3EliminatedSuspects.has(s.id) ? 'Restore' : 'Rule out'}</button>
+            </header>
+            <dl class="cf-fields cf-fields-tight">
+              <dt>BOOTS</dt><dd>${escapeHtml(s.bootsGait)}</dd>
+              <dt>MOTIVE</dt><dd>${escapeHtml(s.motive)}</dd>
+              <dt>CARRIES</dt><dd>${escapeHtml(s.weaponPossession)}</dd>
+              <dt>ALIBI</dt><dd>"${escapeHtml(s.alibi)}"</dd>
+            </dl>
+            <div class="cf-alibi-check"><span class="cf-stamp ${stampClass}">${stampText}</span> <span class="cf-muted">${escapeHtml(status.replace(/^[A-Z ]+—\s*/, ''))}</span></div>
+          </article>`;
+      }).join('');
+    }
+
+    const statements = document.getElementById('r3Statements');
+    if (statements) {
+      statements.innerHTML = (dossier.witnessStatements || []).map((w, i) => `
+        <div class="cf-statement">
+          <div class="cf-statement-head">STATEMENT ${i + 1} — ${escapeHtml(w.speaker)}</div>
+          <p class="cf-typed">"${escapeHtml(w.text)}"</p>
+        </div>`).join('');
+    }
+  }
+
+  // Case-file tabs (summary / suspects / statements) and suspect rule-outs
+  document.querySelectorAll('.cf-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.cfTab;
+      document.querySelectorAll('.cf-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.cf-file-panel').forEach(p => p.classList.toggle('hidden', p.dataset.cfPanel !== target));
+    });
+  });
+  const r3SuspectsGridEl = document.getElementById('r3SuspectsGrid');
+  if (r3SuspectsGridEl) {
+    r3SuspectsGridEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.cf-rule-out');
+      if (!btn) return;
+      const card = btn.closest('.cf-suspect');
+      const id = card?.dataset.suspect;
+      if (!id) return;
+      if (r3EliminatedSuspects.has(id)) r3EliminatedSuspects.delete(id);
+      else r3EliminatedSuspects.add(id);
+      const ruledOut = r3EliminatedSuspects.has(id);
+      card.classList.toggle('ruled-out', ruledOut);
+      btn.textContent = ruledOut ? 'Restore' : 'Rule out';
+    });
   }
 
   function renderRound3Game(state) {
@@ -2499,30 +2593,34 @@
     const team = state.team;
     const puzzle = state.puzzle;
 
-    // Squads outside the Top 5 watch the finals as spectators (no empty case board or console)
+    const r3GameTeamName = document.getElementById('r3GameTeamName');
+    const r3GameTeamScore = document.getElementById('r3GameTeamScore');
+    if (r3GameTeamName) r3GameTeamName.textContent = team.name || '--';
+    if (r3GameTeamScore) r3GameTeamScore.textContent = (team.totalScore || 0).toLocaleString();
+
+    const boxR3MemberGame = document.getElementById('boxR3MemberGame');
+    const boxR3LeaderGame = document.getElementById('boxR3LeaderGame');
+    const boxR3WaitingTurn = document.getElementById('boxR3WaitingTurn');
+    const boxR3Completed = document.getElementById('boxR3Completed');
+    [boxR3MemberGame, boxR3LeaderGame, boxR3WaitingTurn, boxR3Completed].forEach(el => el && el.classList.add('hidden'));
+
+    // Squads outside the Top 5 watch the finals as spectators (just a notice, no empty case file)
     if (viewRound3Game) viewRound3Game.classList.toggle('r3-spectator', Boolean(team.isEliminated));
     if (team.isEliminated) {
-      const r3GameTeamName = document.getElementById('r3GameTeamName');
-      const r3GameTeamScore = document.getElementById('r3GameTeamScore');
-      if (r3GameTeamName) r3GameTeamName.textContent = team.name || '--';
-      if (r3GameTeamScore) r3GameTeamScore.textContent = (team.totalScore || 0).toLocaleString();
-      ['boxR3MemberGame', 'boxR3LeaderGame', 'boxR3Completed'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-      });
-      const waiting = document.getElementById('boxR3WaitingTurn');
-      if (waiting) {
-        waiting.classList.remove('hidden');
-        const title = waiting.querySelector('.waiting-title');
+      if (boxR3WaitingTurn) {
+        boxR3WaitingTurn.classList.remove('hidden');
+        const title = boxR3WaitingTurn.querySelector('.waiting-title');
         if (title) title.textContent = 'Honorary Spectators';
         const sub = document.getElementById('r3WaitingSub');
-        if (sub) sub.textContent = `The Top 5 squads are battling in the Baker Street finals. ${team.rank ? `Your squad finished the qualifiers at rank #${team.rank} with ${team.totalScore} PTS — ` : ''}watch the Grand Hall projector to cheer them on!`;
+        if (sub) sub.textContent = `The Top 5 squads are investigating the Kensington Crescent Affair. ${team.rank ? `Your squad finished the qualifiers at rank #${team.rank} with ${team.totalScore} PTS — ` : ''}watch the Grand Hall projector to cheer them on!`;
       }
       updateR3TurnTimer();
       return;
     }
 
-    // Fresh evidence file: clear the last answer's feedback and input
+    buildR3CaseFile(puzzle?.caseDossier);
+
+    // Fresh exhibit: clear the last answer's feedback and input
     const stepKey = `${puzzle?.type || 'none'}_${puzzle?.stepNumber || 0}`;
     if (stepKey !== lastR3StepKey) {
       lastR3StepKey = stepKey;
@@ -2540,7 +2638,6 @@
       clearInterval(r3TimerInterval);
       r3TimerInterval = null;
     }
-    updateR3TurnTimer();
 
     // Show detective briefing once upon entering Round 3 (and only while the case is live)
     if (!r3BriefingShown && !team.progress?.isRoundCompleted && state.roundActive) {
@@ -2548,176 +2645,78 @@
       showR3BriefingModal();
     }
 
-    // 1. Top HUD
-    const r3GameTeamName = document.getElementById('r3GameTeamName');
-    const r3GameTeamScore = document.getElementById('r3GameTeamScore');
-    if (r3GameTeamName) r3GameTeamName.textContent = team.name || '--';
-    if (r3GameTeamScore) r3GameTeamScore.textContent = (team.totalScore || 0).toLocaleString();
-
-    // 2. Progress Pipeline Ribbon
-    const r3EvidencePipeline = document.getElementById('r3EvidencePipeline');
-    if (r3EvidencePipeline && team.progress?.turnPipeline) {
-      r3EvidencePipeline.innerHTML = '';
-      team.progress.turnPipeline.forEach((step, idx) => {
-        const pill = document.createElement('div');
-        pill.className = `baker-step-pill ${step.status === 'SOLVED' ? 'step-solved' : (step.status === 'ACTIVE' ? 'step-active' : '')}`;
-        const icon = step.status === 'SOLVED' ? '✓' : (step.status === 'ACTIVE' ? '▶' : '🔒');
-        pill.innerHTML = `<span>${icon}</span> <span>${escapeHtml(step.label)}</span>`;
-        r3EvidencePipeline.appendChild(pill);
-        if (idx < team.progress.turnPipeline.length - 1) {
-          const arrow = document.createElement('span');
-          arrow.className = 'baker-step-arrow';
-          arrow.textContent = '➔';
-          r3EvidencePipeline.appendChild(arrow);
-        }
-      });
+    // Progress tabs: Exhibit A … E, then the warrant
+    const pipelineEl = document.getElementById('r3EvidencePipeline');
+    if (pipelineEl && team.progress?.turnPipeline) {
+      pipelineEl.innerHTML = team.progress.turnPipeline.map((step, idx, all) => {
+        const isWarrant = idx === all.length - 1;
+        const label = isWarrant ? 'Warrant' : `Exhibit ${EXHIBIT_LETTERS[idx]}`;
+        const cls = step.status === 'SOLVED' ? 'done' : (step.status === 'ACTIVE' ? 'active' : '');
+        const mark = step.status === 'SOLVED' ? '✓ ' : '';
+        return `<span class="cf-progress-tab ${cls}" title="${escapeHtml(step.label)} — ${escapeHtml(step.scholarName)}">${mark}${label}</span>`;
+      }).join('');
     }
 
-    // 3. Case Summary & Dossier Header
-    const r3CaseTitle = document.getElementById('r3CaseTitle');
-    const r3CaseMeta = document.getElementById('r3CaseMeta');
-    const r3CaseSummary = document.getElementById('r3CaseSummary');
-    const dossier = puzzle?.caseDossier;
-    if (dossier) {
-      if (r3CaseTitle && dossier.dossierTitle) r3CaseTitle.textContent = dossier.dossierTitle;
-      if (r3CaseMeta && dossier.incidentDate) r3CaseMeta.textContent = `${dossier.incidentDate} • ${dossier.location || '221B Kensington Crescent'}`;
-      if (r3CaseSummary && dossier.caseSummary) r3CaseSummary.textContent = dossier.caseSummary;
-    }
-
-    // 4. Suspects Board
-    const r3SuspectsGrid = document.getElementById('r3SuspectsGrid');
-    if (r3SuspectsGrid && dossier?.suspects && r3SuspectsGrid.children.length === 0) {
-      r3SuspectsGrid.innerHTML = '';
-      dossier.suspects.forEach(s => {
-        const card = document.createElement('div');
-        const isElim = r3EliminatedSuspects.has(s.id);
-        card.className = `suspect-card ${isElim ? 'suspect-eliminated' : ''}`;
-        card.id = `card_${s.id}`;
-        card.innerHTML = `
-          <div class="suspect-card-header">
-            <div>
-              <span class="suspect-name-title">${escapeHtml(s.name)}</span>
-              <span class="suspect-occupation"> • ${escapeHtml(s.occupation)}</span>
-            </div>
-            <button type="button" class="btn-suspect-toggle" data-id="${s.id}">
-              ${isElim ? 'Restore' : 'Rule Out'}
-            </button>
-          </div>
-          <div class="suspect-card-body">
-            <div class="suspect-trait"><span class="trait-label">Boots / Stride:</span> <span>${escapeHtml(s.bootsGait)}</span></div>
-            <div class="suspect-trait"><span class="trait-label">Motive:</span> <span>${escapeHtml(s.motive)}</span></div>
-            <div class="suspect-trait"><span class="trait-label">Weapon / Item:</span> <span>${escapeHtml(s.weaponPossession)}</span></div>
-            <div class="suspect-trait"><span class="trait-label">Stated Alibi:</span> <span style="font-style: italic;">"${escapeHtml(s.alibi)}"</span></div>
-          </div>
-        `;
-        card.querySelector('.btn-suspect-toggle').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (r3EliminatedSuspects.has(s.id)) {
-            r3EliminatedSuspects.delete(s.id);
-            card.classList.remove('suspect-eliminated');
-            e.target.textContent = 'Rule Out';
-          } else {
-            r3EliminatedSuspects.add(s.id);
-            card.classList.add('suspect-eliminated');
-            e.target.textContent = 'Restore';
-          }
-        });
-        r3SuspectsGrid.appendChild(card);
-      });
-    }
-
-    // 5. Active Investigator Info
+    // Who is at the console
     const r3ActivePlayerName = document.getElementById('r3ActivePlayerName');
     const r3ActivePlayerRole = document.getElementById('r3ActivePlayerRole');
-    if (r3ActivePlayerName) r3ActivePlayerName.textContent = team.progress?.activePlayerName || 'Lead Detective';
-    if (r3ActivePlayerRole) r3ActivePlayerRole.textContent = team.progress?.activePlayerRole || 'OPERATIVE';
+    if (r3ActivePlayerName) r3ActivePlayerName.textContent = team.progress?.activePlayerName || '--';
+    if (r3ActivePlayerRole) r3ActivePlayerRole.textContent = team.progress?.activePlayerRole || '';
 
-    // 6. Containers
-    const boxR3MemberGame = document.getElementById('boxR3MemberGame');
-    const boxR3LeaderGame = document.getElementById('boxR3LeaderGame');
-    const boxR3WaitingTurn = document.getElementById('boxR3WaitingTurn');
-    const boxR3Completed = document.getElementById('boxR3Completed');
-
-    [boxR3MemberGame, boxR3LeaderGame, boxR3WaitingTurn, boxR3Completed].forEach(el => el && el.classList.add('hidden'));
-
-    // Check if team finished Round 3
+    // Case closed
     if (puzzle?.type === 'sherlock_round3_completed' || team.progress?.isRoundCompleted) {
       if (boxR3Completed) boxR3Completed.classList.remove('hidden');
-      const r3VictoryCulprit = document.getElementById('r3VictoryCulprit');
-      const r3VictoryWeapon = document.getElementById('r3VictoryWeapon');
-      const r3VictoryMotive = document.getElementById('r3VictoryMotive');
-      const r3VictoryTotalScore = document.getElementById('r3VictoryTotalScore');
-      if (r3VictoryCulprit) r3VictoryCulprit.textContent = 'ROHAN SHARMA (The Valet)';
-      if (r3VictoryWeapon) r3VictoryWeapon.textContent = 'POTASSIUM CYANIDE (In Goblet)';
-      if (r3VictoryMotive) r3VictoryMotive.textContent = 'BLACKMAIL OVER FORGED SHIPPING LEDGER';
-      if (r3VictoryTotalScore) r3VictoryTotalScore.textContent = `${(team.totalScore || 0).toLocaleString()} PTS`;
+      const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      setText('r3VictoryCulprit', puzzle?.culpritName || 'ROHAN SHARMA (the head valet)');
+      setText('r3VictoryWeapon', puzzle?.weapon || 'POTASSIUM CYANIDE');
+      setText('r3VictoryMotive', puzzle?.motive || 'To silence the exposure of the forged ledger');
+      setText('r3VictoryTotalScore', `${(team.totalScore || 0).toLocaleString()} PTS`);
+      updateR3TurnTimer();
       return;
     }
 
-    const isYourTurn = team.progress?.isYourTurn;
-
-    if (!isYourTurn) {
+    if (!team.progress?.isYourTurn) {
       if (boxR3WaitingTurn) {
         boxR3WaitingTurn.classList.remove('hidden');
         const waitingTitle = boxR3WaitingTurn.querySelector('.waiting-title');
         if (waitingTitle) waitingTitle.textContent = 'Awaiting Fellow Detective';
         const r3WaitingSub = document.getElementById('r3WaitingSub');
-        if (r3WaitingSub) {
-          r3WaitingSub.textContent = `Operative ${team.progress?.activePlayerName || '--'} (${team.progress?.activePlayerRole || 'PLAYER'}) is examining Evidence File ${((team.progress?.currentTurnIndex || 0) + 1)} at the console.`;
-        }
+        if (r3WaitingSub) r3WaitingSub.textContent = `${team.progress?.activePlayerName || 'A teammate'} is examining the current exhibit at the console. Help them from the case file!`;
       }
+      updateR3TurnTimer();
       return;
     }
 
-    // Active Turn (Member or Leader)
     if (puzzle?.type === 'leader_step') {
-      if (boxR3LeaderGame) {
-        boxR3LeaderGame.classList.remove('hidden');
-        const r3GatheredProofs = document.getElementById('r3GatheredProofs');
-        if (r3GatheredProofs) {
-          r3GatheredProofs.innerHTML = '';
-          const frags = puzzle.collectedFragments || [];
-          frags.forEach(f => {
-            const chip = document.createElement('span');
-            chip.className = 'proof-chip';
-            chip.textContent = `✓ [${f}]`;
-            r3GatheredProofs.appendChild(chip);
-          });
-          if (frags.length === 0) {
-            r3GatheredProofs.innerHTML = '<span style="color:#64748b; font-size:0.8rem; font-style:italic;">No proofs gathered yet</span>';
-          }
-        }
+      if (boxR3LeaderGame) boxR3LeaderGame.classList.remove('hidden');
+      const proofs = document.getElementById('r3GatheredProofs');
+      if (proofs) {
+        const frags = puzzle.collectedFragments || [];
+        const labels = puzzle.findingLabels || [];
+        proofs.innerHTML = frags.length === 0
+          ? '<li class="cf-muted">No findings recorded.</li>'
+          : frags.map((f, i) => `<li><span class="cf-muted">Exhibit ${EXHIBIT_LETTERS[i]}${labels[i] ? ` · ${escapeHtml(labels[i].replace(/^\S+\s/, ''))}` : ''}</span> <strong>${escapeHtml(f)}</strong></li>`).join('');
       }
-    } else {
-      if (boxR3MemberGame) {
-        boxR3MemberGame.classList.remove('hidden');
-        const r3EvidenceNumber = document.getElementById('r3EvidenceNumber');
-        const r3EvidenceCategory = document.getElementById('r3EvidenceCategory');
-        const r3EvidenceTitle = document.getElementById('r3EvidenceTitle');
-        const r3EvidencePrompt = document.getElementById('r3EvidencePrompt');
-        const r3EvidenceClue = document.getElementById('r3EvidenceClue');
-        const r3EvidenceHint = document.getElementById('r3EvidenceHint');
-        const r3EvidenceImgContainer = document.getElementById('r3EvidenceImgContainer');
-        const r3EvidenceImg = document.getElementById('r3EvidenceImg');
-
-        if (r3EvidenceNumber) r3EvidenceNumber.textContent = `EVIDENCE FILE ${(puzzle.stepNumber || 1)} OF 3`;
-        if (r3EvidenceCategory) r3EvidenceCategory.textContent = puzzle.category || 'Forensic Science';
-        if (r3EvidenceTitle) r3EvidenceTitle.textContent = puzzle.title || 'Forensic Examination';
-        if (r3EvidencePrompt) r3EvidencePrompt.textContent = puzzle.prompt || '';
-        if (r3EvidenceClue) r3EvidenceClue.textContent = puzzle.clue || '';
-        if (r3EvidenceHint) r3EvidenceHint.textContent = puzzle.hint || '';
-
-        // Dynamic forensic image
-        if (r3EvidenceImgContainer && r3EvidenceImg) {
-          if (puzzle.image) {
-            r3EvidenceImg.src = puzzle.image;
-            r3EvidenceImgContainer.classList.remove('hidden');
-          } else {
-            r3EvidenceImgContainer.classList.add('hidden');
-          }
-        }
-      }
+    } else if (puzzle?.type === 'member_step') {
+      if (boxR3MemberGame) boxR3MemberGame.classList.remove('hidden');
+      const idx = (puzzle.stepNumber || 1) - 1;
+      const total = Math.max(1, (puzzle.totalSteps || 6) - 1);
+      const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      setText('r3EvidenceNumber', `EXHIBIT ${EXHIBIT_LETTERS[idx] || idx + 1} • FILE ${idx + 1} OF ${total}`);
+      setText('r3EvidenceCategory', (puzzle.category || 'Evidence').replace(/^\S+\s/, '').toUpperCase());
+      setText('r3EvidenceTitle', (puzzle.title || 'Evidence').replace(/^Exhibit [A-Z] — /, ''));
+      setText('r3EvidencePrompt', puzzle.prompt || '');
+      setText('r3EvidenceClue', puzzle.clue || '—');
+      const lines = document.getElementById('r3ExhibitLines');
+      if (lines) lines.innerHTML = (puzzle.exhibit || []).map(line => `<li>${escapeHtml(line)}</li>`).join('');
     }
+    updateR3TurnTimer();
   }
 
   // Hook up briefing modal buttons
