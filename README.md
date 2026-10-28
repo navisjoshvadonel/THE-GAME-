@@ -150,6 +150,18 @@ PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
 
 ---
 
+## 🌨️ Pre-Event Load Test (20+ Squads)
+
+Simulate a full tournament of bot squads over real WebSockets from any laptop on the college network:
+```bash
+# Start rounds yourself from /admin while 20 bot squads play
+node simulate_load.js --url http://172.16.10.5:5000 --teams 20
+
+# Fully automatic quick run (bots also start each round)
+node simulate_load.js --url http://172.16.10.5:5000 --teams 20 --speed 0.1 --host
+```
+The report shows which question set each squad got (duplicates are flagged), server response times, disconnects and any squad that got stuck. Click **Reset All** in /admin afterwards so bot squads don't appear in the real event.
+
 ## 🧪 Automated Tournament Engine Verification
 To run the automated validation test suite:
 ```bash
