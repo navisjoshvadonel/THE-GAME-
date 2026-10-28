@@ -339,18 +339,22 @@
 
     if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') {
       e.preventDefault();
-      if (socket) {
-        socket.emit('host_key_advance');
-      }
+      emitHostAdvance();
     }
   });
 
   if (btnClickAdvance) {
     btnClickAdvance.addEventListener('click', () => {
-      if (socket) {
-        socket.emit('host_key_advance');
-      }
+      emitHostAdvance();
     });
+  }
+
+  // The server only accepts stage advances from the host, so send the password saved at admin login
+  function emitHostAdvance() {
+    if (!socket) return;
+    let password = '';
+    try { password = localStorage.getItem('campus_admin_pwd') || ''; } catch (e) { /* storage blocked */ }
+    socket.emit('host_key_advance', { password });
   }
 
   /* -------------------------------------------------------------

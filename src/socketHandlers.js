@@ -119,7 +119,8 @@ function setupSocketHandlers(io, gameState) {
         return socket.emit('admin_action_result', unauth);
       }
 
-      const { action, payload } = data;
+      const action = data.action;
+      const payload = data.payload || {};
       let result = { success: false, message: 'Unknown action' };
 
       switch (action) {
@@ -153,6 +154,9 @@ function setupSocketHandlers(io, gameState) {
           result = gameState.pauseRound();
           if (result.success) {
             io.emit('round_paused', result);
+            for (const teamId of gameState.teams.keys()) {
+              syncTeamRoom(teamId);
+            }
           }
           break;
 
@@ -160,6 +164,9 @@ function setupSocketHandlers(io, gameState) {
           result = gameState.resumeRound();
           if (result.success) {
             io.emit('round_resumed', result);
+            for (const teamId of gameState.teams.keys()) {
+              syncTeamRoom(teamId);
+            }
           }
           break;
 
@@ -169,7 +176,7 @@ function setupSocketHandlers(io, gameState) {
 
         case 'end_round':
           result = gameState.endRound();
-          io.emit('round_ended', { status: gameState.status });
+          io.emit('round_ended', { currentRound: gameState.currentRound, status: gameState.status });
           for (const teamId of gameState.teams.keys()) {
             syncTeamRoom(teamId);
           }
@@ -200,7 +207,15 @@ function setupSocketHandlers(io, gameState) {
         case 'force_advance':
           result = gameState.forceAdvanceTeamTurn(payload.teamId, payload.reason);
           if (result.success) {
-            syncTeamRoom(payload.teamId);
+            if (!gameState.roundState.active) {
+              // The forced step was the last one outstanding, so the whole round concluded
+              io.emit('round_ended', { currentRound: gameState.currentRound, status: gameState.status });
+              for (const teamId of gameState.teams.keys()) {
+                syncTeamRoom(teamId);
+              }
+            } else {
+              syncTeamRoom(payload.teamId);
+            }
           }
           break;
 
@@ -212,8 +227,7 @@ function setupSocketHandlers(io, gameState) {
           break;
 
         case 'reset_game':
-          gameState.resetAllState();
-          result = { success: true, message: 'Game state reset completely.' };
+          result = gameState.resetAllState();
           io.emit('game_reset_event');
           break;
       }
@@ -227,7 +241,10 @@ function setupSocketHandlers(io, gameState) {
     // ----------------------------------------------------------------
     // HOST KEYBOARD SHORTCUT (SPACEBAR OR ANY KEY ADVANCE)
     // ----------------------------------------------------------------
-    socket.on('host_key_advance', () => {
+    socket.on('host_key_advance', (authData) => {
+      // Only the host may advance the tournament (students share this socket server)
+      const isHost = socket.rooms.has('admin_room') || (authData && authData.password === gameState.adminPassword);
+      if (!isHost) return;
       const result = gameState.advanceStage();
       if (result.success) {
         io.emit('stage_advanced', { status: gameState.status, currentRound: gameState.currentRound });
@@ -378,6 +395,18 @@ function setupSocketHandlers(io, gameState) {
         } else {
           syncTeamRoom(teamId);
         }
+        triggerDisplayPush(true);
+        pushAdminUpdate();
+      }
+    });
+
+    // Skip a timed-out Round 1 / Round 3 riddle step (0 pts, keyword revealed)
+    socket.on('skip_turn', ({ sessionToken } = {}, callback) => {
+      const player = gameState.players.get(sessionToken);
+      const result = gameState.skipTurn(sessionToken);
+      if (typeof callback === 'function') callback(result);
+      if (result.success && player) {
+        syncTeamRoom(player.teamId);
         triggerDisplayPush(true);
         pushAdminUpdate();
       }

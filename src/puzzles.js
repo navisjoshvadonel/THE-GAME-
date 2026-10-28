@@ -1603,7 +1603,7 @@ const PUZZLE_SETS = {
         "category": "⚠️ Debugging",
         "targetWord": "ERROR",
         "length": 5,
-        "bridgeClue": "⚡ LINKED FROM NODE 01 [GAMER] ➔ Starts with the ending letter 'R'.",
+        "bridgeClue": "⚡ LINKED FROM NODE 01 [GAMER] ➔ Starts with the letter 'E'.",
         "prompt": "A state of inaccuracy, runtime exception, or bug; HTTP status code 404 indicates a client ________.",
         "hint": "Trial and _______; syntax _______.",
         "acceptedAnswers": [
@@ -3030,7 +3030,7 @@ const PUZZLE_SETS = {
         "category": "🐧 Server OS",
         "targetWord": "LINUX",
         "length": 5,
-        "bridgeClue": "⚡ LINKED FROM NODE 06 [TUPLE] ➔ Starts with the ending letter 'L'.",
+        "bridgeClue": "⚡ LINKED FROM NODE 06 [TUPLE] ➔ Starts with the letter 'L'.",
         "prompt": "Free, open-source operating system kernel created by Linus Torvalds that powers modern cloud computing.",
         "hint": "Tux penguin.",
         "acceptedAnswers": [
@@ -3451,7 +3451,7 @@ const PUZZLE_SETS = {
         "category": "💾 Disk Volumes",
         "targetWord": "DRIVE",
         "length": 5,
-        "bridgeClue": "⚡ LINKED FROM NODE 07 [NODE] ➔ Starts with the ending letter 'D'.",
+        "bridgeClue": "⚡ LINKED FROM NODE 07 [NODE] ➔ Starts with the letter 'D'.",
         "prompt": "Mass storage peripheral reading magnetic platters or flash memory NAND chips.",
         "hint": "Hard ______; Flash ______.",
         "acceptedAnswers": [
@@ -3708,13 +3708,13 @@ const PUZZLE_SETS = {
         "id": "r2_ome_7",
         "nodeNumber": 7,
         "category": "☸️ Container Orchestration",
-        "targetWord": "K8S",
-        "length": 3,
+        "targetWord": "KUBERNETES",
+        "length": 10,
         "bridgeClue": "⚡ LINKED FROM NODE 06 [SPARK] ➔ Starts with the ending letter 'K'.",
         "prompt": "Ubiquitous Greek-named open-source system for automating deployment, scaling, and management of containerized applications.",
-        "hint": "Kubernetes short abbreviation; 8 letters between K and S.",
+        "hint": "Often shortened to K8S — type the full 10-letter name.",
         "acceptedAnswers": [
-          "k8s"
+          "kubernetes"
         ]
       },
       {
@@ -3723,7 +3723,7 @@ const PUZZLE_SETS = {
         "category": "🖥️ Host Machines",
         "targetWord": "SERVER",
         "length": 6,
-        "bridgeClue": "⚡ LINKED FROM NODE 07 [K8S] ➔ Starts with the ending letter 'S'.",
+        "bridgeClue": "⚡ LINKED FROM NODE 07 [KUBERNETES] ➔ Starts with the ending letter 'S'.",
         "prompt": "Computer hardware or software system that provides functionality, resources, and data responses for client programs.",
         "hint": "Client-______ architecture; rack mounted blade.",
         "acceptedAnswers": [
@@ -3932,18 +3932,25 @@ function checkStepAnswer(roundNumber, setId, stepIndex, userAnswer) {
     return { success: false, message: 'Step does not exist' };
   }
   const step = puzzleSet.steps[stepIndex];
-  const cleaned = (userAnswer || '').toString().trim().toLowerCase();
-  const isCorrect = step.acceptedAnswers.some(ans => ans.toLowerCase() === cleaned);
+  // Forgive case, spacing and punctuation ("Dr. Kalam", "A.P.J Abdul Kalam ", "cyanide!")
+  const normalize = (v) => (v || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleaned = normalize(userAnswer);
+  const isCorrect = cleaned.length > 0 && [...step.acceptedAnswers, step.expectedFragment].some(ans => normalize(ans) === cleaned);
+  const isSherlock = roundNumber === 3;
   if (isCorrect) {
     return {
       success: true,
       fragment: step.expectedFragment,
-      message: 'Verified! Forensic proof secured and sealed into Scotland Yard case evidence.'
+      message: isSherlock
+        ? 'Verified! Forensic proof secured and sealed into Scotland Yard case evidence.'
+        : 'Correct! Keyword unlocked.'
     };
   }
   return {
     success: false,
-    message: 'Incorrect forensic deduction. Re-examine the case testimony and premise carefully!'
+    message: isSherlock
+      ? 'Incorrect forensic deduction. Re-examine the case testimony and premise carefully!'
+      : 'Not quite — check the letter boxes and try again.'
   };
 }
 

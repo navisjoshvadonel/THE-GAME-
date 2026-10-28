@@ -3849,3 +3849,1280 @@ body.theme-finished .retro-cyber-grid {
 }
 
 
+
+/* ==========================================================================
+   SNOW'S ARENA — PREMIUM GLASSMORPHISM OVERHAUL
+   Inspired by the 3D card / gradient UI reference.
+   Unique color palette per round. Snowfall lobby theme.
+   Appended to student.css as override layer.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   SNOW'S ARENA GLOBAL FONT & ROOT UPGRADES
+   -------------------------------------------------------------------------- */
+.snow-arena-body {
+  --sa-font-display: "Nunito", "Outfit", sans-serif;
+  --sa-radius-card: 22px;
+  --sa-radius-btn: 14px;
+  --sa-shadow-glow: 0 8px 32px rgba(0,0,0,0.45);
+  --sa-glass: rgba(255,255,255,0.07);
+  --sa-glass-border: rgba(255,255,255,0.18);
+  --sa-glass-hover: rgba(255,255,255,0.12);
+  font-family: var(--sa-font-display);
+}
+
+/* --------------------------------------------------------------------------
+   SNOW'S ARENA HEADER LOGO
+   -------------------------------------------------------------------------- */
+.snow-logo-title {
+  font-family: var(--sa-font-display);
+  font-size: 1.35rem !important;
+  font-weight: 900 !important;
+  background: linear-gradient(135deg, #a8edea 0%, #7ec8e3 40%, #c9d6ff 80%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.04em !important;
+  filter: drop-shadow(0 0 12px rgba(168, 237, 234, 0.5));
+}
+
+/* --------------------------------------------------------------------------
+   ROUND THEME OVERRIDES — UNIQUE COLORS PER ROUND
+   Snow's Arena approach: bold gradient backgrounds + glassmorphism cards
+   -------------------------------------------------------------------------- */
+
+/* LOBBY: Ice Blue & Soft Lavender */
+body.theme-lobby {
+  --sa-accent1: #a8edea;
+  --sa-accent2: #7ec8e3;
+  --sa-accent3: #c9d6ff;
+  --sa-btn-grad: linear-gradient(135deg, #a8edea, #7ec8e3);
+  --sa-card-glow: rgba(168, 237, 234, 0.25);
+}
+body.theme-lobby .retro-crt-backdrop {
+  background: radial-gradient(ellipse at 30% 20%, rgba(100, 180, 230, 0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(160, 130, 255, 0.10) 0%, transparent 60%);
+}
+
+/* ROUND 1: Emerald Mint & Electric Green */
+body.theme-round-1 {
+  --sa-accent1: #43e97b;
+  --sa-accent2: #38f9d7;
+  --sa-accent3: #a8ff78;
+  --sa-btn-grad: linear-gradient(135deg, #43e97b, #38f9d7);
+  --sa-card-glow: rgba(67, 233, 123, 0.3);
+}
+body.theme-round-1 .retro-crt-backdrop {
+  background: radial-gradient(ellipse at 20% 30%, rgba(56, 249, 215, 0.15) 0%, transparent 55%),
+              radial-gradient(ellipse at 75% 70%, rgba(168, 255, 120, 0.10) 0%, transparent 55%);
+}
+body.theme-round-1 .retro-window-box,
+body.theme-round-1 .terminal-stage-card,
+body.theme-round-1 .tactical-card {
+  border-color: rgba(67, 233, 123, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(67,233,123,0.15), 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+body.theme-round-1 .retro-window-header,
+body.theme-round-1 .arena-topbar {
+  background: linear-gradient(90deg, rgba(67,233,123,0.12) 0%, rgba(56,249,215,0.08) 100%) !important;
+  border-bottom-color: rgba(67,233,123,0.3) !important;
+}
+body.theme-round-1 .category-tag,
+body.theme-round-1 .tactical-badge {
+  background: linear-gradient(135deg, #43e97b, #38f9d7) !important;
+  color: #031208 !important;
+}
+body.theme-round-1 .btn-jules,
+body.theme-round-1 .btn-pc-primary {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important;
+  color: #031208 !important;
+  box-shadow: 0 4px 20px rgba(67, 233, 123, 0.45) !important;
+}
+body.theme-round-1 .operative-progress-fill {
+  background: linear-gradient(90deg, #43e97b, #38f9d7) !important;
+}
+body.theme-round-1 .score-pill-jules {
+  background: rgba(67,233,123,0.12) !important;
+  border-color: rgba(67,233,123,0.45) !important;
+  box-shadow: 0 0 14px rgba(67,233,123,0.3) !important;
+}
+body.theme-round-1 .step-num-circle {
+  background: linear-gradient(135deg, #43e97b, #38f9d7) !important;
+  color: #031208 !important;
+}
+
+/* ROUND 2: Solar Amber & Hot Orange */
+body.theme-round-2 {
+  --sa-accent1: #f7971e;
+  --sa-accent2: #ffd200;
+  --sa-accent3: #ff6b6b;
+  --sa-btn-grad: linear-gradient(135deg, #f7971e, #ffd200);
+  --sa-card-glow: rgba(247, 151, 30, 0.3);
+}
+body.theme-round-2 .retro-crt-backdrop {
+  background: radial-gradient(ellipse at 25% 25%, rgba(255, 210, 0, 0.14) 0%, transparent 55%),
+              radial-gradient(ellipse at 75% 75%, rgba(247, 151, 30, 0.12) 0%, transparent 55%);
+}
+body.theme-round-2 .retro-window-box,
+body.theme-round-2 .terminal-stage-card,
+body.theme-round-2 .tactical-card,
+body.theme-round-2 .cyber-terminal-card {
+  border-color: rgba(247, 151, 30, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(247,151,30,0.15), 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+body.theme-round-2 .retro-window-header,
+body.theme-round-2 .arena-topbar {
+  background: linear-gradient(90deg, rgba(247,151,30,0.12) 0%, rgba(255,210,0,0.08) 100%) !important;
+  border-bottom-color: rgba(247,151,30,0.3) !important;
+}
+body.theme-round-2 .category-tag,
+body.theme-round-2 .tactical-badge {
+  background: linear-gradient(135deg, #f7971e, #ffd200) !important;
+  color: #0e0a04 !important;
+}
+body.theme-round-2 .btn-jules,
+body.theme-round-2 .btn-pc-primary,
+body.theme-round-2 .btn-gold {
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%) !important;
+  color: #0e0a04 !important;
+  box-shadow: 0 4px 20px rgba(247, 151, 30, 0.45) !important;
+}
+body.theme-round-2 .operative-progress-fill {
+  background: linear-gradient(90deg, #f7971e, #ffd200) !important;
+}
+body.theme-round-2 .score-pill-jules {
+  background: rgba(247,151,30,0.12) !important;
+  border-color: rgba(247,151,30,0.45) !important;
+  box-shadow: 0 0 14px rgba(247,151,30,0.3) !important;
+}
+body.theme-round-2 .circuit-nodes-flow .node-dot.node-breached {
+  background: linear-gradient(135deg, #f7971e, #ffd200) !important;
+  box-shadow: 0 0 12px rgba(247,151,30,0.6) !important;
+}
+
+/* ROUND 3: Victorian Crimson & Deep Gold */
+body.theme-round-3 {
+  --sa-accent1: #c94b4b;
+  --sa-accent2: #4b134f;
+  --sa-accent3: #d4a017;
+  --sa-btn-grad: linear-gradient(135deg, #c94b4b, #4b134f);
+  --sa-card-glow: rgba(201, 75, 75, 0.3);
+}
+body.theme-round-3 .retro-crt-backdrop {
+  background: radial-gradient(ellipse at 20% 20%, rgba(201, 75, 75, 0.14) 0%, transparent 55%),
+              radial-gradient(ellipse at 80% 80%, rgba(75, 19, 79, 0.14) 0%, transparent 55%);
+}
+
+/* FINISHED: Royal Amethyst & Gold Trophy */
+body.theme-finished {
+  --sa-accent1: #ffd700;
+  --sa-accent2: #a855f7;
+  --sa-accent3: #ec4899;
+  --sa-btn-grad: linear-gradient(135deg, #ffd700, #a855f7);
+  --sa-card-glow: rgba(255, 215, 0, 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   UNIVERSAL CARD GLASSMORPHISM OVERRIDES
+   Applied to all round game cards, tactical cards, and arena windows
+   -------------------------------------------------------------------------- */
+.snow-arena-body .retro-window-box,
+.snow-arena-body .terminal-stage-card,
+.snow-arena-body .tactical-card,
+.snow-arena-body .game-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.04) 50%,
+    rgba(0,0,0,0.2) 100%
+  ) !important;
+  backdrop-filter: blur(18px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.3) !important;
+  border: 1.5px solid rgba(255,255,255,0.14) !important;
+  border-radius: var(--sa-radius-card) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45),
+              inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+/* Window header glassmorphism */
+.snow-arena-body .retro-window-header,
+.snow-arena-body .arena-topbar {
+  background: rgba(255,255,255,0.05) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: var(--sa-radius-card) var(--sa-radius-card) 0 0 !important;
+}
+
+/* Inputs */
+.snow-arena-body .pc-input-text,
+.snow-arena-body .terminal-input,
+.snow-arena-body .thesis-textarea,
+.snow-arena-body .baker-input {
+  background: rgba(0,0,0,0.35) !important;
+  border: 1.5px solid rgba(255,255,255,0.15) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  transition: border-color 0.25s, box-shadow 0.25s !important;
+}
+.snow-arena-body .pc-input-text:focus,
+.snow-arena-body .terminal-input:focus,
+.snow-arena-body .thesis-textarea:focus,
+.snow-arena-body .baker-input:focus {
+  border-color: rgba(255,255,255,0.4) !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.10) !important;
+  outline: none !important;
+}
+
+/* Buttons — rounded pill style */
+.snow-arena-body .btn-pc-primary,
+.snow-arena-body .btn-jules,
+.snow-arena-body .btn-jules-gold,
+.snow-arena-body .btn-baker-primary,
+.snow-arena-body .btn-baker-gold,
+.snow-arena-body #btnSubmitAnswer,
+.snow-arena-body #btnR2Submit,
+.snow-arena-body #btnR3MemberSubmit,
+.snow-arena-body #btnR3LeaderSubmit,
+.snow-arena-body #btnSubmitLeaderAnswer {
+  border-radius: var(--sa-radius-btn) !important;
+  font-family: var(--sa-font-display) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  transition: transform 0.18s, box-shadow 0.18s, filter 0.18s !important;
+  border: none !important;
+}
+.snow-arena-body .btn-pc-primary:hover,
+.snow-arena-body .btn-jules:hover,
+.snow-arena-body #btnSubmitAnswer:hover,
+.snow-arena-body #btnR2Submit:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  filter: brightness(1.12) !important;
+}
+
+/* Secondary / clear buttons */
+.snow-arena-body .btn-secondary,
+.snow-arena-body .btn-outline,
+.snow-arena-body .btn-retro,
+.snow-arena-body .btn-retro-clue {
+  border-radius: 10px !important;
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  color: #e2e8f0 !important;
+}
+.snow-arena-body .btn-secondary:hover,
+.snow-arena-body .btn-outline:hover {
+  background: rgba(255,255,255,0.14) !important;
+}
+
+/* Score pill */
+.snow-arena-body .score-pill-jules {
+  border-radius: 50px !important;
+  padding: 6px 18px !important;
+  font-family: var(--sa-font-display) !important;
+  font-weight: 900 !important;
+}
+
+/* Category / step badges */
+.snow-arena-body .category-tag,
+.snow-arena-body .step-counter {
+  border-radius: 50px !important;
+  font-family: var(--sa-font-display) !important;
+  font-weight: 800 !important;
+  font-size: 0.78rem !important;
+}
+
+/* Prompt text card */
+.snow-arena-body .prompt-parchment,
+.snow-arena-body .terminal-prompt-box {
+  background: rgba(0,0,0,0.4) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 16px !important;
+  padding: 20px 22px !important;
+}
+
+/* Vault card */
+.snow-arena-body .vault-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(0,0,0,0.25)) !important;
+  border-radius: 18px !important;
+}
+
+/* Letter slot tiles */
+.snow-arena-body .slot-tile {
+  border-radius: 10px !important;
+  border: 2px solid rgba(255,255,255,0.18) !important;
+  background: rgba(255,255,255,0.06) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s !important;
+}
+.snow-arena-body .slot-tile.filled {
+  border-color: rgba(255,255,255,0.35) !important;
+  background: rgba(255,255,255,0.12) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Hack matrix tiles */
+.snow-arena-body .hack-tile {
+  border-radius: 10px !important;
+  border: 2px solid rgba(255,255,255,0.15) !important;
+}
+
+/* Pass console banner */
+.snow-arena-body .pass-console-banner {
+  background: linear-gradient(135deg, rgba(67,233,123,0.15), rgba(56,249,215,0.08)) !important;
+  border: 1.5px solid rgba(67,233,123,0.35) !important;
+  border-radius: 18px !important;
+}
+
+/* Clue drawer button */
+.snow-arena-body .btn-retro-clue {
+  border-radius: 12px !important;
+}
+
+/* Baker Street parchment */
+.snow-arena-body .parchment-sheet {
+  background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(0,0,0,0.3)) !important;
+  backdrop-filter: blur(18px) !important;
+  border: 1px solid rgba(212, 160, 23, 0.25) !important;
+  border-radius: 18px !important;
+}
+.snow-arena-body .baker-street-window {
+  background: rgba(6, 9, 20, 0.9) !important;
+  border-radius: 22px !important;
+}
+
+/* Turn tracker strip */
+.snow-arena-body .turn-tracker-strip {
+  background: rgba(0,0,0,0.4) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 14px !important;
+}
+
+/* Alert boxes */
+.snow-arena-body .alert-box.alert-success {
+  background: rgba(67,233,123,0.15) !important;
+  border: 1.5px solid rgba(67,233,123,0.4) !important;
+  border-radius: 12px !important;
+}
+.snow-arena-body .alert-box.alert-error {
+  background: rgba(255, 82, 82, 0.15) !important;
+  border: 1.5px solid rgba(255,82,82,0.4) !important;
+  border-radius: 12px !important;
+}
+
+/* Victory cards */
+.snow-arena-body .victory-card,
+.snow-arena-body .r2-victory-card,
+.snow-arena-body .victory-dossier-sheet {
+  background: linear-gradient(145deg, rgba(255,215,0,0.10), rgba(255,255,255,0.05)) !important;
+  border: 2px solid rgba(255,215,0,0.35) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 0 40px rgba(255,215,0,0.15) !important;
+}
+
+/* Registration form card */
+.snow-arena-body .retro-window-box .setup-welcome-banner {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 16px !important;
+  padding: 18px 20px !important;
+}
+
+.snow-arena-body .size-radio-card {
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(255,255,255,0.14) !important;
+  background: rgba(255,255,255,0.05) !important;
+  transition: all 0.2s !important;
+}
+.snow-arena-body .size-radio-card:has(input:checked),
+.snow-arena-body .size-radio-card.selected {
+  background: rgba(255,255,255,0.12) !important;
+  border-color: var(--jules-cyan, #a8edea) !important;
+  box-shadow: 0 0 14px rgba(168, 237, 234, 0.25) !important;
+}
+
+/* Toast */
+.snow-arena-body .toast {
+  border-radius: 14px !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* --------------------------------------------------------------------------
+   SNOWFALL LOBBY STYLES
+   -------------------------------------------------------------------------- */
+#viewLobby {
+  position: relative;
+  overflow: hidden;
+}
+
+.snow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.snow-lobby-wrapper {
+  position: relative;
+  z-index: 2;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Hero section */
+.snow-lobby-hero {
+  text-align: center;
+  padding: 32px 24px 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(120, 180, 240, 0.12) 0%,
+    rgba(160, 130, 255, 0.08) 100%
+  );
+  border: 1px solid rgba(200, 220, 255, 0.2);
+  border-radius: 24px;
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+}
+.snow-lobby-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(168,237,234,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.snow-arena-emblem {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 2.2rem;
+}
+.snow-emblem-flake {
+  display: inline-block;
+  color: #a8edea;
+  filter: drop-shadow(0 0 10px rgba(168,237,234,0.7));
+  animation: snowEmblemSpin 8s linear infinite;
+}
+.snow-emblem-flake.delay-1 { animation-delay: -2.6s; animation-direction: reverse; color: #c9d6ff; }
+.snow-emblem-flake.delay-2 { animation-delay: -5.2s; color: #7ec8e3; }
+
+@keyframes snowEmblemSpin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.12); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.snow-lobby-title {
+  font-family: "Nunito", "Outfit", sans-serif;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #a8edea 0%, #7ec8e3 35%, #c9d6ff 70%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 20px rgba(168, 237, 234, 0.4));
+}
+
+.snow-lobby-tagline {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(200, 220, 255, 0.7);
+  letter-spacing: 0.15em;
+  margin-bottom: 18px;
+}
+
+.snow-lobby-status-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(200, 220, 255, 0.2);
+  border-radius: 50px;
+  padding: 6px 18px;
+}
+.snow-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #43e97b;
+  box-shadow: 0 0 8px #43e97b;
+  animation: snowPulse 1.8s ease-in-out infinite;
+}
+@keyframes snowPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px #43e97b; }
+  50%       { opacity: 0.5; box-shadow: 0 0 16px #43e97b; }
+}
+.snow-status-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(200, 230, 255, 0.85);
+  letter-spacing: 0.1em;
+}
+.snow-status-sep { color: rgba(200,230,255,0.4); }
+
+/* Two-column grid */
+.snow-lobby-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .snow-lobby-grid { grid-template-columns: 1fr; }
+}
+
+/* Glass Cards */
+.snow-glass-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255,255,255,0.09) 0%,
+    rgba(255,255,255,0.04) 60%,
+    rgba(0,0,0,0.15) 100%
+  );
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1.5px solid rgba(200, 220, 255, 0.18);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4),
+              inset 0 1px 0 rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Card Header */
+.snow-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(200,220,255,0.12);
+}
+.snow-card-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 8px rgba(168,237,234,0.5));
+}
+.snow-card-title {
+  font-family: "Nunito", "Outfit", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #f8fafc;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+.snow-card-sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(200,220,255,0.55);
+  letter-spacing: 0.1em;
+  display: block;
+}
+.snow-online-badge {
+  margin-left: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #43e97b;
+  background: rgba(67,233,123,0.12);
+  border: 1px solid rgba(67,233,123,0.3);
+  border-radius: 50px;
+  padding: 3px 10px;
+  letter-spacing: 0.08em;
+}
+
+/* Roster header */
+.snow-roster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.snow-roster-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(200,220,255,0.6);
+  letter-spacing: 0.12em;
+}
+.snow-roster-count {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a8edea;
+  letter-spacing: 0.08em;
+}
+
+/* Members grid inside lobby */
+.snow-members-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Sound strip */
+.snow-sound-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(200,220,255,0.10);
+  border-radius: 14px;
+  margin-top: auto;
+}
+.snow-sound-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(200,220,255,0.55);
+  letter-spacing: 0.1em;
+}
+.snow-test-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(200,220,255,0.2);
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.2s, border-color 0.2s;
+}
+.snow-test-btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(200,220,255,0.4);
+}
+
+/* Briefing Steps */
+.snow-briefing-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.snow-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(200,220,255,0.10);
+  border-radius: 14px;
+}
+.snow-step-num {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a8edea, #7ec8e3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #050a12;
+  box-shadow: 0 0 12px rgba(168,237,234,0.4);
+}
+.snow-step-body {
+  flex: 1;
+}
+.snow-step-body strong {
+  display: block;
+  font-family: "Nunito", "Outfit", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin-bottom: 4px;
+}
+.snow-step-body p {
+  font-size: 0.82rem;
+  color: rgba(200,220,255,0.65);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Standby callout */
+.snow-standby-callout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(168,237,234,0.10), rgba(124,131,255,0.08));
+  border: 1.5px solid rgba(168,237,234,0.3);
+  border-radius: 16px;
+  margin-top: auto;
+  animation: snowGlow 3s ease-in-out infinite;
+}
+@keyframes snowGlow {
+  0%, 100% { box-shadow: 0 0 0px rgba(168,237,234,0.1); }
+  50%       { box-shadow: 0 0 20px rgba(168,237,234,0.25); }
+}
+.snow-spinner-ring {
+  width: 32px; height: 32px;
+  border: 3px solid rgba(168,237,234,0.2);
+  border-top-color: #a8edea;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: snowSpin 1.2s linear infinite;
+}
+@keyframes snowSpin {
+  to { transform: rotate(360deg); }
+}
+.snow-standby-text strong {
+  display: block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #a8edea;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.snow-standby-text p {
+  font-size: 0.78rem;
+  color: rgba(200,220,255,0.6);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   ROUND CARD LABEL CHIPS — per-round unique badge
+   -------------------------------------------------------------------------- */
+body.theme-round-1 .retro-window-header .window-title-text::before {
+  content: "🟢 ";
+}
+body.theme-round-2 .retro-window-header .window-title-text::before {
+  content: "🟠 ";
+}
+body.theme-round-3 .retro-window-header .window-title-text::before {
+  content: "🔵 ";
+}
+
+/* --------------------------------------------------------------------------
+   ROUND-SPECIFIC 3D CARD GLOW ACCENTS
+   -------------------------------------------------------------------------- */
+body.theme-round-1 .tactical-card.operative-card {
+  background: linear-gradient(145deg, rgba(67,233,123,0.10), rgba(0,0,0,0.25)) !important;
+  border-color: rgba(67,233,123,0.3) !important;
+}
+body.theme-round-1 .tactical-card.vault-card {
+  background: linear-gradient(145deg, rgba(56,249,215,0.08), rgba(0,0,0,0.25)) !important;
+  border-color: rgba(56,249,215,0.25) !important;
+}
+
+body.theme-round-2 .tactical-card.operative-card {
+  background: linear-gradient(145deg, rgba(247,151,30,0.10), rgba(0,0,0,0.25)) !important;
+  border-color: rgba(247,151,30,0.3) !important;
+}
+body.theme-round-2 .tactical-card.vault-card {
+  background: linear-gradient(145deg, rgba(255,210,0,0.08), rgba(0,0,0,0.25)) !important;
+  border-color: rgba(255,210,0,0.25) !important;
+}
+
+body.theme-round-3 .investigator-card {
+  background: linear-gradient(145deg, rgba(201,75,75,0.10), rgba(0,0,0,0.25)) !important;
+  border-color: rgba(201,75,75,0.3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   WORDLE TILE OVERRIDES (R2 hack matrix)
+   -------------------------------------------------------------------------- */
+.snow-arena-body .tile-correct {
+  background: linear-gradient(135deg, #43e97b, #38f9d7) !important;
+  border-color: #43e97b !important;
+  color: #031208 !important;
+  box-shadow: 0 0 14px rgba(67,233,123,0.5) !important;
+}
+.snow-arena-body .tile-present {
+  background: linear-gradient(135deg, #f7971e, #ffd200) !important;
+  border-color: #f7971e !important;
+  color: #0e0a04 !important;
+  box-shadow: 0 0 14px rgba(247,151,30,0.5) !important;
+}
+.snow-arena-body .tile-absent {
+  background: rgba(30,30,40,0.8) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: rgba(200,220,255,0.5) !important;
+}
+
+/* --------------------------------------------------------------------------
+   VIRTUAL KEYBOARD (R2)
+   -------------------------------------------------------------------------- */
+.snow-arena-body .vk-key {
+  border-radius: 9px !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  background: rgba(255,255,255,0.07) !important;
+  font-family: var(--sa-font-display) !important;
+  font-weight: 700 !important;
+  transition: all 0.15s !important;
+}
+.snow-arena-body .vk-key:hover {
+  background: rgba(255,255,255,0.14) !important;
+  transform: translateY(-1px) !important;
+}
+.snow-arena-body .vk-key.key-correct {
+  background: linear-gradient(135deg, #43e97b, #38f9d7) !important;
+  color: #031208 !important;
+  border-color: transparent !important;
+}
+.snow-arena-body .vk-key.key-present {
+  background: linear-gradient(135deg, #f7971e, #ffd200) !important;
+  color: #0e0a04 !important;
+  border-color: transparent !important;
+}
+.snow-arena-body .vk-key.key-absent {
+  background: rgba(20,20,30,0.7) !important;
+  color: rgba(200,220,255,0.4) !important;
+}
+
+/* --------------------------------------------------------------------------
+   MODAL OVERLAYS (Rules, Score Override)
+   -------------------------------------------------------------------------- */
+.snow-arena-body .modal-rules-card,
+.snow-arena-body .modal-card {
+  background: linear-gradient(145deg, rgba(15,20,40,0.97), rgba(8,12,28,0.99)) !important;
+  border: 1.5px solid rgba(200,220,255,0.18) !important;
+  border-radius: 24px !important;
+  backdrop-filter: blur(24px) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important;
+}
+
+/* --------------------------------------------------------------------------
+   PROGRESS BAR ANIMATION UPGRADE
+   -------------------------------------------------------------------------- */
+.snow-arena-body .operative-progress-fill,
+.snow-arena-body .leaderProgressBar {
+  background: linear-gradient(90deg, var(--jules-cyan), var(--jules-magenta)) !important;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 100px !important;
+  box-shadow: 0 0 10px rgba(0,240,255,0.3) !important;
+}
+.snow-arena-body .operative-progress-track {
+  border-radius: 100px !important;
+  background: rgba(0,0,0,0.4) !important;
+}
+
+/* --------------------------------------------------------------------------
+   FLOATING SCORE POPUP UPGRADE
+   -------------------------------------------------------------------------- */
+.snow-arena-body .floating-score-tag {
+  background: linear-gradient(135deg, #43e97b, #38f9d7) !important;
+  color: #031208 !important;
+  border-radius: 50px !important;
+  font-family: var(--sa-font-display) !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 20px rgba(67,233,123,0.5) !important;
+}
+
+/* --------------------------------------------------------------------------
+   NODE DOTS UPGRADE (R2 circuit tracker)
+   -------------------------------------------------------------------------- */
+.snow-arena-body .node-dot {
+  border-radius: 50% !important;
+  transition: all 0.3s !important;
+}
+
+/* --------------------------------------------------------------------------
+   SMALL MISC UPGRADES
+   -------------------------------------------------------------------------- */
+/* Breadcrumb tracker title chips */
+.snow-arena-body .tracker-title {
+  font-family: var(--sa-font-display) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+}
+/* Turn tracker node labels */
+.snow-arena-body .turn-seq-step {
+  border-radius: 50px !important;
+}
+/* Slot pattern badge */
+.snow-arena-body .slots-pattern-badge {
+  border-radius: 50px !important;
+  font-family: var(--sa-font-display) !important;
+}
+/* Inspector / telemetry bar */
+.snow-arena-body .live-thesis-inspector {
+  background: rgba(0,0,0,0.35) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 14px !important;
+}
+/* Baker progress pipeline */
+.snow-arena-body .baker-pipeline-row .pipeline-step {
+  border-radius: 50px !important;
+}
+/* Suspect cards */
+.snow-arena-body .suspect-card {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(200,200,255,0.15) !important;
+  border-radius: 16px !important;
+  transition: all 0.2s !important;
+}
+.snow-arena-body .suspect-card:hover {
+  background: rgba(255,255,255,0.10) !important;
+  border-color: rgba(200,200,255,0.3) !important;
+  transform: translateY(-2px) !important;
+}
+.snow-arena-body .suspect-card.eliminated {
+  opacity: 0.4 !important;
+  filter: grayscale(0.7) !important;
+}
+/* Fragment chips */
+.snow-arena-body .fragment-chip {
+  border-radius: 50px !important;
+  font-family: var(--sa-font-display) !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s, box-shadow 0.15s !important;
+}
+.snow-arena-body .fragment-chip:hover {
+  transform: scale(1.06) !important;
+}
+
+/* ==========================================================================
+   INTRO SPLASH — SNOWFALL TITLE CARD
+   ========================================================================== */
+.intro-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(126, 200, 227, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 10%, rgba(201, 214, 255, 0.16) 0%, transparent 50%),
+    linear-gradient(180deg, #050816 0%, #0b1330 55%, #111a3d 100%);
+  animation: introFadeIn 0.6s ease-out both;
+}
+.intro-splash.leaving {
+  animation: introFadeOut 0.7s ease-in forwards;
+  pointer-events: none;
+}
+.intro-snow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.intro-aurora {
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 60%;
+  background: conic-gradient(from 200deg at 50% 50%, rgba(168, 237, 234, 0), rgba(168, 237, 234, 0.18), rgba(160, 130, 255, 0.16), rgba(126, 200, 227, 0));
+  filter: blur(60px);
+  animation: auroraDrift 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+.intro-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 24px 16px;
+  max-width: 760px;
+  font-family: var(--sa-font-display, "Nunito", sans-serif);
+}
+.intro-emblem {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: introRise 0.9s cubic-bezier(.2, .8, .2, 1) 0.1s both;
+}
+.intro-emblem-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(168, 237, 234, 0.55);
+  box-shadow: 0 0 40px rgba(126, 200, 227, 0.45), inset 0 0 30px rgba(126, 200, 227, 0.25);
+  animation: emblemPulse 2.8s ease-in-out infinite;
+}
+.intro-emblem-flake {
+  font-size: 3.6rem;
+  color: #e6f6ff;
+  text-shadow: 0 0 24px rgba(168, 237, 234, 0.9);
+  animation: flakeSpin 14s linear infinite;
+}
+.intro-kicker {
+  margin: 0 0 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  letter-spacing: 0.32em;
+  color: #9fd8ee;
+  animation: introRise 0.8s ease-out 0.35s both;
+}
+.intro-title {
+  margin: 0;
+  font-size: clamp(2.8rem, 9vw, 5.6rem);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  background: linear-gradient(120deg, #ffffff 0%, #a8edea 30%, #c9d6ff 55%, #ffffff 70%, #7ec8e3 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 26px rgba(126, 200, 227, 0.45));
+  animation: introRise 0.9s cubic-bezier(.2, .8, .2, 1) 0.5s both, titleShimmer 6s ease-in-out 1.4s infinite;
+}
+.intro-tagline {
+  margin: 14px 0 22px;
+  font-size: clamp(1rem, 2.4vw, 1.25rem);
+  color: #cfe4f5;
+  font-weight: 600;
+  animation: introRise 0.8s ease-out 0.75s both;
+}
+.intro-rounds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+.intro-round-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(200, 225, 255, 0.25);
+  color: #e8f3ff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  backdrop-filter: blur(8px);
+  animation: introRise 0.6s ease-out var(--chip-delay, 1s) both;
+}
+.intro-round-chip span {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: #7ec8e3;
+}
+.intro-enter-btn {
+  position: relative;
+  padding: 16px 40px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #06223a;
+  background: linear-gradient(135deg, #e0fbff 0%, #a8edea 45%, #7ec8e3 100%);
+  box-shadow: 0 10px 40px rgba(126, 200, 227, 0.45), 0 0 0 0 rgba(168, 237, 234, 0.6);
+  animation: introRise 0.7s ease-out 1.35s both, enterGlow 2.2s ease-in-out 2.1s infinite;
+  transition: transform 0.15s ease;
+}
+.intro-enter-btn:hover { transform: translateY(-2px) scale(1.03); }
+.intro-enter-btn:focus-visible { outline: 3px solid #ffffff; outline-offset: 4px; }
+.intro-hint {
+  margin: 16px 0 0;
+  font-size: 0.82rem;
+  color: #8fb3cc;
+  animation: introRise 0.6s ease-out 1.6s both;
+}
+
+@keyframes introFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes introFadeOut { to { opacity: 0; transform: scale(1.04); filter: blur(4px); } }
+@keyframes introRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes titleShimmer { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes emblemPulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes flakeSpin { to { transform: rotate(360deg); } }
+@keyframes auroraDrift { from { transform: translateX(-6%) rotate(-4deg); } to { transform: translateX(6%) rotate(4deg); } }
+@keyframes enterGlow {
+  0%, 100% { box-shadow: 0 10px 40px rgba(126, 200, 227, 0.45), 0 0 0 0 rgba(168, 237, 234, 0.55); }
+  50% { box-shadow: 0 10px 40px rgba(126, 200, 227, 0.6), 0 0 0 14px rgba(168, 237, 234, 0); }
+}
+
+/* Backdrop snow sits behind every card (the lobby used to own its own canvas) */
+.retro-crt-backdrop .snow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   GAME OVERLAYS — HOST PAUSE & PLAYER HAND-OFF
+   ========================================================================== */
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 8, 22, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: introFadeIn 0.25s ease-out both;
+}
+.pause-overlay { z-index: 2100; }
+.game-overlay-card {
+  width: min(520px, 100%);
+  text-align: center;
+  padding: 32px 28px 26px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, rgba(30, 41, 79, 0.96), rgba(12, 18, 40, 0.96));
+  border: 1.5px solid rgba(200, 225, 255, 0.22);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  color: #f1f7ff;
+  font-family: var(--sa-font-display, "Nunito", sans-serif);
+  animation: overlayPop 0.35s cubic-bezier(.2, 1.2, .3, 1) both;
+}
+.game-overlay-card h2 {
+  margin: 6px 0 8px;
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+.game-overlay-card p {
+  margin: 0;
+  color: #c3d4ea;
+  line-height: 1.5;
+}
+.pause-icon {
+  font-size: 2.4rem;
+  color: #ffd60a;
+  letter-spacing: -0.1em;
+  animation: emblemPulse 1.8s ease-in-out infinite;
+}
+.handoff-icon {
+  font-size: 3.2rem;
+  line-height: 1;
+  animation: handoffBounce 0.7s cubic-bezier(.2, 1.4, .4, 1) 0.1s both;
+}
+.handoff-points {
+  display: inline-block;
+  margin: 2px 0 12px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #062a1a;
+  background: linear-gradient(135deg, #a8ffcf, #43e97b);
+  box-shadow: 0 0 26px rgba(67, 233, 123, 0.45);
+}
+.handoff-overlay[data-tone="warning"] .handoff-points {
+  color: #3a2600;
+  background: linear-gradient(135deg, #ffe9a3, #f7b733);
+  box-shadow: 0 0 26px rgba(247, 183, 51, 0.4);
+}
+.handoff-overlay[data-tone="success"] .game-overlay-card { border-color: rgba(67, 233, 123, 0.45); }
+.handoff-overlay[data-tone="warning"] .game-overlay-card { border-color: rgba(247, 183, 51, 0.5); }
+.handoff-detail { font-size: 1.02rem; }
+.handoff-next {
+  margin: 18px auto 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(200, 225, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: introRise 0.4s ease-out both;
+}
+.handoff-next.hidden { display: none !important; }
+.handoff-next-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.25em;
+  color: #7ec8e3;
+}
+.handoff-next strong { font-size: 1.45rem; font-weight: 900; }
+.handoff-next-role { font-size: 0.78rem; color: #a9bdd6; letter-spacing: 0.06em; }
+.handoff-continue-btn {
+  margin-top: 20px;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #06223a;
+  background: linear-gradient(135deg, #e0fbff, #7ec8e3);
+  transition: transform 0.15s ease;
+}
+.handoff-continue-btn:hover { transform: translateY(-1px); }
+.handoff-continue-btn:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
+.handoff-countdown { margin-left: 6px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+@keyframes overlayPop { from { opacity: 0; transform: scale(0.88) translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes handoffBounce { from { transform: scale(0.3) rotate(-15deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ==========================================================================
+   ANTI-STUCK SKIP, ROUND 3 TURN CLOCK & FINAL RANK
+   ========================================================================== */
+.btn-skip-turn {
+  border: 1.5px dashed rgba(247, 183, 51, 0.7) !important;
+  color: #ffd27a !important;
+  background: rgba(247, 183, 51, 0.08) !important;
+  animation: introRise 0.35s ease-out both;
+}
+.btn-skip-turn:hover { background: rgba(247, 183, 51, 0.16) !important; }
+#btnR3SkipTurn { margin-top: 8px; }
+
+.r3-turn-timer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 6px 0 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 160, 23, 0.35);
+  font-size: 0.86rem;
+  color: #e9dcc0;
+}
+.r3-turn-timer strong { font-variant-numeric: tabular-nums; font-size: 1rem; }
+.r3-live-bounty { color: #ffd60a; font-weight: 800; }
+.r3-turn-timer.urgent { border-color: rgba(255, 90, 90, 0.7); }
+
+.finished-rank-badge {
+  display: inline-block;
+  margin: 0 auto 16px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #2b1d00;
+  background: linear-gradient(135deg, #fff1b8, #fbbf24);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.45);
+  animation: overlayPop 0.5s cubic-bezier(.2, 1.2, .3, 1) both;
+}
+
+@media (max-width: 600px) {
+  .game-overlay-card { padding: 24px 18px 20px; }
+  .game-overlay-card h2 { font-size: 1.5rem; }
+  .intro-enter-btn { padding: 14px 28px; font-size: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-splash *, .game-overlay, .game-overlay-card, .handoff-icon, .intro-enter-btn {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

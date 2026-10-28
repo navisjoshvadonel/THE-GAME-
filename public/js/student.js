@@ -25,7 +25,7 @@
   let socket = null;
   let sessionToken = paramToken || sessionStorage.getItem('campus_puzzle_session_token') || localStorage.getItem('campus_puzzle_session_token');
   let currentClientState = null;
-  let previousScore = 0;
+  let previousScore = null; // null until the first sync, so a reconnect doesn't "award" the whole total
   let lastTurnIndex = -1;
   let autoAdvanceTimer = null;
   let operativeTimerInterval = null;
@@ -253,10 +253,14 @@
   function switchScreen(screen) {
     if (!screen) return;
 
-    // Clean up R1 turn timer when leaving game view
+    // Clean up per-round turn timers when leaving their views
     if (_activeScreen === viewGame && screen !== viewGame) {
       clearInterval(operativeTimerInterval);
       operativeTimerInterval = null;
+    }
+    if (_activeScreen === viewRound3Game && screen !== viewRound3Game) {
+      clearInterval(r3TimerInterval);
+      r3TimerInterval = null;
     }
 
     _activeScreen = screen;
@@ -273,6 +277,167 @@
       }
     });
   }
+
+  /* -------------------------------------------------------------
+   * GAME OVERLAYS: INTRO SPLASH, HOST PAUSE & PLAYER HAND-OFF
+   * ----------------------------------------------------------- */
+  const introSplash = document.getElementById('introSplash');
+  const btnIntroEnter = document.getElementById('btnIntroEnter');
+  const pauseOverlay = document.getElementById('pauseOverlay');
+  const handoffOverlay = document.getElementById('handoffOverlay');
+  const handoffIcon = document.getElementById('handoffIcon');
+  const handoffTitle = document.getElementById('handoffTitle');
+  const handoffPoints = document.getElementById('handoffPoints');
+  const handoffDetail = document.getElementById('handoffDetail');
+  const handoffNext = document.getElementById('handoffNext');
+  const handoffNextName = document.getElementById('handoffNextName');
+  const handoffNextRole = document.getElementById('handoffNextRole');
+  const btnHandoffContinue = document.getElementById('btnHandoffContinue');
+  const handoffCountdown = document.getElementById('handoffCountdown');
+
+  let handoffTimer = null;
+  let handoffTick = null;
+  let handoffOnClose = null;
+  let handoffAwaitingNext = false;
+
+  function isShown(el) {
+    return Boolean(el) && !el.classList.contains('hidden');
+  }
+
+  function isHandoffOpen() {
+    return isShown(handoffOverlay);
+  }
+
+  // Celebrate a solved step, then tell the squad who takes the controls next.
+  // fromStep is the step that was just solved, so "UP NEXT" waits for the newer sync.
+  function showHandoff({ icon = '🎉', title, points = null, detail = '', tone = 'success', fromStep = '', awaitNext = true, holdMs = 4000, onClose = null }) {
+    if (!handoffOverlay) {
+      if (onClose) onClose();
+      return;
+    }
+    clearTimeout(handoffTimer);
+    clearInterval(handoffTick);
+    handoffOnClose = onClose;
+    handoffOverlay.dataset.tone = tone;
+    handoffOverlay.dataset.fromStep = String(fromStep);
+    if (handoffIcon) handoffIcon.textContent = icon;
+    if (handoffTitle) handoffTitle.textContent = title;
+    if (handoffPoints) {
+      handoffPoints.classList.toggle('hidden', points === null);
+      if (points !== null) handoffPoints.textContent = `${points > 0 ? '+' : ''}${points} PTS`;
+    }
+    if (handoffDetail) handoffDetail.textContent = detail;
+    if (handoffNext) handoffNext.classList.add('hidden');
+    handoffAwaitingNext = awaitNext;
+    handoffOverlay.classList.remove('hidden');
+
+    let remaining = Math.ceil(holdMs / 1000);
+    if (handoffCountdown) handoffCountdown.textContent = `(${remaining})`;
+    handoffTick = setInterval(() => {
+      remaining--;
+      if (handoffCountdown) handoffCountdown.textContent = remaining > 0 ? `(${remaining})` : '';
+    }, 1000);
+    handoffTimer = setTimeout(closeHandoff, holdMs);
+    if (btnHandoffContinue) btnHandoffContinue.focus();
+
+    // The server may already have synced the next turn before this opened
+    if (currentClientState) updateHandoffNext(currentClientState);
+  }
+
+  function closeHandoff() {
+    if (!isHandoffOpen()) return;
+    clearTimeout(handoffTimer);
+    clearInterval(handoffTick);
+    handoffOverlay.classList.add('hidden');
+    handoffAwaitingNext = false;
+    const cb = handoffOnClose;
+    handoffOnClose = null;
+    if (cb) cb();
+    refocusActiveInput();
+  }
+
+  // Fill in "UP NEXT" once the server has synced the squad's new turn
+  function updateHandoffNext(state) {
+    if (!handoffAwaitingNext || !isHandoffOpen() || !state) return;
+    const puzzle = state.puzzle;
+    if (!puzzle || state.team?.progress?.isRoundCompleted) return;
+    if (puzzle.type !== 'member_step' && puzzle.type !== 'leader_step' && puzzle.type !== 'cyber_hack_round2') return;
+    const stepKey = puzzle.type === 'cyber_hack_round2' ? puzzle.nodeNumber : puzzle.stepNumber;
+    if (handoffOverlay.dataset.fromStep && String(stepKey) === handoffOverlay.dataset.fromStep) return;
+    if (handoffNextName) handoffNextName.textContent = puzzle.activePlayerName || 'Next player';
+    if (handoffNextRole) handoffNextRole.textContent = (puzzle.activePlayerRole || '').toUpperCase();
+    if (handoffNext) handoffNext.classList.remove('hidden');
+    handoffAwaitingNext = false;
+  }
+
+  function refocusActiveInput() {
+    if (isShown(handoffOverlay) || isShown(pauseOverlay) || isShown(introSplash)) return;
+    if (_activeScreen === viewGame) {
+      if (isShown(boxLeaderTurn) && leaderAnswerInput) leaderAnswerInput.focus();
+      else if (isShown(boxYourTurn) && puzzleHiddenInput) puzzleHiddenInput.focus();
+    } else if (_activeScreen === viewRound2Game) {
+      if (r2HiddenInput) r2HiddenInput.focus();
+    } else if (_activeScreen === viewRound3Game) {
+      const leaderInput = document.getElementById('r3LeaderInput');
+      const memberInput = document.getElementById('r3MemberInput');
+      if (isShown(document.getElementById('boxR3LeaderGame')) && leaderInput) leaderInput.focus();
+      else if (isShown(document.getElementById('boxR3MemberGame')) && memberInput) memberInput.focus();
+    }
+  }
+
+  if (btnHandoffContinue) btnHandoffContinue.addEventListener('click', closeHandoff);
+
+  // Intro splash: shown once per browser tab, and doubles as the click that unlocks game audio
+  const INTRO_SEEN_KEY = 'snow_arena_intro_seen';
+  function dismissIntro() {
+    if (!isShown(introSplash) || introSplash.classList.contains('leaving')) return;
+    try { sessionStorage.setItem(INTRO_SEEN_KEY, '1'); } catch (e) { /* storage blocked */ }
+    if (sound) {
+      sound.init();
+      sound.playSuccess();
+    }
+    introSplash.classList.add('leaving');
+    setTimeout(() => {
+      introSplash.classList.add('hidden');
+      introSplash.classList.remove('leaving');
+      refocusActiveInput();
+    }, 700);
+  }
+
+  let introAlreadySeen = false;
+  try { introAlreadySeen = Boolean(sessionStorage.getItem(INTRO_SEEN_KEY)); } catch (e) { introAlreadySeen = true; }
+  if (introSplash && !introAlreadySeen) {
+    introSplash.classList.remove('hidden');
+    introSplash.addEventListener('click', dismissIntro);
+  }
+  if (btnIntroEnter) {
+    btnIntroEnter.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissIntro();
+    });
+  }
+
+  // Overlays own the keyboard while open, so keystrokes never leak into a hidden puzzle
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
+    if (isShown(introSplash)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!e.repeat) dismissIntro();
+      return;
+    }
+    if (isShown(pauseOverlay)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    if (isHandoffOpen()) {
+      if (e.key === 'Tab') return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!e.repeat && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) closeHandoff();
+    }
+  }, true);
 
   function triggerScorePopup(delta) {
     if (!floatingScorePopup) return;
@@ -434,8 +599,11 @@
       socket.emit('request_state_refresh', { sessionToken });
     });
 
-    socket.on('round_ended', () => {
-      showToast('Round 1 concluded! Check Grand Hall Projector for scores.', 'info');
+    socket.on('round_ended', (data) => {
+      const roundNum = data?.currentRound || currentClientState?.currentRound;
+      showToast(data?.status === 'FINISHED'
+        ? '🏆 The tournament is over! Watch the Grand Hall projector for the honors ceremony.'
+        : `Round ${roundNum || ''} has ended! Check the Grand Hall projector for standings.`, 'info');
       socket.emit('request_state_refresh', { sessionToken });
     });
 
@@ -509,16 +677,23 @@
       if (benchIdentityBadge) benchIdentityBadge.classList.remove('hidden');
       if (btnSwitchBench) btnSwitchBench.classList.remove('hidden');
 
-      // Check if score increased
-      if (team.totalScore > previousScore) {
-        const delta = team.totalScore - previousScore;
-        triggerScorePopup(delta);
-        previousScore = team.totalScore;
+      // Pop the gained points (but not the existing total on first load / reconnect)
+      if (previousScore !== null && team.totalScore > previousScore) {
+        triggerScorePopup(team.totalScore - previousScore);
       }
+      previousScore = team.totalScore;
     } else {
       if (benchIdentityBadge) benchIdentityBadge.classList.add('hidden');
       if (btnSwitchBench) btnSwitchBench.classList.add('hidden');
     }
+
+    // Host pause covers every game screen
+    const showPause = Boolean(state.isPaused) && Boolean(team) && !team.isEliminated && String(state.gameStatus).startsWith('ROUND_');
+    if (pauseOverlay) pauseOverlay.classList.toggle('hidden', !showPause);
+
+    // A finished round or game supersedes any celebration still on screen
+    if (isHandoffOpen() && !String(state.gameStatus).startsWith('ROUND_')) closeHandoff();
+    updateHandoffNext(state);
 
     // View Routing
     if (state.gameStatus === 'LOBBY' || !team) {
@@ -565,6 +740,12 @@
       const r3 = team.roundScores?.[3] || 0;
       finishedScoreBreakdown.textContent = `Round 1: ${r1.toLocaleString()} PTS  •  Round 2: ${r2.toLocaleString()} PTS  •  Round 3: ${r3.toLocaleString()} PTS`;
     }
+    const finishedRankBadge = document.getElementById('finishedRankBadge');
+    if (finishedRankBadge && team.rank > 0) {
+      const medal = ['🥇', '🥈', '🥉'][team.rank - 1] || '🎖️';
+      finishedRankBadge.textContent = `${medal} Final rank #${team.rank} of ${team.totalTeams}`;
+      finishedRankBadge.classList.remove('hidden');
+    }
   }
 
   /* -------------------------------------------------------------
@@ -600,7 +781,7 @@
             <span>${icon}</span>
           </div>
           <div class="lounge-member-info">
-            <strong>${mem.name}</strong>
+            <strong>${escapeHtml(mem.name)}</strong>
             <span>${roleText}</span>
           </div>
         `;
@@ -679,7 +860,7 @@
           ${badgeHtml}
           ${icon}
           <div>
-            <span class="turn-pill-name">${pStep.scholarName}</span>
+            <span class="turn-pill-name">${escapeHtml(pStep.scholarName)}</span>
             <span class="field-hint" style="display:block; font-size:0.68rem; color:var(--jules-text-dim);">${pStep.label}</span>
           </div>
         `;
@@ -705,17 +886,16 @@
       return;
     }
 
-    // 2. Round 1 Completed by this Team or Intermission 1 -> Display Round 2 Mission Briefing!
+    // 2. Round 1 Completed by this Team or Intermission 1 -> victory recap + Round 2 Mission Briefing
     if (state.gameStatus === 'INTERMEDIATE_1' || (progress && progress.isRoundCompleted)) {
-      if (boxRound2Briefing) {
-        boxRound2Briefing.classList.remove('hidden');
-      } else if (boxRoundCompleted) {
+      if (progress && progress.isRoundCompleted && boxRoundCompleted) {
         boxRoundCompleted.classList.remove('hidden');
-        if (completeTotalScore) completeTotalScore.textContent = team.totalScore;
+        if (completeTotalScore) completeTotalScore.textContent = team.roundScores?.[1] ?? team.totalScore;
         if (completeThesisText) {
-          completeThesisText.textContent = `"${progress?.assembledSubmission || 'Victory Phrase Verified'}"`;
+          completeThesisText.textContent = `"${progress.assembledSubmission || 'Victory Phrase Verified'}"`;
         }
       }
+      if (boxRound2Briefing) boxRound2Briefing.classList.remove('hidden');
       return;
     }
 
@@ -842,7 +1022,7 @@
           r2CompletedKeysGrid.innerHTML = '';
           const words = state.puzzle?.collectedWords || progress?.collectedWords || [];
           for (let i = 0; i < 10; i++) {
-            const w = words[i] || (i === 9 ? 'SERVER' : `KEY_${i + 1}`);
+            const w = words[i] || '—';
             const pill = document.createElement('div');
             const isBoss = i === 9;
             pill.className = `r2-key-pill${isBoss ? ' boss-key' : ''}`;
@@ -878,6 +1058,7 @@
     if (lastR2RenderedNode !== puzzle.nodeNumber) {
       r2NodePassedState = false;
       if (boxR2NodePassed) boxR2NodePassed.classList.add('hidden');
+      if (r2FeedbackBox) r2FeedbackBox.classList.add('hidden');
       r2CurrentGuess = '';
       lastR2RenderedNode = puzzle.nodeNumber;
       // Reset keyboard + matrix caches for the new node
@@ -972,7 +1153,7 @@
     renderVirtualKeyboard(puzzle);
 
     // Keep hidden input focused for typing
-    if (r2HiddenInput && document.activeElement !== r2HiddenInput && !r2NodePassedState) {
+    if (r2HiddenInput && document.activeElement !== r2HiddenInput && !r2NodePassedState && !isHandoffOpen()) {
       r2HiddenInput.focus();
     }
   }
@@ -1168,8 +1349,9 @@
     });
   }
 
+  let r2Submitting = false;
   function submitRound2Guess() {
-    if (r2NodePassedState) return;
+    if (r2NodePassedState || r2Submitting || isHandoffOpen()) return;
     const puzzle = currentClientState?.puzzle;
     if (!puzzle || puzzle.type !== 'cyber_hack_round2') return;
 
@@ -1187,9 +1369,11 @@
       return;
     }
 
+    r2Submitting = true;
     if (btnR2Submit) btnR2Submit.disabled = true;
 
     socket.emit('submit_round2_guess', { sessionToken, guessWord: guess, guess }, (res) => {
+      r2Submitting = false;
       if (btnR2Submit) btnR2Submit.disabled = false;
       if (!res) return;
 
@@ -1206,8 +1390,9 @@
 
       // Check if node is breached or auto-bypassed
       if (res.isSolved || res.nodePassed) {
-        r2NodePassedState = true;
         const pts = res.pointsAwarded !== undefined ? res.pointsAwarded : (res.isSolved ? 100 : 0);
+        r2CurrentGuess = '';
+        if (r2FeedbackBox) r2FeedbackBox.classList.add('hidden');
 
         if (res.isSolved) {
           if (sound) {
@@ -1215,42 +1400,27 @@
             sound.playVictoryFanfare();
           }
           triggerParticleBurst();
-        } else {
-          if (sound) sound.playError();
+        } else if (sound) {
+          sound.playError();
         }
 
-        if (r2FloatingScorePopup) {
-          r2FloatingScorePopup.textContent = `+${pts} PTS`;
-        }
-
-        if (boxR2NodePassed) {
-          boxR2NodePassed.classList.remove('hidden');
-          if (r2PassTitleText) {
-            r2PassTitleText.textContent = res.isSolved 
-              ? `🎉 NODE ${puzzle.nodeNumber} BREACHED! +${pts} PTS!`
-              : `⚠️ NODE ${puzzle.nodeNumber} AUTO-BYPASS! (+0 PTS)`;
-          }
-          if (r2PassDescText) {
-            r2PassDescText.textContent = res.roundCompleted
-              ? '👑 CONGRATULATIONS! ALL 10 NODES BREACHED! MAIN REACTOR OVERRIDDEN!'
-              : (res.isSolved 
-                  ? 'Cryptographic relay key transmitted forward! Pass controls to the next operative...' 
-                  : `Target password was "${res.solvedWord || 'LOCKED'}". Node bypassed with 0 PTS.`);
-          }
-        }
-
-        if (res.isSolved) {
-          showToast(`⚡ Node ${puzzle.nodeNumber} Breached! (+${pts} PTS)`, 'success');
-        } else {
-          showToast(`⚠️ Node ${puzzle.nodeNumber} Auto-Bypassed (+0 PTS). Next operative up!`, 'warning');
-        }
-        r2CurrentGuess = '';
-
-        // Auto-advance after 3.5s or click
-        clearTimeout(autoAdvanceTimer);
-        autoAdvanceTimer = setTimeout(() => {
-          advanceToNextR2Node();
-        }, 3500);
+        // Celebrate the breach and name the next relay operative on the shared console
+        const isFinalNode = Boolean(res.roundCompleted);
+        showHandoff({
+          icon: isFinalNode ? '👑' : (res.isSolved ? '⚡' : '⚠️'),
+          title: isFinalNode
+            ? 'All 10 nodes breached!'
+            : (res.isSolved ? `Node ${puzzle.nodeNumber} breached!` : `Node ${puzzle.nodeNumber} auto-bypassed`),
+          points: pts,
+          detail: res.isSolved
+            ? `Password "${res.solvedWord}" cracked in ${res.attemptsUsed || 1} ${res.attemptsUsed === 1 ? 'guess' : 'guesses'}.${isFinalNode ? ' Main reactor overridden!' : ''}`
+            : `Out of attempts — the password was "${res.solvedWord || '?'}". The relay continues.`,
+          tone: res.isSolved ? 'success' : 'warning',
+          fromStep: puzzle.nodeNumber,
+          awaitNext: !isFinalNode,
+          holdMs: isFinalNode ? 5000 : 3500,
+          onClose: advanceToNextR2Node
+        });
 
       } else {
         // Incorrect guess: feedback received, prepare next attempt
@@ -1508,6 +1678,15 @@
       liveBountyBadge.textContent = `⚡ LIVE BOUNTY: ${liveBounty} PTS`;
     }
 
+    // Anti-stuck: once the full turn window is used up, offer a 0-point skip
+    if (btnSkipTurn) {
+      const skipAfter = puzzle.skipUnlockSec || durationSec;
+      btnSkipTurn.classList.toggle('hidden', elapsedSec < skipAfter);
+    }
+    if (liveBountyBadge && remainingTurnSec === 0) {
+      liveBountyBadge.textContent = `⌛ TIME'S UP • BOUNTY ${liveBounty} PTS • SKIP UNLOCKED`;
+    }
+
     // Check Clue Lock Status (Locked until 2:00 mark)
     const unlockDelaySec = puzzle.clueUnlockDelaySec || 120; // 2.0 mins
     if (elapsedSec < unlockDelaySec) {
@@ -1690,7 +1869,7 @@
       }
       return;
     }
-    sessionStorage.setItem('campus_admin_pwd', pwd);
+    try { localStorage.setItem('campus_admin_pwd', pwd); } catch (e) { /* storage blocked */ }
     window.location.href = '/admin';
   }
 
@@ -1774,6 +1953,7 @@
       }
 
       if (registerError) registerError.classList.add('hidden');
+      if (btnInitializeBench.disabled) return;
       btnInitializeBench.disabled = true;
 
       socket.emit('register_bench', {
@@ -1791,7 +1971,7 @@
           localStorage.setItem('campus_puzzle_session_token', sessionToken);
           handleSyncState(res.clientState);
           if (sound) sound.playSuccess();
-          showToast(`Bench ${benchNumber} initialized for ${teamName}!`, 'success');
+          showToast(`❄️ Welcome to Snow's Arena, ${res.team?.name || teamName}!`, 'success');
         } else {
           if (registerError) {
             registerError.textContent = res.message || 'Bench registration failed.';
@@ -1837,6 +2017,10 @@
     if (isNewStep) {
       activeRiddleStepKey = stepKey;
       currentWordPattern = pattern;
+      // Fresh riddle: drop the previous player's feedback and success glow
+      if (puzzleFeedbackBox) puzzleFeedbackBox.classList.add('hidden');
+      slotsBoard.classList.remove('correct-glow');
+      if (btnSkipTurn) btnSkipTurn.classList.add('hidden');
 
       // Update letter count badge
       if (slotsCountLabel) {
@@ -1895,7 +2079,7 @@
       updateSlotVisuals();
     }
 
-    if (puzzleHiddenInput && document.activeElement !== puzzleHiddenInput) {
+    if (puzzleHiddenInput && document.activeElement !== puzzleHiddenInput && !isHandoffOpen()) {
       puzzleHiddenInput.value = '';
       puzzleHiddenInput.focus();
     }
@@ -1944,7 +2128,9 @@
   }
 
   // 8. Submit Riddle Solution
+  let riddleSubmitting = false;
   function submitRiddleAnswer() {
+    if (riddleSubmitting) return; // Enter + click together must not double-submit
     const answer = puzzleAnswerInput ? puzzleAnswerInput.value.trim() : '';
     if (!answer) {
       if (slotsBoard) {
@@ -1960,48 +2146,34 @@
     }
 
     const turnIndex = currentClientState?.team?.progress?.currentTurnIndex || 0;
+    const solvedStep = currentClientState?.puzzle?.stepNumber || turnIndex + 1;
+    riddleSubmitting = true;
     if (btnSubmitAnswer) btnSubmitAnswer.disabled = true;
 
     socket.emit('submit_turn_answer', { sessionToken, turnIndex, answer }, (res) => {
+      riddleSubmitting = false;
       if (btnSubmitAnswer) btnSubmitAnswer.disabled = false;
-      if (res && res.success) {
+      if (res && res.success && !res.alreadySolved) {
         if (sound) {
           sound.playSuccess();
           sound.playFragmentCollect();
         }
         triggerParticleBurst();
+        if (slotsBoard) slotsBoard.classList.add('correct-glow');
 
-        if (slotsBoard) {
-          slotsBoard.classList.add('correct-glow');
-        }
-
-        if (puzzleFeedbackBox) {
-          puzzleFeedbackBox.className = 'alert-box alert-success';
-          puzzleFeedbackBox.textContent = res.message || 'Cipher Cracked! Keyword Added to Inventory.';
-          puzzleFeedbackBox.classList.remove('hidden');
-        }
-
-        // Show Pass Console Banner with actual dynamic speed points
-        const points = res.earnedPoints || 250;
-        if (floatingScorePopup) {
-          floatingScorePopup.textContent = `+${points} PTS`;
-        }
-        if (boxPassConsole) {
-          if (passTitleText) passTitleText.textContent = `⭐ CIPHER CRACKED! +${points} PTS!`;
-          if (passDescText) passDescText.textContent = `Keyword "${res.fragment || 'KEYWORD'}" added to squad inventory! Ready for next player...`;
-          boxPassConsole.classList.remove('hidden');
-        }
-
-        // Auto-advance smoothly after 1.6 seconds
-        clearTimeout(autoAdvanceTimer);
-        autoAdvanceTimer = setTimeout(() => {
-          if (boxPassConsole) boxPassConsole.classList.add('hidden');
-          if (slotsBoard) slotsBoard.classList.remove('correct-glow');
-          activeRiddleStepKey = null; // Allow next puzzle to construct fresh slots
-          clearAllSlots();
-        }, 1600);
-
+        // Celebrate, reveal the keyword and hand the console to the next player.
+        // The next riddle is already rendering underneath, so nothing is lost.
+        showHandoff({
+          icon: '🔓',
+          title: 'Cipher cracked!',
+          points: res.earnedPoints ?? 0,
+          detail: `Keyword "${res.fragment || 'KEYWORD'}" is locked into your squad inventory.`,
+          fromStep: solvedStep
+        });
+      } else if (res && res.alreadySolved) {
+        socket.emit('request_state_refresh', { sessionToken });
       } else {
+        if (res && res.outOfSync) socket.emit('request_state_refresh', { sessionToken });
         if (sound) sound.playError();
         if (slotsBoard) {
           slotsBoard.classList.add('error-shake');
@@ -2033,7 +2205,9 @@
 
   // Listen to keystrokes on document
   document.addEventListener('keydown', (e) => {
-    // Only capture if currently in member riddle view and not typing in leader textarea or other inputs
+    // Only capture while the Round 1 riddle terminal is on screen (Round 3 has its own inputs)
+    if (_activeScreen !== viewGame || !isShown(boxYourTurn)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (!currentClientState?.puzzle || currentClientState.puzzle.type === 'leader_step') return;
     if (document.activeElement === leaderAnswerInput) return;
     if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) && document.activeElement !== puzzleHiddenInput) return;
@@ -2115,15 +2289,34 @@
     });
   }
 
-  if (btnNextTurnReady) {
-    btnNextTurnReady.addEventListener('click', () => {
-      clearTimeout(autoAdvanceTimer);
-      if (boxPassConsole) boxPassConsole.classList.add('hidden');
-      if (slotsBoard) slotsBoard.classList.remove('correct-glow');
-      activeRiddleStepKey = null;
-      clearAllSlots();
+  // Skip a riddle whose turn window has run out (0 PTS, keyword revealed) — shared by Rounds 1 & 3
+  let skipRequestPending = false;
+  function requestSkipTurn() {
+    if (skipRequestPending) return;
+    const puzzle = currentClientState?.puzzle;
+    if (!puzzle || puzzle.type !== 'member_step') return;
+    if (!confirm('Skip this riddle?\n\nThe answer will be revealed and added to your inventory, but your squad scores 0 points for it.')) return;
+    skipRequestPending = true;
+    socket.emit('skip_turn', { sessionToken }, (res) => {
+      skipRequestPending = false;
+      if (res && res.success) {
+        if (sound) sound.playWhoosh();
+        showHandoff({
+          icon: '⏭️',
+          title: 'Riddle skipped',
+          points: 0,
+          detail: `The answer was "${res.fragment}". It's in your inventory — keep going!`,
+          tone: 'warning',
+          fromStep: puzzle.stepNumber
+        });
+      } else {
+        showToast(res?.message || 'Skip is not available yet.', 'error');
+      }
     });
   }
+
+  const btnSkipTurn = document.getElementById('btnSkipTurn');
+  if (btnSkipTurn) btnSkipTurn.addEventListener('click', requestSkipTurn);
 
   // 9. Real-time typing listener for Leader Thesis Inspector
   if (leaderAnswerInput) {
@@ -2141,15 +2334,25 @@
   }
 
   // 10. Submit Master Thesis (Leader Step)
+  let thesisSubmitting = false;
   function submitLeaderThesis() {
-    if (!leaderAnswerInput) return;
+    if (!leaderAnswerInput || thesisSubmitting) return;
     const answer = leaderAnswerInput.value.trim();
-    if (!answer) return;
+    if (!answer) {
+      if (leaderFeedbackBox) {
+        leaderFeedbackBox.className = 'alert-box alert-error';
+        leaderFeedbackBox.textContent = 'Write your victory sentence using the collected keywords first.';
+        leaderFeedbackBox.classList.remove('hidden');
+      }
+      return;
+    }
 
-    const turnIndex = currentClientState?.team?.progress?.currentTurnIndex || 3;
+    const turnIndex = currentClientState?.team?.progress?.currentTurnIndex ?? 3;
+    thesisSubmitting = true;
     if (btnSubmitLeaderAnswer) btnSubmitLeaderAnswer.disabled = true;
 
     socket.emit('submit_turn_answer', { sessionToken, turnIndex, answer }, (res) => {
+      thesisSubmitting = false;
       if (btnSubmitLeaderAnswer) btnSubmitLeaderAnswer.disabled = false;
       if (res && res.success) {
         if (sound) {
@@ -2158,17 +2361,17 @@
         }
         triggerParticleBurst();
 
-        const points = res.earnedPoints || res.scoreEarned || 250;
-        if (floatingScorePopup) {
-          floatingScorePopup.textContent = `+${points} PTS`;
-        }
-        if (leaderFeedbackBox) {
-          leaderFeedbackBox.className = 'alert-box alert-success';
-          leaderFeedbackBox.textContent = `Final Boss Conquered! Victory phrase accepted! (+${points} PTS)`;
-          leaderFeedbackBox.classList.remove('hidden');
-        }
-
-        showToast(`🏆 STAGE 1 CONQUERED BY YOUR SQUAD! (+${points} PTS)`, 'success');
+        const points = res.earnedPoints ?? res.scoreEarned ?? 0;
+        if (leaderFeedbackBox) leaderFeedbackBox.classList.add('hidden');
+        leaderAnswerInput.value = '';
+        showHandoff({
+          icon: '🏆',
+          title: 'Round 1 conquered!',
+          points,
+          detail: 'Your victory sentence was accepted. Study the Round 2 briefing while the other squads finish.',
+          awaitNext: false,
+          holdMs: 5000
+        });
       } else {
         if (sound) sound.playError();
         if (leaderFeedbackBox) {
@@ -2262,13 +2465,84 @@
     if (modal) modal.classList.add('hidden');
   }
 
+  let r3TimerInterval = null;
+  let lastR3StepKey = null;
+
+  // Live turn clock, speed bounty and skip availability for the active evidence file
+  function updateR3TurnTimer() {
+    const puzzle = currentClientState?.puzzle;
+    const timerEl = document.getElementById('r3TurnTimer');
+    const skipBtn = document.getElementById('btnR3SkipTurn');
+    if (!puzzle || puzzle.type !== 'member_step' || currentClientState?.currentRound !== 3) {
+      if (timerEl) timerEl.classList.add('hidden');
+      if (skipBtn) skipBtn.classList.add('hidden');
+      return;
+    }
+    const durationSec = puzzle.turnDurationSec || 150;
+    const elapsedSec = Math.max(0, Math.floor((Date.now() - (puzzle.turnStartedAt || Date.now())) / 1000));
+    const remaining = Math.max(0, durationSec - elapsedSec);
+    const remainingEl = document.getElementById('r3TurnTimeRemaining');
+    const bountyEl = document.getElementById('r3LiveBounty');
+    if (timerEl) {
+      timerEl.classList.remove('hidden');
+      timerEl.classList.toggle('urgent', remaining <= 30);
+    }
+    if (remainingEl) remainingEl.textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+    if (bountyEl) bountyEl.textContent = remaining > 0
+      ? `⚡ BOUNTY ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`
+      : `⌛ TIME'S UP • ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`;
+    if (skipBtn) skipBtn.classList.toggle('hidden', elapsedSec < (puzzle.skipUnlockSec || durationSec));
+  }
+
   function renderRound3Game(state) {
     if (!state || !state.team) return;
     const team = state.team;
     const puzzle = state.puzzle;
 
-    // Show detective briefing once upon entering Round 3
-    if (!r3BriefingShown && !team.progress?.isRoundCompleted) {
+    // Squads outside the Top 5 watch the finals as spectators
+    if (team.isEliminated) {
+      const r3GameTeamName = document.getElementById('r3GameTeamName');
+      const r3GameTeamScore = document.getElementById('r3GameTeamScore');
+      if (r3GameTeamName) r3GameTeamName.textContent = team.name || '--';
+      if (r3GameTeamScore) r3GameTeamScore.textContent = (team.totalScore || 0).toLocaleString();
+      ['boxR3MemberGame', 'boxR3LeaderGame', 'boxR3Completed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      const waiting = document.getElementById('boxR3WaitingTurn');
+      if (waiting) {
+        waiting.classList.remove('hidden');
+        const title = waiting.querySelector('.waiting-title');
+        if (title) title.textContent = 'Honorary Spectators';
+        const sub = document.getElementById('r3WaitingSub');
+        if (sub) sub.textContent = `The Top 5 squads are battling in the Baker Street finals. ${team.rank ? `Your squad finished the qualifiers at rank #${team.rank} with ${team.totalScore} PTS — ` : ''}watch the Grand Hall projector to cheer them on!`;
+      }
+      updateR3TurnTimer();
+      return;
+    }
+
+    // Fresh evidence file: clear the last answer's feedback and input
+    const stepKey = `${puzzle?.type || 'none'}_${puzzle?.stepNumber || 0}`;
+    if (stepKey !== lastR3StepKey) {
+      lastR3StepKey = stepKey;
+      ['r3MemberFeedback', 'r3LeaderFeedback'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      const memberInput = document.getElementById('r3MemberInput');
+      if (memberInput) memberInput.value = '';
+    }
+
+    if (puzzle?.type === 'member_step') {
+      if (!r3TimerInterval) r3TimerInterval = setInterval(updateR3TurnTimer, 1000);
+    } else {
+      clearInterval(r3TimerInterval);
+      r3TimerInterval = null;
+    }
+    updateR3TurnTimer();
+
+    // Show detective briefing once upon entering Round 3 (and only while the case is live)
+    if (!r3BriefingShown && !team.progress?.isRoundCompleted && state.roundActive) {
       r3BriefingShown = true;
       showR3BriefingModal();
     }
@@ -2384,6 +2658,8 @@
     if (!isYourTurn) {
       if (boxR3WaitingTurn) {
         boxR3WaitingTurn.classList.remove('hidden');
+        const waitingTitle = boxR3WaitingTurn.querySelector('.waiting-title');
+        if (waitingTitle) waitingTitle.textContent = 'Awaiting Fellow Detective';
         const r3WaitingSub = document.getElementById('r3WaitingSub');
         if (r3WaitingSub) {
           r3WaitingSub.textContent = `Operative ${team.progress?.activePlayerName || '--'} (${team.progress?.activePlayerRole || 'PLAYER'}) is examining Evidence File ${((team.progress?.currentTurnIndex || 0) + 1)} at the console.`;
@@ -2449,11 +2725,16 @@
   const btnR3DismissBriefing = document.getElementById('btnR3DismissBriefing');
   if (btnR3DismissBriefing) btnR3DismissBriefing.addEventListener('click', hideR3BriefingModal);
 
+  const btnR3SkipTurn = document.getElementById('btnR3SkipTurn');
+  if (btnR3SkipTurn) btnR3SkipTurn.addEventListener('click', requestSkipTurn);
+
   // Round 3 Form Listeners
+  let r3Submitting = false;
   const r3MemberForm = document.getElementById('r3MemberForm');
   if (r3MemberForm) {
     r3MemberForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (r3Submitting) return;
       const input = document.getElementById('r3MemberInput');
       const val = (input?.value || '').trim();
       const fb = document.getElementById('r3MemberFeedback');
@@ -2462,18 +2743,38 @@
         return;
       }
       const turnIdx = currentClientState?.team?.progress?.currentTurnIndex ?? 0;
+      const solvedStep = currentClientState?.puzzle?.stepNumber || turnIdx + 1;
+      const submitBtn = document.getElementById('btnR3MemberSubmit');
+      r3Submitting = true;
+      if (submitBtn) submitBtn.disabled = true;
       socket.emit('submit_turn_answer', {
         sessionToken,
         turnIndex: turnIdx,
         answer: val
       }, (res) => {
-        if (res && res.success) {
-          if (fb) { fb.textContent = res.message || 'Forensic Proof Verified!'; fb.className = 'alert-box alert-success'; fb.classList.remove('hidden'); }
+        r3Submitting = false;
+        if (submitBtn) submitBtn.disabled = false;
+        if (res && res.success && !res.alreadySolved) {
+          if (fb) fb.classList.add('hidden');
           input.value = '';
-          showToast('Forensic Proof Verified!', 'success');
+          if (sound) {
+            sound.playSuccess();
+            sound.playFragmentCollect();
+          }
+          triggerParticleBurst();
+          showHandoff({
+            icon: '🔍',
+            title: `Evidence ${solvedStep} verified!`,
+            points: res.earnedPoints ?? 0,
+            detail: `Proof "${res.fragment || 'SEALED'}" is sealed into the case file.`,
+            fromStep: solvedStep
+          });
+        } else if (res && res.alreadySolved) {
+          socket.emit('request_state_refresh', { sessionToken });
         } else {
+          if (res && res.outOfSync) socket.emit('request_state_refresh', { sessionToken });
+          if (sound) sound.playError();
           if (fb) { fb.textContent = res?.message || 'Incorrect deduction. Re-examine the testimony and clues.'; fb.className = 'alert-box alert-error'; fb.classList.remove('hidden'); }
-          showToast(res?.message || 'Incorrect deduction', 'error');
         }
       });
     });
@@ -2483,6 +2784,7 @@
   if (r3LeaderForm) {
     r3LeaderForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (r3Submitting) return;
       const input = document.getElementById('r3LeaderInput');
       const val = (input?.value || '').trim();
       const fb = document.getElementById('r3LeaderFeedback');
@@ -2490,18 +2792,35 @@
         if (fb) { fb.textContent = 'Please enter the official warrant: [CULPRIT]:[WEAPON]:[MOTIVE]'; fb.className = 'alert-box alert-error'; fb.classList.remove('hidden'); }
         return;
       }
+      const submitBtn = document.getElementById('btnR3LeaderSubmit');
+      r3Submitting = true;
+      if (submitBtn) submitBtn.disabled = true;
       socket.emit('submit_turn_answer', {
         sessionToken,
-        turnIndex: 3,
+        turnIndex: currentClientState?.team?.progress?.currentTurnIndex ?? 3,
         answer: val
       }, (res) => {
+        r3Submitting = false;
+        if (submitBtn) submitBtn.disabled = false;
         if (res && res.success) {
-          if (fb) { fb.textContent = res.message || 'Warrant Verified! Mystery Solved!'; fb.className = 'alert-box alert-success'; fb.classList.remove('hidden'); }
+          if (fb) fb.classList.add('hidden');
           input.value = '';
-          showToast('Warrant Verified! The Mystery is Solved!', 'success');
+          if (sound) {
+            sound.playSuccess();
+            sound.playVictoryFanfare();
+          }
+          triggerParticleBurst();
+          showHandoff({
+            icon: '⚖️',
+            title: 'Case closed!',
+            points: res.earnedPoints ?? 0,
+            detail: 'The magistrate accepted your warrant. Justice is served at Baker Street!',
+            awaitNext: false,
+            holdMs: 5000
+          });
         } else {
+          if (sound) sound.playError();
           if (fb) { fb.textContent = res?.message || 'Warrant Rejected by Magistrate. Check format: [CULPRIT]:[WEAPON]:[MOTIVE]'; fb.className = 'alert-box alert-error'; fb.classList.remove('hidden'); }
-          showToast(res?.message || 'Warrant Rejected', 'error');
         }
       });
     });

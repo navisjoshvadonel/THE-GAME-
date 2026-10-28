@@ -1,3 +1,5 @@
+// Keep test runs away from the live data/snapshot.json
+process.env.SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || require('path').join(require('os').tmpdir(), 'snow-arena-test-snapshots');
 const GameStateManager = require('./src/state');
 const { PUZZLE_SETS } = require('./src/puzzles');
 

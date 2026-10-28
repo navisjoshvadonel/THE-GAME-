@@ -1,0 +1,131 @@
+/**
+ * SNOW'S ARENA — GAMEPLAY REGRESSION TESTS
+ * Covers the anti-stuck and fairness fixes: timed skip, stale turn indexes,
+ * tiered Round 2 scoring, spectator isolation, leaderboard freshness and host-only advance.
+ */
+
+// Keep test runs away from the live data/snapshot.json
+process.env.SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || require('path').join(require('os').tmpdir(), 'snow-arena-test-snapshots');
+const GameStateManager = require('./src/state');
+const { PUZZLE_SETS, checkStepAnswer } = require('./src/puzzles');
+
+let passed = 0;
+let failed = 0;
+function assert(condition, name, details = '') {
+  if (condition) {
+    passed++;
+    console.log(`  ✓ PASS: ${name}`);
+  } else {
+    failed++;
+    console.error(`  ✗ FAIL: ${name}${details ? ' — ' + details : ''}`);
+  }
+}
+
+function registerTeam(state, name, size = 3) {
+  const members = ['Joshva', 'Sharma', 'Priya'].slice(0, size - 1);
+  const reg = state.registerBenchTeam({ teamName: name, teamSize: size, leaderName: `${name} Lead`, memberNames: members, socketId: `sock_${name}` });
+  return { team: reg.team, token: reg.sessionToken };
+}
+
+// Pretend the current turn started `seconds` ago (and the submit cooldown has passed)
+function ageTurn(state, team, token, seconds) {
+  team.currentRoundProgress.currentTurnStartedAt = Date.now() - seconds * 1000;
+  state.players.get(token).lastSubmitTime = 0;
+}
+
+console.log('--- [PUZZLE DATA] ---');
+for (const set of PUZZLE_SETS[2]) {
+  set.steps.forEach((step, i) => {
+    if (!/^[A-Z]+$/.test(step.targetWord) || step.targetWord.length !== step.length) {
+      assert(false, `R2 ${set.setId} node ${i + 1} is solvable`, `${step.targetWord}/${step.length}`);
+    }
+  });
+}
+assert(true, 'DATA-1: Every Round 2 node is letters-only with a matching length');
+assert(checkStepAnswer(1, 'r1_set_a', 2, '  Dr. A.P.J Abdul Kalam ').success === false, 'DATA-2: Unlisted long-form answer still rejected');
+assert(checkStepAnswer(1, 'r1_set_a', 2, 'Abdul-Kalam!').success, 'DATA-3: Punctuation and case are forgiven');
+assert(checkStepAnswer(3, null, 0, 'Cyanide.').success, 'DATA-4: Round 3 forgives trailing punctuation');
+
+console.log('\n--- [ROUND 1: STALE TURNS & SKIP] ---');
+const state = new GameStateManager();
+state.resetAllState();
+const alpha = registerTeam(state, 'Alpha');
+const beta = registerTeam(state, 'Beta');
+state.startRound(1);
+const alphaSet = PUZZLE_SETS[1].find(s => s.setId === alpha.team.currentRoundProgress.setId);
+
+const future = state.submitTurnAnswer(alpha.token, 2, alphaSet.steps[2].acceptedAnswers[0]);
+assert(!future.success && future.outOfSync, 'R1-1: A future step index is rejected instead of skipping ahead');
+assert(alpha.team.currentRoundProgress.currentTurnIndex === 0 && !alpha.team.currentRoundProgress.stepSolved[2], 'R1-2: Rejected stale index leaves progress untouched');
+
+const earlySkip = state.skipTurn(alpha.token);
+assert(!earlySkip.success, 'R1-3: Skip is locked before the turn window runs out', earlySkip.message);
+
+ageTurn(state, alpha.team, alpha.token, 151);
+const skip = state.skipTurn(alpha.token);
+assert(skip.success && skip.fragment === alphaSet.steps[0].expectedFragment, 'R1-4: Timed-out riddle can be skipped and reveals the keyword');
+assert(alpha.team.totalScore === 0 && alpha.team.currentRoundProgress.currentTurnIndex === 1, 'R1-5: Skip awards 0 points and advances the turn');
+
+const memberToken = alpha.team.members.find(t => t !== alpha.token);
+ageTurn(state, alpha.team, alpha.token, 151);
+assert(!state.skipTurn(memberToken).success, 'R1-6: Only the squad console can skip');
+
+ageTurn(state, alpha.team, alpha.token, 0);
+const solve = state.submitTurnAnswer(alpha.token, undefined, alphaSet.steps[1].acceptedAnswers[0]);
+assert(solve.success && solve.earnedPoints === 250, 'R1-7: Missing turn index defaults to the current step');
+
+state.players.get(alpha.token).lastSubmitTime = 0;
+state.submitTurnAnswer(alpha.token, 2, alphaSet.steps[2].acceptedAnswers[0]);
+ageTurn(state, alpha.team, alpha.token, 151);
+assert(!state.skipTurn(alpha.token).success, 'R1-8: The leader\'s final step can never be skipped');
+
+console.log('\n--- [LEADERBOARD FRESHNESS] ---');
+state.getLeaderboard();
+state.overrideTeamScore(beta.team.teamId, 999, 'test');
+assert(state.getLeaderboard()[0].teamId === beta.team.teamId, 'LB-1: Score override is reflected immediately');
+const forced = state.forceAdvanceTeamTurn(beta.team.teamId, 'test');
+assert(forced.success && beta.team.currentRoundProgress.currentTurnStartedAt > Date.now() - 1000, 'LB-2: Host force-advance restarts the next player\'s clock');
+
+console.log('\n--- [ROUND 2: TIERED SCORING & PAUSE] ---');
+state.endRound();
+state.startRound(2);
+const r2Set = PUZZLE_SETS[2].find(s => s.setId === alpha.team.currentRoundProgress.setId);
+const node1 = r2Set.steps[0].targetWord;
+const wrong = node1.split('').reverse().join('') === node1 ? 'Z'.repeat(node1.length) : node1.split('').reverse().join('');
+state.submitRound2Guess(alpha.token, wrong);
+const before = alpha.team.totalScore;
+const secondTry = state.submitRound2Guess(alpha.token, node1);
+assert(secondTry.isSolved && secondTry.pointsAwarded === 80 && alpha.team.totalScore === before + 80, 'R2-1: Breach on the 2nd guess awards 80 PTS', JSON.stringify(secondTry.pointsAwarded));
+
+state.pauseRound();
+const paused = state.submitRound2Guess(alpha.token, r2Set.steps[1].targetWord);
+assert(!paused.success && /paused/i.test(paused.message), 'R2-2: Guesses are rejected while the host has paused');
+assert(state.getClientState(alpha.token).isPaused === true, 'R2-3: Players are told the round is paused');
+const turnStartBeforeResume = alpha.team.currentRoundProgress.currentTurnStartedAt;
+state.roundState.pausedAt = Date.now() - 60000; // pretend the pause lasted a minute
+state.resumeRound();
+const shift = alpha.team.currentRoundProgress.currentTurnStartedAt - turnStartBeforeResume;
+assert(shift >= 59000 && shift <= 61000, 'R2-4: Resume gives back the paused minute to the turn clock', `shift=${shift}`);
+
+console.log('\n--- [ROUND 3: SPECTATORS] ---');
+for (let i = 0; i < 5; i++) {
+  const late = registerTeam(state, `Late${i}`);
+  state.overrideTeamScore(late.team.teamId, 10 + i, 'outscore Alpha');
+}
+state.endRound();
+state.overrideTeamScore(alpha.team.teamId, -alpha.team.totalScore, 'drop out of top 5');
+state.startRound(3);
+const spectatorState = state.getClientState(alpha.token);
+assert(alpha.team.isEliminated && alpha.team.currentRoundProgress === null, 'R3-1: Non-qualified squads lose stale Round 2 progress');
+assert(spectatorState.puzzle === null, 'R3-2: Spectators are never sent a Round 3 puzzle');
+const lateFinalist = registerTeam(state, 'MidFinals');
+assert(lateFinalist.team.isEliminated && !lateFinalist.team.currentRoundProgress, 'R3-3: A squad registering mid-finals joins as a spectator');
+
+console.log('\n--- [RESET] ---');
+state.getLeaderboard();
+state.resetAllState();
+assert(state.getLeaderboard().length === 0, 'RESET-1: Leaderboard is empty right after a reset');
+assert(state._benchIndex.size === 0, 'RESET-2: Bench lookup index is cleared on reset');
+
+console.log(`\n📊 GAMEPLAY FIX TESTS: ${passed} PASSED, ${failed} FAILED`);
+process.exit(failed > 0 ? 1 : 0);

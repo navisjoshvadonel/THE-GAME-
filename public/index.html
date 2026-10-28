@@ -1,26 +1,79 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JD's Arena | Campus LAN Arcade 2026</title>
+  <title>Snow's Arena | Campus LAN Arcade 2026</title>
   <link rel="stylesheet" href="/css/student.css">
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;600;700;800;900&display=swap" media="print" onload="this.media='all'">
   <noscript>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;600;700;800;900&display=swap">
   </noscript>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕹️</text></svg>">
 </head>
-<body class="student-body jules-theme">
+<body class="student-body jules-theme snow-arena-body">
 
   <!-- Low-Power Optimized Retro Grid & Ambient Backdrop (Zero GPU strain) -->
   <div class="retro-crt-backdrop" aria-hidden="true">
     <div class="retro-cyber-grid"></div>
     <div class="retro-scanlines"></div>
     <div class="retro-vignette"></div>
+    <canvas id="snowCanvas" class="snow-canvas" aria-hidden="true"></canvas>
     <canvas id="particleCanvas" class="particle-canvas"></canvas>
+  </div>
+
+  <!-- INTRO SPLASH: snowfall title card shown when a tab first opens Snow's Arena -->
+  <div id="introSplash" class="intro-splash hidden" role="dialog" aria-label="Welcome to Snow's Arena">
+    <canvas id="introSnowCanvas" class="intro-snow-canvas" aria-hidden="true"></canvas>
+    <div class="intro-aurora" aria-hidden="true"></div>
+    <div class="intro-content">
+      <div class="intro-emblem" aria-hidden="true">
+        <span class="intro-emblem-ring"></span>
+        <span class="intro-emblem-flake">&#10052;</span>
+      </div>
+      <p class="intro-kicker">CAMPUS LAN ARCADE &bull; 2026</p>
+      <h1 class="intro-title">Snow's Arena</h1>
+      <p class="intro-tagline">Three rounds. One squad. Every second counts.</p>
+      <div class="intro-rounds">
+        <div class="intro-round-chip" style="--chip-delay: 0.9s;"><span>01</span> Cipher Quest</div>
+        <div class="intro-round-chip" style="--chip-delay: 1.05s;"><span>02</span> Cyber Breach</div>
+        <div class="intro-round-chip" style="--chip-delay: 1.2s;"><span>03</span> Baker Street Mystery</div>
+      </div>
+      <button type="button" id="btnIntroEnter" class="intro-enter-btn">
+        <span>ENTER THE ARENA</span>
+      </button>
+      <p class="intro-hint">Press any key or tap to begin &bull; turns on game sound</p>
+    </div>
+  </div>
+
+  <!-- PAUSE OVERLAY: shown on every game screen while the host has paused the round -->
+  <div id="pauseOverlay" class="game-overlay pause-overlay hidden" role="status" aria-live="polite">
+    <div class="game-overlay-card">
+      <div class="pause-icon" aria-hidden="true">&#10074;&#10074;</div>
+      <h2>Round paused</h2>
+      <p>The host has paused the game. Your progress and timer are safe &mdash; hands off the keyboard and stand by.</p>
+    </div>
+  </div>
+
+  <!-- HAND-OFF OVERLAY: celebrates a solved step and tells the squad who plays next -->
+  <div id="handoffOverlay" class="game-overlay handoff-overlay hidden" role="dialog" aria-live="assertive">
+    <div class="game-overlay-card handoff-card">
+      <div id="handoffIcon" class="handoff-icon" aria-hidden="true">&#127881;</div>
+      <h2 id="handoffTitle">Correct!</h2>
+      <div id="handoffPoints" class="handoff-points">+250 PTS</div>
+      <p id="handoffDetail" class="handoff-detail"></p>
+      <div id="handoffNext" class="handoff-next hidden">
+        <span class="handoff-next-label">UP NEXT</span>
+        <strong id="handoffNextName">--</strong>
+        <span id="handoffNextRole" class="handoff-next-role"></span>
+      </div>
+      <button type="button" id="btnHandoffContinue" class="handoff-continue-btn">
+        <span id="handoffContinueText">Continue</span>
+        <span class="handoff-countdown" id="handoffCountdown"></span>
+      </button>
+    </div>
   </div>
 
   <div class="pc-student-container">
@@ -36,8 +89,8 @@
       <div class="student-brand">
         <span class="student-logo-icon">🕹️</span>
         <div>
-          <h1 class="student-logo-title">JD's Arena</h1>
-          <span class="student-logo-sub" id="navRoundSub">CAMPUS ARCADE LAN • ROUND 1: CIPHER QUEST</span>
+          <h1 class="student-logo-title snow-logo-title">❄️ Snow's Arena</h1>
+          <span class="student-logo-sub" id="navRoundSub">CAMPUS ARCADE LAN • SQUAD REGISTRATION</span>
         </div>
       </div>
 
@@ -78,7 +131,7 @@
       <section id="viewRegister" class="view-screen active">
         <div class="retro-window-box">
           <div class="retro-window-header">
-            <span class="window-title-text">[ JD'S ARENA // SQUAD_REGISTRATION ]</span>
+            <span class="window-title-text">[ ❄️ SNOW'S ARENA // SQUAD_REGISTRATION ]</span>
             <span class="badge badge-cyan">👑 LEADER PORTAL</span>
           </div>
 
@@ -88,7 +141,7 @@
               <div class="setup-icon-box">🕹️</div>
               <div>
                 <h2 class="auth-heading">TEAM REGISTRATION</h2>
-                <p class="auth-subheading">Team Leader connects to JD's Arena, enters the team name, and locks in the squad member roster.</p>
+                <p class="auth-subheading">Team Leader connects to Snow's Arena, enters the team name, and locks in the squad member roster.</p>
               </div>
             </div>
 
@@ -117,7 +170,7 @@
                     <span class="notice-title">TEAM LEADER CONNECTION</span>
                   </div>
                   <p class="notice-body">
-                    The <strong>Team Leader</strong> connects directly to <strong>JD's Arena</strong> and enters the names of all team members.
+                    The <strong>Team Leader</strong> connects directly to <strong>Snow's Arena</strong> and enters the names of all team members.
                   </p>
                   <div class="notice-subpoints">
                     <div class="notice-subpoint-item">
@@ -187,7 +240,7 @@
                 <div class="roster-input-panel">
                   <div class="roster-panel-title">
                     <span>SQUAD ROSTER // ENTERED BY LEADER</span>
-                    <span class="roster-panel-sub">[JD'S ARENA]</span>
+                    <span class="roster-panel-sub">[SNOW'S ARENA]</span>
                   </div>
 
                   <!-- Member 1: Leader (You) -->
@@ -274,78 +327,101 @@
       </section>
 
       <!-- ========================================================
-           VIEW 2: BENCH STAGING LOUNGE (WAITING FOR ROUND 1)
+           VIEW 2: SNOW'S ARENA LOBBY — SNOWFALL WAITING SCREEN
            ======================================================== -->
       <section id="viewLobby" class="view-screen hidden">
-        <div class="retro-window-box">
-          <div class="retro-window-header">
-            <span class="window-title-text">[ STATION_READY // SQUAD_LOUNGE ]</span>
-            <span id="loungeDivisionBadge" class="badge badge-cyan">STATION ONLINE</span>
+        <div class="snow-lobby-wrapper">
+
+          <!-- Hero Header -->
+          <div class="snow-lobby-hero">
+            <div class="snow-arena-emblem">
+              <span class="snow-emblem-flake">&#10052;</span>
+              <span class="snow-emblem-flake delay-1">&#10053;</span>
+              <span class="snow-emblem-flake delay-2">&#10054;</span>
+            </div>
+            <h1 class="snow-lobby-title">&#10052;&#65039; Snow's Arena</h1>
+            <p class="snow-lobby-tagline">CAMPUS LAN ARCADE &bull; ALL SQUADS ASSEMBLE</p>
+            <div class="snow-lobby-status-bar">
+              <span class="snow-status-dot"></span>
+              <span id="loungeDivisionBadge" class="snow-status-label">STATION ONLINE</span>
+              <span class="snow-status-sep">&bull;</span>
+              <span class="snow-status-label">AWAITING GAME MASTER</span>
+            </div>
           </div>
 
-          <div class="lounge-wide-grid window-content-pad">
-            <!-- Left Column: Bench Roster -->
-            <div class="lounge-card-box">
-              <div class="heraldic-sub">ARCADE CABINET ONLINE</div>
-              <h2 id="loungeBenchTitle" class="card-title">CABINET --: SQUAD</h2>
-              <p class="card-subtitle">Arcade cabinet locked to this table. All squad members play from this station.</p>
+          <!-- Two-Column Grid -->
+          <div class="snow-lobby-grid">
 
-              <div class="lounge-members-container">
-                <div class="roster-header">
-                  <span>SQUAD ROSTER (<span id="loungeMemberCount">3</span> PLAYERS)</span>
-                  <span class="status-online-dot">● ALL PLAYERS READY</span>
+            <!-- LEFT: Squad Roster Card -->
+            <div class="snow-glass-card snow-roster-card">
+              <div class="snow-card-header">
+                <span class="snow-card-icon">&#127918;</span>
+                <div>
+                  <h2 id="loungeBenchTitle" class="snow-card-title">SQUAD --</h2>
+                  <span class="snow-card-sub">ARCADE CABINET ONLINE</span>
                 </div>
-                <div class="members-roster-grid" id="loungeMembersGrid">
-                  <!-- Dynamic Member Cards Injected via JS -->
-                </div>
+                <span class="snow-online-badge">&#9679; LIVE</span>
               </div>
 
-              <div class="sound-check-strip">
-                <span class="sound-check-label">AUDIO TEST:</span>
-                <button type="button" id="btnTestSound" class="btn btn-sm btn-retro">
-                  <span>🔔 TEST ARCADE SOUND FX</span>
+              <div class="snow-roster-header">
+                <span class="snow-roster-label">SQUAD ROSTER</span>
+                <span class="snow-roster-count"><span id="loungeMemberCount">3</span> PLAYERS</span>
+              </div>
+              <div class="members-roster-grid snow-members-grid" id="loungeMembersGrid">
+                <!-- Dynamic Member Cards Injected via JS -->
+              </div>
+
+              <div class="snow-sound-strip">
+                <span class="snow-sound-label">&#128266; AUDIO CHECK</span>
+                <button type="button" id="btnTestSound" class="snow-test-btn">
+                  &#128276; TEST SOUND FX
                 </button>
               </div>
             </div>
 
-            <!-- Right Column: Mission Briefing -->
-            <div class="lounge-card-box briefing-card">
-              <div class="heraldic-sub">MISSION BRIEFING</div>
-              <h2 class="card-title">STAGE 1: KEYWORD CIPHER QUEST</h2>
-              <p class="card-subtitle">Qualifier round execution flow for your arcade cabinet.</p>
+            <!-- RIGHT: Mission Briefing Card -->
+            <div class="snow-glass-card snow-briefing-card">
+              <div class="snow-card-header">
+                <span class="snow-card-icon">&#128203;</span>
+                <div>
+                  <h2 class="snow-card-title">STAGE 1: CIPHER QUEST</h2>
+                  <span class="snow-card-sub">KEYWORD CIPHER QUEST // BRIEFING</span>
+                </div>
+              </div>
 
-              <div class="briefing-steps">
-                <div class="briefing-step-item">
-                  <span class="step-num-circle">01</span>
-                  <div>
+              <div class="snow-briefing-steps">
+                <div class="snow-step">
+                  <div class="snow-step-num">01</div>
+                  <div class="snow-step-body">
                     <strong>4 GAMES TOTAL (2.5 MIN PER GAME)</strong>
-                    <p>Game 1 (AI & ML), Game 2 (Tamil Cinema), Game 3 (Famous Personality), and Game 4 (Captain Final Boss). Clues unlock at the 2:00 mark.</p>
+                    <p>Game 1 (AI &amp; ML), Game 2 (Tamil Cinema), Game 3 (Famous Personality), Game 4 (Captain Final Boss). Clues unlock at 2:00.</p>
                   </div>
                 </div>
-                <div class="briefing-step-item">
-                  <span class="step-num-circle">02</span>
-                  <div>
-                    <strong>CRACK 3 CIPHER KEYWORDS (+250 PTS EACH)</strong>
-                    <p>Each cracked riddle awards 250 PTS and locks a secret keyword into your team's vault inventory.</p>
+                <div class="snow-step">
+                  <div class="snow-step-num">02</div>
+                  <div class="snow-step-body">
+                    <strong>CRACK 3 CIPHER KEYWORDS (UP TO 250 PTS EACH)</strong>
+                    <p>Solve within 15 seconds for the full 250 PTS &mdash; the bounty slowly drops to 100 PTS. Each answer locks a keyword into your squad's vault.</p>
                   </div>
                 </div>
-                <div class="briefing-step-item">
-                  <span class="step-num-circle">03</span>
-                  <div>
+                <div class="snow-step">
+                  <div class="snow-step-num">03</div>
+                  <div class="snow-step-body">
                     <strong>FINAL BOSS SYNTHESIS (GAME 4)</strong>
-                    <p>Squad Leader uses the collected keywords to craft the winning victory sentence evaluated offline by the engine (+250 PTS).</p>
+                    <p>Squad Leader uses the collected keywords to craft the winning victory sentence (up to 250 PTS).</p>
                   </div>
                 </div>
               </div>
 
-              <div class="status-callout-box">
-                <div class="callout-spinner"></div>
-                <div>
-                  <strong>STAND BY FOR GAME MASTER TO START ROUND 1</strong>
-                  <p>Round 1 will commence simultaneously for all teams when launched from the host console.</p>
+              <div class="snow-standby-callout">
+                <div class="snow-spinner-ring"></div>
+                <div class="snow-standby-text">
+                  <strong>STAND BY &mdash; GAME MASTER LAUNCHING ROUND 1</strong>
+                  <p>Round 1 will commence simultaneously for all squads when the host fires the starting signal.</p>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -503,6 +579,9 @@
                     <div class="slots-action-controls">
                       <span class="slots-hint-keyboard">⌨️ TYPE DIRECTLY • BACKSPACE TO DELETE • ENTER TO SUBMIT</span>
                       <div class="slots-buttons-group">
+                        <button type="button" id="btnSkipTurn" class="btn btn-secondary btn-sm btn-skip-turn hidden" title="Reveal this keyword and move on for 0 points">
+                          <span>⏭ SKIP (0 PTS)</span>
+                        </button>
                         <button type="button" id="btnClearSlots" class="btn btn-secondary btn-sm btn-clear-slots">
                           <span>⌫ CLEAR</span>
                         </button>
@@ -702,7 +781,7 @@
                     <span class="tactic-icon">🎯</span>
                     <div>
                       <strong>4 Attempts &amp; Auto-Bypass</strong>
-                      <p>1st Guess = 100 PTS • 2nd = 80 PTS • 3rd = 60 PTS • 4th / Bypass = 40 PTS (Never stuck!).</p>
+                      <p>Breach on guess 1 = 100 PTS • 2nd = 80 • 3rd = 60 • 4th = 40. Miss all 4 and the node auto-bypasses for 0 PTS &mdash; you're never stuck!</p>
                     </div>
                   </div>
                   <div class="tactic-item">
@@ -1128,6 +1207,10 @@
                   <span id="r3EvidenceCategory" class="evidence-cat">Forensic Science</span>
                 </div>
                 <h2 id="r3EvidenceTitle" class="evidence-title">Forensic Autopsy &amp; Balcony Footprints</h2>
+                <div id="r3TurnTimer" class="r3-turn-timer">
+                  <span>⏱️ TURN TIME <strong id="r3TurnTimeRemaining">02:30</strong></span>
+                  <span id="r3LiveBounty" class="r3-live-bounty">⚡ BOUNTY 250 PTS</span>
+                </div>
 
                 <!-- Forensic Evidence Image Display -->
                 <div id="r3EvidenceImgContainer" class="evidence-img-container hidden" style="margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(212, 160, 23, 0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
@@ -1155,6 +1238,9 @@
                   </div>
                   <button type="submit" id="btnR3MemberSubmit" class="btn btn-baker-primary btn-block">
                     <span>🔍 SUBMIT FORENSIC PROOF ➔</span>
+                  </button>
+                  <button type="button" id="btnR3SkipTurn" class="btn btn-secondary btn-block btn-skip-turn hidden" title="Reveal this proof and move on for 0 points">
+                    <span>⏭ STUCK? REVEAL THIS PROOF (0 PTS)</span>
                   </button>
                   <div id="r3MemberFeedback" class="alert-box hidden"></div>
                 </form>
@@ -1249,6 +1335,7 @@
       <section id="viewFinished" class="view-screen hidden">
         <div class="retro-window-box text-center window-content-pad" style="max-width: 820px; margin: 40px auto; padding: 40px 30px; text-align: center;">
           <div class="laurel-crest" style="font-size: 4rem; margin-bottom: 12px;">🏆</div>
+          <div id="finishedRankBadge" class="finished-rank-badge hidden"></div>
           <h1 class="card-title" style="font-size: 2.2rem; color: #fbbf24; margin-bottom: 8px; font-weight: 900; letter-spacing: 1px;">TOURNAMENT CONCLUDED</h1>
           <p class="card-subtitle" style="font-size: 1rem; color: #94a3b8; margin-bottom: 24px; max-width: 600px; margin-left: auto; margin-right: auto;">
             All tournament stages have ended. Direct your attention to the Grand Projector Screen for the official honors ceremony!
@@ -1261,7 +1348,7 @@
             </div>
           </div>
           <div style="font-size: 0.82rem; color: #64748b; font-family: var(--font-mono); letter-spacing: 0.05em;">
-            🏛️ JD'S ARENA ACADEMIC DECATHLON • OFFICIAL PROCTOR VERIFIED
+            ❄️ SNOW'S ARENA ACADEMIC DECATHLON • OFFICIAL PROCTOR VERIFIED
           </div>
         </div>
       </section>
@@ -1275,5 +1362,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/soundFx.js"></script>
   <script src="/js/student.js"></script>
+  <script src="/js/snowfall.js"></script>
 </body>
 </html>

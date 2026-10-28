@@ -7,7 +7,17 @@
   'use strict';
 
   let socket = null;
-  let adminPassword = sessionStorage.getItem('campus_admin_pwd') || 'campus_admin_2026';
+  // Saved on this host machine only, so the Hall Display tab can also advance stages
+  function readSavedPassword() {
+    try { return localStorage.getItem('campus_admin_pwd') || ''; } catch (e) { return ''; }
+  }
+  function savePassword(pwd) {
+    try {
+      if (pwd) localStorage.setItem('campus_admin_pwd', pwd);
+      else localStorage.removeItem('campus_admin_pwd');
+    } catch (e) { /* storage blocked */ }
+  }
+  let adminPassword = readSavedPassword();
   let adminState = null;
   let previousScores = new Map(); // teamId -> score (for flash update animation)
   let selectedSquadForOverride = null;
@@ -86,7 +96,7 @@
     });
 
     socket.on('connect', () => {
-      socket.emit('register_admin', { password: adminPassword });
+      if (adminPassword) socket.emit('register_admin', { password: adminPassword });
     });
 
     socket.on('admin_authenticated', (res) => {
@@ -94,7 +104,9 @@
         if (hostLoginScreen) hostLoginScreen.classList.add('hidden');
         if (hostDashboardScreen) hostDashboardScreen.classList.remove('hidden');
         if (adminLoginError) adminLoginError.classList.add('hidden');
+        savePassword(adminPassword);
       } else {
+        savePassword('');
         if (hostLoginScreen) hostLoginScreen.classList.remove('hidden');
         if (hostDashboardScreen) hostDashboardScreen.classList.add('hidden');
         if (adminLoginError) {
@@ -124,7 +136,6 @@
       adminLoginError.classList.remove('hidden');
       return;
     }
-    sessionStorage.setItem('campus_admin_pwd', adminPassword);
     socket.emit('register_admin', { password: adminPassword });
   }
 
@@ -138,7 +149,7 @@
 
   if (btnHostLogout) {
     btnHostLogout.addEventListener('click', () => {
-      sessionStorage.removeItem('campus_admin_pwd');
+      savePassword('');
       adminPassword = '';
       if (hostLoginScreen) hostLoginScreen.classList.remove('hidden');
       if (hostDashboardScreen) hostDashboardScreen.classList.add('hidden');

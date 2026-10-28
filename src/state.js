@@ -4,8 +4,11 @@ const crypto = require('crypto');
 const { ROUND_CONFIGS, PUZZLE_SETS, getPuzzleSetForTeam, checkStepAnswer, checkLeaderExactCode, evaluateWordleGuess } = require('./puzzles');
 const { validateLeaderPhrase, sanitizeText } = require('./nlpValidator');
 
-const SNAPSHOT_DIR = path.join(__dirname, '..', 'data');
+// Tests point SNAPSHOT_DIR at a temp folder so they never touch a live tournament's save file
+const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || path.join(__dirname, '..', 'data');
 const SNAPSHOT_FILE = path.join(SNAPSHOT_DIR, 'snapshot.json');
+// A riddle step's full turn window; after it the squad may skip (0 pts) so nobody is stuck
+const SKIP_UNLOCK_SEC = 150;
 
 class GameStateManager {
   constructor(adminPassword = 'campus_admin_2026') {
@@ -69,6 +72,9 @@ class GameStateManager {
 
   // Debounced save: coalesces rapid saves into one write per 3 seconds
   saveSnapshot(immediate = false) {
+    // Every state mutation saves a snapshot, so this is also the single place
+    // that guarantees the leaderboard cache never goes stale.
+    this._invalidateLeaderboard();
     this._snapshotPending = true;
     if (immediate) {
       this._flushSnapshot();
@@ -204,8 +210,10 @@ class GameStateManager {
     this._socketIndex.clear();
     this._benchIndex.clear();
     this._invalidateLeaderboard();
+    this._leaderboardCache = null;
     this.saveSnapshot(true); // immediate flush on reset
-    this.logEvent('STATE_RESET', 'All game data wiped by administrator.');
+    this.logEvent('GAME_RESET', 'All players, teams, and scores wiped. Reset to clean lobby.');
+    return { success: true, message: 'Game state reset completely.' };
   }
 
   /* -------------------------------------------------------------
@@ -319,9 +327,9 @@ class GameStateManager {
   registerBenchTeam({ benchNumber, teamName, gender = 'open', teamSize = 3, leaderName, memberNames = [], socketId }) {
     const cabinetIdx = this.teams.size + 1;
     const cleanBench = (benchNumber && benchNumber !== 'Bench 01')
-      ? sanitizeText(benchNumber).trim()
+      ? sanitizeText(benchNumber).trim().slice(0, 16)
       : `Cabinet ${String(cabinetIdx).padStart(2, '0')}`;
-    const cleanLeader = sanitizeText(leaderName).trim();
+    const cleanLeader = sanitizeText(leaderName).trim().slice(0, 20);
     if (!cleanLeader || cleanLeader.length < 2) {
       return { success: false, message: 'Please enter a valid Team Leader name (at least 2 characters).' };
     }
@@ -334,7 +342,7 @@ class GameStateManager {
 
     // Filter valid member names
     const filteredMemberNames = (Array.isArray(memberNames) ? memberNames : [])
-      .map(n => sanitizeText(n).trim())
+      .map(n => sanitizeText(n).trim().slice(0, 20))
       .filter(n => n.length >= 2);
 
     const requiredTeammates = cleanTeamSize - 1; // 1 member for size 2, 2 members for size 3, 3 members for size 4
@@ -345,7 +353,7 @@ class GameStateManager {
       };
     }
 
-    const cleanTeamName = sanitizeText(teamName).trim();
+    const cleanTeamName = sanitizeText(teamName).trim().slice(0, 24);
     if (!cleanTeamName || cleanTeamName.length < 2) {
       return { success: false, message: 'Please enter a valid Team Name (at least 2 characters).' };
     }
@@ -407,7 +415,7 @@ class GameStateManager {
       teamSize: allMembers.length,
       totalScore: 0,
       roundScores: { 1: 0, 2: 0, 3: 0 },
-      isEliminated: false,
+      isEliminated: this.currentRound === 3 || this.status === 'FINISHED',
       currentRoundProgress: null
     };
 
@@ -419,7 +427,7 @@ class GameStateManager {
     });
 
     // If competition round is currently running, initialize this bench with an unassigned unique set
-    if (this.roundState.active && this.currentRound) {
+    if (this.roundState.active && this.currentRound && !team.isEliminated) {
       const assignedSetIds = new Set();
       for (const t of this.teams.values()) {
         if (t.currentRoundProgress?.setId) {
@@ -686,7 +694,11 @@ class GameStateManager {
     const assignedSetIds = new Set();
     let teamIdx = 0;
     for (const team of this.teams.values()) {
-      if (team.isEliminated) continue;
+      if (team.isEliminated) {
+        // Spectators must not keep the previous round's progress, or they would be shown a stale puzzle
+        team.currentRoundProgress = null;
+        continue;
+      }
 
       const puzzleSet = getPuzzleSetForTeam(roundNumber, teamIdx, assignedSetIds);
       teamIdx++;
@@ -728,6 +740,7 @@ class GameStateManager {
     const remainingMs = Math.max(0, this.roundState.endTime - Date.now());
     this.roundState.isPaused = true;
     this.roundState.remainingMsOnPause = remainingMs;
+    this.roundState.pausedAt = Date.now();
     this.logEvent('ROUND_PAUSED', `Round ${this.currentRound} paused with ${Math.round(remainingMs / 1000)}s remaining.`);
     this.saveSnapshot();
     return { success: true, remainingMs };
@@ -738,6 +751,15 @@ class GameStateManager {
       return { success: false, message: 'Round is not paused' };
     }
     const now = Date.now();
+    // A host pause must not eat into anyone's speed bounty or turn window
+    const pausedMs = Math.max(0, now - (this.roundState.pausedAt || now));
+    for (const team of this.teams.values()) {
+      const prog = team.currentRoundProgress;
+      if (prog && !prog.isRoundCompleted && prog.currentTurnStartedAt) {
+        prog.currentTurnStartedAt += pausedMs;
+      }
+    }
+    this.roundState.pausedAt = null;
     this.roundState.isPaused = false;
     this.roundState.startTime = now - (this.roundState.durationSec * 1000 - this.roundState.remainingMsOnPause);
     this.roundState.endTime = now + this.roundState.remainingMsOnPause;
@@ -885,9 +907,17 @@ class GameStateManager {
       return { success: true, alreadySolved: true, message: 'Your team has already completed this round!' };
     }
 
+    // The server owns the turn order: a missing index means "current step", and a stale or
+    // future index must never mark another step solved (that would leave the team stuck).
+    const parsedTurn = parseInt(turnIndex, 10);
+    turnIndex = Number.isInteger(parsedTurn) ? parsedTurn : progress.currentTurnIndex;
+
     // Idempotent check: if this step was already completed, return immediately
     if (progress.stepSolved[turnIndex] === true) {
       return { success: true, alreadySolved: true, message: 'This step was already submitted.' };
+    }
+    if (turnIndex !== progress.currentTurnIndex) {
+      return { success: false, outOfSync: true, message: 'Your screen was out of sync — refreshed to the current game.' };
     }
 
     // Turn verification: active member or bench leader can submit
@@ -981,13 +1011,7 @@ class GameStateManager {
       this.logEvent('TEAM_ROUND_COMPLETED', `Team ${team.name} COMPLETED Round ${this.currentRound} in ${Math.round((now - this.roundState.startTime) / 1000)}s! (+${leaderPoints} pts).`);
       this.saveSnapshot();
 
-      // Check if all participating teams have finished Round
-      const activeTeams = Array.from(this.teams.values()).filter(t => !t.isEliminated);
-      const allFinished = activeTeams.length > 0 && activeTeams.every(t => t.currentRoundProgress?.isRoundCompleted);
-      if (allFinished) {
-        this.logEvent('ALL_TEAMS_FINISHED', `All ${activeTeams.length} teams completed Round ${this.currentRound}! Concluding stage.`);
-        this.endRound();
-      }
+      this._endRoundIfAllTeamsFinished();
 
       return {
         success: true,
@@ -1001,6 +1025,57 @@ class GameStateManager {
     }
   }
 
+
+  /* -------------------------------------------------------------
+   * ANTI-STUCK SKIP (Round 1 & 3 riddle steps)
+   * Once a turn's window has fully elapsed the squad may reveal the keyword for 0 points,
+   * so one impossible riddle can never freeze a team for the rest of the round.
+   * ----------------------------------------------------------- */
+  skipTurn(sessionToken) {
+    const player = this.players.get(sessionToken);
+    if (!player) return { success: false, message: 'Invalid session' };
+    if (!this.roundState.active || this.roundState.isPaused) {
+      return { success: false, message: 'The round is not running right now.' };
+    }
+    if (this.currentRound !== 1 && this.currentRound !== 3) {
+      return { success: false, message: 'Skipping is only available in Rounds 1 and 3.' };
+    }
+    const team = this.teams.get(player.teamId);
+    if (!team || team.isEliminated) return { success: false, message: 'Your team is not playing this round.' };
+    if (team.leaderSessionToken !== sessionToken) {
+      return { success: false, message: 'Only the squad console can skip a turn.' };
+    }
+    const progress = team.currentRoundProgress;
+    if (!progress || progress.isRoundCompleted) return { success: false, message: 'Round already completed.' };
+
+    const sets = PUZZLE_SETS[this.currentRound] || [];
+    const puzzleSet = sets.find(s => s.setId === progress.setId) || sets[0];
+    const stepIndex = progress.currentTurnIndex;
+    const step = puzzleSet?.steps?.[stepIndex];
+    if (!step) return { success: false, message: 'The final step cannot be skipped.' };
+
+    const elapsedSec = (Date.now() - (progress.currentTurnStartedAt || this.roundState.startTime)) / 1000;
+    if (elapsedSec < SKIP_UNLOCK_SEC) {
+      return { success: false, message: `Skip unlocks after ${Math.ceil(SKIP_UNLOCK_SEC - elapsedSec)}s more. Keep trying!` };
+    }
+
+    progress.stepSolved[stepIndex] = true;
+    progress.collectedFragments.push(step.expectedFragment);
+    progress.currentTurnIndex++;
+    progress.currentTurnStartedAt = Date.now();
+
+    this.logEvent('STEP_SKIPPED', `Team ${team.name}: Game ${stepIndex + 1} skipped after time-out (+0 pts).`);
+    this.saveSnapshot();
+
+    return {
+      success: true,
+      skipped: true,
+      earnedPoints: 0,
+      fragment: step.expectedFragment,
+      nextTurnIndex: progress.currentTurnIndex,
+      message: `Skipped. The answer was "${step.expectedFragment}" — it has been added to your inventory (+0 PTS).`
+    };
+  }
 
   /* -------------------------------------------------------------
    * ROUND 2: 10-NODE CYBER TERMINAL HACK GUESS SUBMISSION
@@ -1017,9 +1092,18 @@ class GameStateManager {
     if (!player || !player.teamId) {
       return { success: false, message: 'You are not assigned to a team.' };
     }
+    if (this.roundState.isPaused) {
+      return { success: false, message: 'The round is currently paused by the host.' };
+    }
+    if (Date.now() > this.roundState.endTime) {
+      return { success: false, message: 'Time has expired for this round!' };
+    }
     const team = this.teams.get(player.teamId);
     if (!team) {
       return { success: false, message: 'Team not found.' };
+    }
+    if (team.isEliminated) {
+      return { success: false, message: 'Your team did not qualify for this round.' };
     }
     const progress = team.currentRoundProgress;
     if (!progress || progress.isRoundCompleted) {
@@ -1066,8 +1150,8 @@ class GameStateManager {
 
     if (isBreached || isMaxAttempts) {
       if (isBreached) {
-        // Winning / breaching a node awards full 100 points
-        pointsAwarded = 100;
+        // Fewer guesses = more points: 100 / 80 / 60 / 40 for a breach on attempt 1-4
+        pointsAwarded = [100, 80, 60, 40][nodeAttempts.length - 1] || 40;
       } else {
         // Auto-bypass on 4th failed attempt awards 0 points
         pointsAwarded = 0;
@@ -1091,13 +1175,7 @@ class GameStateManager {
         progress.completedAt = Date.now();
         this.logEvent('ROUND_COMPLETED', `Team ${team.name} breached all 10 nodes in Round 2! (+1000 max)`);
 
-        // Check if all active teams have finished Round 2 to advance stage
-        const activeTeams = Array.from(this.teams.values()).filter(t => !t.isEliminated);
-        const allFinished = activeTeams.length > 0 && activeTeams.every(t => t.currentRoundProgress?.isRoundCompleted);
-        if (allFinished) {
-          this.logEvent('ALL_TEAMS_FINISHED', `All ${activeTeams.length} teams completed Round 2! Concluding stage.`);
-          this.endRound();
-        }
+        this._endRoundIfAllTeamsFinished();
       } else {
         this.logEvent('NODE_BREACHED', `Team ${team.name}: Node ${nodeIndex + 1} breached (+ ${pointsAwarded} pts).`);
       }
@@ -1140,6 +1218,17 @@ class GameStateManager {
     };
   }
 
+  // Concludes the active round as soon as every participating team has finished it
+  _endRoundIfAllTeamsFinished() {
+    if (!this.roundState.active) return false;
+    const activeTeams = Array.from(this.teams.values()).filter(t => !t.isEliminated);
+    const allFinished = activeTeams.length > 0 && activeTeams.every(t => t.currentRoundProgress?.isRoundCompleted);
+    if (!allFinished) return false;
+    this.logEvent('ALL_TEAMS_FINISHED', `All ${activeTeams.length} teams completed Round ${this.currentRound}! Concluding stage.`);
+    this.endRound();
+    return true;
+  }
+
   /* -------------------------------------------------------------
    * ADMIN RESILIENCE & INTERVENTIONS
    * ----------------------------------------------------------- */
@@ -1166,7 +1255,7 @@ class GameStateManager {
           progress.collectedWords.push(currentNode.targetWord);
         }
       }
-      progress.nodesBreached = (progress.nodesBreached || 0) + 1;
+      progress.nodesBreached = Object.keys(progress.stepSolved).length;
       team.totalScore += 50;
       team.roundScores[2] = (team.roundScores[2] || 0) + 50;
 
@@ -1181,10 +1270,12 @@ class GameStateManager {
           nextTurnIndex: progress.currentTurnIndex
         };
       } else {
+        progress.currentTurnIndex = totalNodes;
         progress.isRoundCompleted = true;
         progress.completedAt = Date.now();
         this.logEvent('ADMIN_FORCE_COMPLETE_R2', `Force-completed Round 2 for Team ${team.name}.`);
         this.saveSnapshot();
+        this._endRoundIfAllTeamsFinished();
         return {
           success: true,
           message: 'Team marked as Round 2 completed by Administrator.'
@@ -1201,6 +1292,7 @@ class GameStateManager {
       progress.stepSolved[currentTurn] = true;
       progress.collectedFragments.push(expectedFrag);
       progress.currentTurnIndex++;
+      progress.currentTurnStartedAt = Date.now();
 
       this.logEvent('ADMIN_FORCE_ADVANCE', `Force-advanced Team ${team.name} on Step ${currentTurn + 1} (${adminReason}).`);
       this.saveSnapshot();
@@ -1217,9 +1309,11 @@ class GameStateManager {
       progress.completedAt = Date.now();
       progress.assembledSubmission = '[ADMIN OVERRIDE]';
       team.totalScore += 250;
+      team.roundScores[this.currentRound] = (team.roundScores[this.currentRound] || 0) + 250;
 
       this.logEvent('ADMIN_FORCE_COMPLETE', `Force-completed Round ${this.currentRound} for Team ${team.name}.`);
       this.saveSnapshot();
+      this._endRoundIfAllTeamsFinished();
 
       return {
         success: true,
@@ -1240,41 +1334,6 @@ class GameStateManager {
     this.saveSnapshot();
 
     return { success: true, newScore: team.totalScore };
-  }
-
-  resetAllState() {
-    this.status = 'LOBBY';
-    this.currentRound = null;
-    this.roundState = {
-      roundNumber: null,
-      startTime: null,
-      endTime: null,
-      durationSec: 0,
-      active: false,
-      isPaused: false,
-      remainingMsOnPause: 0
-    };
-    this.lobbyTimer = {
-      active: false,
-      startTime: null,
-      endTime: null,
-      durationSec: 300
-    };
-    this.players.clear();
-    this.teams.clear();
-    this.auditLogs = [];
-
-    // Remove snapshot file from disk
-    try {
-      if (fs.existsSync(SNAPSHOT_FILE)) {
-        fs.unlinkSync(SNAPSHOT_FILE);
-      }
-    } catch (err) {
-      console.error('[Snapshot Clear Error]:', err.message);
-    }
-
-    this.logEvent('GAME_RESET', 'All players, teams, and scores wiped. Reset to clean lobby.');
-    return { success: true, message: 'Game state reset completely.' };
   }
 
   /* -------------------------------------------------------------
@@ -1388,7 +1447,7 @@ class GameStateManager {
       const isBenchConsole = player.isLeader || team.leaderSessionToken === sessionToken;
       const isYourTurn = isBenchConsole || (currentTurnAssignment.scholar?.sessionToken === sessionToken);
 
-      if (this.roundState.active && progress && !progress.isRoundCompleted) {
+      if (this.roundState.active && progress && !progress.isRoundCompleted && !team.isEliminated) {
         if (this.currentRound === 2) {
           // ROUND 2: 10-Node Cyber Terminal Hack View — Collaborative Relay (Visible to ALL squad members)
           const stepObj = puzzleSet.steps[activeTurnIndex] || {};
@@ -1455,7 +1514,8 @@ class GameStateManager {
               } : null,
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150, // 2.5 minutes per operative turn
-              clueUnlockDelaySec: 120 // Clue unlocks at 2:00 mark (120s)
+              clueUnlockDelaySec: 120, // Clue unlocks at 2:00 mark (120s)
+              skipUnlockSec: SKIP_UNLOCK_SEC
             };
           } else {
             // Leader step (Game 4: Master Boss / Scotland Yard Indictment)
@@ -1584,6 +1644,9 @@ class GameStateManager {
         teamSize: team.teamSize || team.members.length,
         members: memberDetails,
         totalScore: team.totalScore,
+        roundScores: team.roundScores,
+        rank: this.getLeaderboard().findIndex(t => t.teamId === team.teamId) + 1,
+        totalTeams: this.teams.size,
         isEliminated: team.isEliminated,
         progress: progress ? {
           setId: progress.setId,
@@ -1597,6 +1660,7 @@ class GameStateManager {
           stepSolved: progress.stepSolved,
           isRoundCompleted: progress.isRoundCompleted,
           completedAt: progress.completedAt,
+          assembledSubmission: progress.assembledSubmission || null,
           turnPipeline
         } : null
       };
@@ -1613,7 +1677,8 @@ class GameStateManager {
       puzzle: puzzleView,
       gameStatus: this.status,
       currentRound: this.currentRound,
-      roundActive: this.roundState.active && !this.roundState.isPaused
+      roundActive: this.roundState.active && !this.roundState.isPaused,
+      isPaused: Boolean(this.roundState.active && this.roundState.isPaused)
       // Note: round timer is NOT sent to students, per requirement!
     };
   }

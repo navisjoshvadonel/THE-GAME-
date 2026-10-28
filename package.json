@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test_engine.js && node test_edge_cases_stress.js",
+    "test": "node test_engine.js && node test_edge_cases_stress.js && node test_gameplay_fixes.js",
     "test:stress": "node test_edge_cases_stress.js",
     "play": "node play_full_tournament.js"
   },
