@@ -2499,7 +2499,8 @@
     const team = state.team;
     const puzzle = state.puzzle;
 
-    // Squads outside the Top 5 watch the finals as spectators
+    // Squads outside the Top 5 watch the finals as spectators (no empty case board or console)
+    if (viewRound3Game) viewRound3Game.classList.toggle('r3-spectator', Boolean(team.isEliminated));
     if (team.isEliminated) {
       const r3GameTeamName = document.getElementById('r3GameTeamName');
       const r3GameTeamScore = document.getElementById('r3GameTeamScore');

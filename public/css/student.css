@@ -5126,3 +5126,54 @@ body.theme-round-3 .investigator-card {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Round 3 spectators: only the spectator card, centred */
+.r3-spectator .baker-dossier-col,
+.r3-spectator .investigator-card,
+.r3-spectator .waiting-collaborate-tip,
+.r3-spectator .baker-progress-ribbon,
+.r3-spectator #btnR3ShowBriefing {
+  display: none !important;
+}
+.r3-spectator .baker-workspace-layout {
+  display: flex !important;
+  justify-content: center;
+}
+.r3-spectator .baker-console-col {
+  width: min(640px, 100%);
+}
+.r3-spectator .waiting-title {
+  color: #f5e6c4 !important;
+  font-size: 1.6rem;
+}
+.r3-spectator .waiting-sub {
+  color: #e2d6bd !important;
+}
+
+/* Round 3 waiting / spectator card on the dark Snow glass (base styles assumed light parchment) */
+.snow-arena-body .waiting-sheet {
+  padding: 40px 28px;
+}
+.snow-arena-body .waiting-crest {
+  font-size: 2.6rem;
+  filter: drop-shadow(0 0 14px rgba(212, 160, 23, 0.45));
+}
+.snow-arena-body .waiting-title {
+  color: #f5e6c4;
+  font-size: 1.55rem;
+  letter-spacing: 0.02em;
+}
+.snow-arena-body .waiting-sub {
+  color: #d6cbb3;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.snow-arena-body .waiting-collaborate-tip {
+  background: rgba(212, 160, 23, 0.1);
+  border: 1px solid rgba(212, 160, 23, 0.35);
+  border-radius: 12px;
+  color: #ecd9a8;
+}
