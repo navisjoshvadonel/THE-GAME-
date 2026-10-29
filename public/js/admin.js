@@ -13,7 +13,6 @@
   let adminState = null;
   let authenticated = false;
   let serverOffsetMs = 0; // server clock minus local clock
-  let sortMode = 'rank';
   let lastStatus = null;
   let ceremonyAutoShown = false;
   let joinUrl = window.location.origin;
@@ -125,18 +124,52 @@
     FINISHED: 'Tournament complete'
   };
 
+  const ROUND_INFO = {
+    1: { name: 'Keyword Cipher Quest', level: 'Easy', minutes: 10 },
+    2: { name: '10-Node Cyber Relay', level: 'Medium', minutes: 10 },
+    3: { name: 'The Kensington Crescent Affair', level: 'Hard', minutes: 15 }
+  };
+
+  // `space: true` marks the actions the Space key may trigger (starting things, never ending a round)
   function primaryActionFor(status) {
     switch (status) {
-      case 'LOBBY': return { label: '▶ Start Round 1', run: () => startRound(1) };
-      case 'ROUND_1': return { label: '■ End Round 1', run: () => endRound(1) };
-      case 'INTERMEDIATE_1': return { label: '▶ Start Round 2', run: () => startRound(2) };
-      case 'ROUND_2': return { label: '■ End Round 2', run: () => endRound(2) };
-      case 'INTERMEDIATE_2': return { label: '▶ Start the Finals', run: () => startRound(3) };
-      case 'ROUND_3': return { label: '■ End the Finals', run: () => endRound(3) };
-      case 'FINISHED': return { label: '🏆 Results ceremony', run: () => showCeremony() };
+      case 'LOBBY': return { label: '▶ Start Round 1', space: true, run: () => startRound(1) };
+      case 'ROUND_1': return { label: '■ End Round 1 early', run: () => endRound(1) };
+      case 'INTERMEDIATE_1': return { label: '▶ Start Round 2', space: true, run: () => startRound(2) };
+      case 'ROUND_2': return { label: '■ End Round 2 early', run: () => endRound(2) };
+      case 'INTERMEDIATE_2': return { label: '▶ Start Round 3', space: true, run: () => startRound(3) };
+      case 'ROUND_3': return { label: '■ End Round 3 early', run: () => endRound(3) };
+      case 'FINISHED': return { label: '🏆 Results ceremony', space: true, run: () => showCeremony() };
       default: return { label: '—', run: () => {} };
     }
   }
+
+  // Large in-page confirmation (readable on the projector, driven by Space / Enter / Esc)
+  let stageModalAction = null;
+  function openStageModal({ kicker, title, body, confirmLabel, danger = false, onConfirm }) {
+    $('stageModalKicker').textContent = kicker;
+    $('stageModalTitle').textContent = title;
+    $('stageModalBody').textContent = body;
+    const confirmBtn = $('btnStageConfirm');
+    confirmBtn.innerHTML = `${escapeHtml(confirmLabel)} <kbd>${danger ? 'Enter' : 'Space'}</kbd>`;
+    confirmBtn.classList.toggle('btn-danger', danger);
+    $('stageModal').dataset.danger = danger ? '1' : '';
+    stageModalAction = onConfirm;
+    $('stageModal').classList.remove('hidden');
+    // Ending a round early is destructive: start with Cancel focused so a stray key does nothing
+    (danger ? $('btnStageCancel') : confirmBtn).focus();
+  }
+  function closeStageModal() {
+    $('stageModal').classList.add('hidden');
+    stageModalAction = null;
+  }
+  function confirmStageModal() {
+    const action = stageModalAction;
+    closeStageModal();
+    if (action) action();
+  }
+  $('btnStageConfirm').addEventListener('click', confirmStageModal);
+  $('btnStageCancel').addEventListener('click', closeStageModal);
 
   function startRound(n) {
     const squads = adminState?.teams?.length || 0;
@@ -144,15 +177,65 @@
       showToast('No squads have registered yet.', 'warning');
       return;
     }
-    if (!confirm(`Start Round ${n} for ${squads} squad${squads === 1 ? '' : 's'}?`)) return;
-    sendAdminAction('start_round', { roundNumber: n });
+    const info = ROUND_INFO[n];
+    openStageModal({
+      kicker: `ROUND ${n} OF 3 • ${info.level.toUpperCase()} • ${info.minutes} MINUTES`,
+      title: `Start Round ${n}: ${info.name}?`,
+      body: `${squads} squad${squads === 1 ? '' : 's'} will begin at the same moment. The round ends automatically when the clock reaches 0:00.`,
+      confirmLabel: `Start Round ${n}`,
+      onConfirm: () => sendAdminAction('start_round', { roundNumber: n })
+    });
   }
 
   function endRound(n) {
     const left = (adminState?.playingCount || 0) - (adminState?.finishedCount || 0);
-    const warn = left > 0 ? `\n\n${left} squad${left === 1 ? ' is' : 's are'} still playing.` : '';
-    if (!confirm(`End Round ${n} now?${warn}`)) return;
-    sendAdminAction('end_round');
+    openStageModal({
+      kicker: 'END THE ROUND EARLY',
+      title: `End Round ${n} now?`,
+      body: left > 0
+        ? `${left} squad${left === 1 ? ' is' : 's are'} still playing and will keep the points earned so far.`
+        : 'Every squad has finished this round.',
+      confirmLabel: `End Round ${n}`,
+      danger: true,
+      onConfirm: () => sendAdminAction('end_round')
+    });
+  }
+
+  // "Round N — GO!" splash on the projector for a few seconds
+  let goTimer = null;
+  function showGoSplash(n) {
+    const info = ROUND_INFO[n];
+    if (!info) return;
+    $('goRound').textContent = `ROUND ${n}`;
+    $('goTitle').textContent = info.name;
+    const splash = $('goSplash');
+    splash.classList.remove('hidden');
+    splash.classList.remove('play');
+    void splash.offsetWidth;
+    splash.classList.add('play');
+    clearTimeout(goTimer);
+    goTimer = setTimeout(() => splash.classList.add('hidden'), 3200);
+  }
+
+  // Between rounds: say whose standings these are and what Space does next
+  function renderBreakBanner(status) {
+    const banner = $('breakBanner');
+    const next = { INTERMEDIATE_1: 2, INTERMEDIATE_2: 3 }[status];
+    const done = { INTERMEDIATE_1: 1, INTERMEDIATE_2: 2, FINISHED: 3 }[status];
+    if (!done) {
+      banner.classList.add('hidden');
+      return;
+    }
+    banner.classList.remove('hidden');
+    $('breakTitle').textContent = status === 'FINISHED'
+      ? 'Tournament complete — final standings'
+      : `Round ${done} complete — final standings`;
+    $('breakSub').textContent = status === 'FINISHED'
+      ? 'All three rounds are over. Every score is final.'
+      : `Round ${done} scores are locked. Players are reading the Round ${next} rules on their screens.`;
+    $('breakNext').innerHTML = status === 'FINISHED'
+      ? '<kbd>Space</kbd> Results ceremony'
+      : `<kbd>Space</kbd> Start Round ${next}`;
   }
 
   btnPrimary.addEventListener('click', () => primaryActionFor(adminState?.status).run());
@@ -178,7 +261,8 @@
     });
 
     const primary = primaryActionFor(data.status);
-    btnPrimary.textContent = primary.label;
+    btnPrimary.innerHTML = `${escapeHtml(primary.label)}${primary.space ? ' <kbd>Space</kbd>' : ''}`;
+    renderBreakBanner(data.status);
     const active = Boolean(data.roundState?.active);
     btnPause.disabled = !active;
     btnExtend.disabled = !active;
@@ -241,7 +325,6 @@
       <span class="c-round r3"></span>
       <span class="c-total"></span>
       <span class="c-actions">
-        <button type="button" data-act="skip" title="Force-advance this squad one step">⏭ Step</button>
         <button type="button" data-act="adjust" title="Adjust score">±</button>
       </span>`;
     const q = (sel) => el.querySelector(sel);
@@ -262,21 +345,13 @@
     return entry;
   }
 
-  function sortTeams(teams) {
-    if (document.body.classList.contains('projector') || sortMode === 'rank') return teams;
-    const list = [...teams];
-    if (sortMode === 'progress') list.sort((a, b) => (b.solved - a.solved) || (a.rank - b.rank));
-    if (sortMode === 'bench') list.sort((a, b) => (a.benchNumber || '').localeCompare(b.benchNumber || '', undefined, { numeric: true }));
-    if (sortMode === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
-    return list;
-  }
-
   function renderBoard(data) {
     const status = data.status;
     const filter = (filterInput.value || '').toLowerCase().trim();
     const now = Date.now();
 
-    let teams = sortTeams(data.teams);
+    // Always ranked: the server already sends squads in rank order
+    let teams = data.teams;
     if (filter) {
       teams = teams.filter(t => t.name.toLowerCase().includes(filter) ||
         (t.benchNumber || '').toLowerCase().includes(filter) ||
@@ -287,8 +362,8 @@
     // Row height: fixed for the operator; in projector mode, squeeze everyone onto one screen
     const projector = document.body.classList.contains('projector');
     const rowH = projector
-      ? Math.max(30, Math.min(64, Math.floor((board.clientHeight || 600) / Math.max(1, teams.length))))
-      : 46;
+      ? Math.max(38, Math.min(84, Math.floor((board.clientHeight || 600) / Math.max(1, teams.length))))
+      : 58;
     board.style.setProperty('--row-h', `${rowH}px`);
     sizer.style.height = `${teams.length * rowH}px`;
 
@@ -316,6 +391,7 @@
       let tagClass = '';
       if (status === 'LOBBY') nowText = `${t.members.length} players ready`;
       else if (t.isRoundCompleted) nowText = '✓ Finished this round';
+      else if (!status.startsWith('ROUND_')) nowText = t.totalSteps ? `⌛ Time ran out at ${t.solved}/${t.totalSteps}` : '';
       else if (t.activeName) nowText = `▶ ${t.activeName} is solving`;
       if (!t.online) { tag = 'OFFLINE'; tagClass = 'tag-off'; }
 
@@ -386,22 +462,9 @@
     const teamId = btn.closest('.row')?.dataset.team;
     const team = adminState?.teams?.find(t => t.teamId === teamId);
     if (!team) return;
-    if (btn.dataset.act === 'skip') {
-      if (!confirm(`Force-advance "${team.name}" by one step?\n\nUse this only for a stuck squad or a technical problem.`)) return;
-      sendAdminAction('force_advance', { teamId, reason: 'Host force-advance' });
-      showToast(`⏭ ${team.name} advanced one step`, 'warning');
-    } else {
-      openScoreModal(team);
-    }
+    openScoreModal(team);
   });
 
-  document.querySelectorAll('.chip[data-sort]').forEach(chip => {
-    chip.addEventListener('click', () => {
-      sortMode = chip.dataset.sort;
-      document.querySelectorAll('.chip[data-sort]').forEach(c => c.classList.toggle('active', c === chip));
-      if (adminState) renderBoard(adminState);
-    });
-  });
   filterInput.addEventListener('input', () => adminState && renderBoard(adminState));
 
   // ------------------------------------------------------------ score modal
@@ -475,6 +538,24 @@
   $('btnExitProjector').addEventListener('click', () => setProjector(false));
   window.addEventListener('keydown', (e) => {
     if (!authenticated || ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    const modalOpen = !$('stageModal').classList.contains('hidden');
+    if (modalOpen) {
+      // Space confirms a start; ending a round early needs a deliberate Enter or click
+      const danger = $('stageModal').dataset.danger === '1';
+      if (e.key === 'Escape') { e.preventDefault(); closeStageModal(); }
+      else if (e.key === ' ') { e.preventDefault(); if (!danger) confirmStageModal(); }
+      else if (e.key === 'Enter') { e.preventDefault(); confirmStageModal(); }
+      else if (e.key === 'Tab') return;
+      else e.preventDefault();
+      return;
+    }
+    if (e.key === ' ' && !e.repeat) {
+      e.preventDefault();
+      if (!$('ceremony').classList.contains('hidden')) return;
+      const primary = primaryActionFor(adminState?.status);
+      if (primary.space) primary.run();
+      return;
+    }
     if (e.key === 'p' || e.key === 'P') setProjector(!document.body.classList.contains('projector'));
     if (e.key === 'Escape' && !$('ceremony').classList.contains('hidden')) hideCeremony();
   });
@@ -579,7 +660,7 @@
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const colors = ['#ffd36b', '#7ec8e3', '#43e97b', '#ff8fa3', '#ffffff', '#ffa63d'];
+    const colors = ['#f2b705', '#1f74a8', '#13a35a', '#e5486d', '#7c5cff', '#f07c00'];
     const pieces = Array.from({ length: 140 }, () => ({
       x: canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.5,
       y: canvas.height * 0.35,
@@ -622,6 +703,11 @@
   function render(data) {
     renderHeader(data);
     renderBoard(data);
+    // A round just started: announce it on the projector
+    if (lastStatus && lastStatus !== data.status && data.status.startsWith('ROUND_')) {
+      closeStageModal();
+      showGoSplash(data.currentRound);
+    }
     // The moment the finals end, roll the ceremony once (host can replay it from the menu)
     if (data.status === 'FINISHED' && lastStatus && lastStatus !== 'FINISHED' && !ceremonyAutoShown) {
       ceremonyAutoShown = true;

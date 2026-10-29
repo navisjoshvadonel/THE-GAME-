@@ -411,8 +411,9 @@ function validateLeaderPhrase(inputPhrase, requiredWords = []) {
     if (lowerInput.includes(reqClean) || normalizedWords.includes(reqNoPunct)) {
       matchedWords.push(rawReq.toUpperCase());
     } else {
-      const subTokens = reqClean.split(/\s+/).filter(t => t.length > 2);
-      if (subTokens.length > 1 && subTokens.some(st => normalizedWords.includes(st))) {
+      // Multi-word keywords count when any meaningful part is used: "Raman" or "C.V. Raman" for CV RAMAN
+      const subTokens = reqClean.split(/\s+/).map(t => t.replace(/[^a-z0-9]/g, '')).filter(t => t.length > 2);
+      if (reqClean.includes(' ') && subTokens.some(st => normalizedWords.includes(st))) {
         matchedWords.push(rawReq.toUpperCase());
       } else {
         missingWords.push(rawReq.toUpperCase());

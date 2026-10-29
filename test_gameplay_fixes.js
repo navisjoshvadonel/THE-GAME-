@@ -126,8 +126,6 @@ console.log('\n--- [LEADERBOARD FRESHNESS] ---');
 state.getLeaderboard();
 state.overrideTeamScore(beta.team.teamId, 999, 'test');
 assert(state.getLeaderboard()[0].teamId === beta.team.teamId, 'LB-1: Score override is reflected immediately');
-const forced = state.forceAdvanceTeamTurn(beta.team.teamId, 'test');
-assert(forced.success && beta.team.currentRoundProgress.currentTurnStartedAt > Date.now() - 1000, 'LB-2: Host force-advance restarts the next player\'s clock');
 
 console.log('\n--- [ROUND 2: TIERED SCORING & PAUSE] ---');
 state.endRound();
@@ -196,6 +194,16 @@ console.log('\n--- [30 SQUADS, 30 QUESTION SETS] ---');
     assert(ids.size === 30, `SETS-${round}: 30 squads get 30 different Round ${round} sets`, `got ${ids.size}`);
     big.endRound();
   }
+}
+
+console.log('\n--- [VICTORY SENTENCE KEYWORDS] ---');
+{
+  const { validateLeaderPhrase } = require('./src/nlpValidator');
+  const frags = ['MATRIX', 'MASTER', 'CV RAMAN'];
+  assert(validateLeaderPhrase('Our squad uses matrix and master with raman inspiration to build ideas.', frags).isValid, 'KW-1: "Raman" counts for the keyword CV RAMAN');
+  assert(validateLeaderPhrase('Our squad uses matrix and master with C.V. Raman inspiration to build ideas.', frags).isValid, 'KW-2: "C.V. Raman" counts for CV RAMAN');
+  assert(!validateLeaderPhrase('Our squad uses matrix and master with cv inspiration to build ideas.', frags).isValid, 'KW-3: A bare initial ("cv") does not count');
+  assert(validateLeaderPhrase('Like Ambedkar we build the matrix and master our future.', ['MATRIX', 'MASTER', 'BR AMBEDKAR']).isValid, 'KW-4: Surname alone counts for BR AMBEDKAR');
 }
 
 console.log('\n--- [RESET] ---');

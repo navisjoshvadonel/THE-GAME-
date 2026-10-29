@@ -101,18 +101,13 @@
       <div class="header-controls">
 
         <div id="benchIdentityBadge" class="identity-badge hidden">
-          <span class="bench-tag" id="navBenchTag">CABINET --</span>
+          <span class="bench-tag" id="navBenchTag">TEAM --</span>
           <span id="navTeamName" class="player-name">--</span>
           <div class="meta-tag meta-score-tag">
             <span class="score-icon">⚡</span>
             <strong id="navSquadScore">0 PTS</strong>
           </div>
         </div>
-
-        <button id="btnSwitchBench" class="header-nav-btn hidden" type="button" title="Switch Cabinet or Re-register">
-          <span class="nav-btn-icon">🔄</span>
-          <span>SWITCH CABINET</span>
-        </button>
 
         <button id="soundToggleBtn" class="header-nav-btn" type="button" title="Toggle Sound">
           <span id="soundIcon" class="nav-btn-icon">🔊</span>
@@ -367,7 +362,7 @@
                 <span class="snow-card-icon">&#127918;</span>
                 <div>
                   <h2 id="loungeBenchTitle" class="snow-card-title">SQUAD --</h2>
-                  <span class="snow-card-sub">ARCADE CABINET ONLINE</span>
+                  <span class="snow-card-sub">SQUAD ONLINE</span>
                 </div>
                 <span class="snow-online-badge">&#9679; LIVE</span>
               </div>
@@ -444,7 +439,7 @@
           <!-- Window Title Bar with Live Bench HUD -->
           <div class="retro-window-header arena-topbar">
             <div class="arena-top-left">
-              <span class="bench-tag-pill" id="gameBenchTag">⚡ CABINET --</span>
+              <span class="bench-tag-pill" id="gameBenchTag">⚡ TEAM --</span>
               <strong id="gameTeamName" class="meta-team-name">--</strong>
               <span class="separator-pipe">|</span>
               <span id="gameRoundTitle" class="meta-round-sub">STAGE 1: KEYWORD CIPHER QUEST</span>
@@ -490,7 +485,7 @@
                     <span id="activeScholarRole" class="operative-role-tag">PLAYER</span>
                   </div>
                 </div>
-                <p class="operative-instruction-hint">👉 Grab the controls! Solve this cipher puzzle for your squad!</p>
+                <p id="activeScholarHint" class="operative-instruction-hint pass-laptop-hint">💻 Pass the laptop to this player and let them solve this one!</p>
               </div>
 
               <!-- Persistent Axiom Vault Inventory Card -->
@@ -735,7 +730,7 @@
                 <div class="intermission-clock">
                   <span id="intermissionClock" class="clock-digits">--:--</span>
                 </div>
-                <p class="intermission-notice">Game Master is preparing the next round. Get ready at your cabinet!</p>
+                <p class="intermission-notice">Game Master is preparing the next round. Get ready at your laptop!</p>
               </div>
 
               <!-- 5. ROUND 2 MISSION BRIEFING & TACTICAL WORDLE GUIDE (Shown during INTERMEDIATE_1 & after R1) -->
@@ -830,7 +825,7 @@
           <!-- Window Title Bar with Live Bench HUD -->
           <div class="retro-window-header arena-topbar">
             <div class="arena-top-left">
-              <span class="bench-tag-pill" id="r2GameBenchTag">⚡ CABINET --</span>
+              <span class="bench-tag-pill" id="r2GameBenchTag">⚡ TEAM --</span>
               <strong id="r2GameTeamName" class="meta-team-name">--</strong>
               <span class="separator-pipe">|</span>
               <span class="meta-round-sub">STAGE 2: THE 10-NODE CYBER TERMINAL HACK</span>
@@ -879,7 +874,7 @@
                     <span id="r2ActivePlayerRole" class="operative-role-tag">PLAYER</span>
                   </div>
                 </div>
-                <p class="operative-instruction-hint">👉 Analyze the circuit bridge, type your guess, and breach this node!</p>
+                <p id="r2ActivePlayerHint" class="operative-instruction-hint pass-laptop-hint">💻 Pass the laptop to this player and let them crack this node!</p>
               </div>
 
               <!-- Persistent Breached Vault Card -->
@@ -1182,6 +1177,7 @@
                 <span class="cf-muted">AT THE CONSOLE</span>
                 <strong id="r3ActivePlayerName">--</strong>
                 <span id="r3ActivePlayerRole" class="cf-muted">--</span>
+                <span id="r3PassHint" class="cf-pass-hint">💻 Pass the laptop to this detective</span>
               </div>
 
               <!-- Evidence exhibit (member turns) -->
@@ -1261,6 +1257,34 @@
         </div>
       </section>
 
+
+      <!-- BREAK BETWEEN ROUNDS: your result + how the next round works -->
+      <section id="viewBreak" class="view-screen hidden">
+        <div class="break-wrap">
+          <div class="break-result">
+            <div id="breakKicker" class="break-kicker">ROUND 1 COMPLETE</div>
+            <h2 id="breakTeamName" class="break-team">--</h2>
+            <div class="break-stats">
+              <div class="break-stat"><span id="breakRoundScore">0</span><label id="breakRoundLabel">Round 1 points</label></div>
+              <div class="break-stat"><span id="breakTotalScore">0</span><label>Total points</label></div>
+            </div>
+          </div>
+
+          <div class="break-rules">
+            <div class="break-rules-head">
+              <span id="breakNextTag" class="break-next-tag">UP NEXT</span>
+              <h3 id="breakNextTitle" class="break-next-title">Round 2</h3>
+              <span id="breakNextMeta" class="break-next-meta">--</span>
+            </div>
+            <ol id="breakRulesList" class="break-rules-list"></ol>
+          </div>
+
+          <div class="break-wait">
+            <span class="break-wait-dot" aria-hidden="true"></span>
+            <span id="breakWaitText">Waiting for the host to start the next round. Stay at your laptop!</span>
+          </div>
+        </div>
+      </section>
 
       <!-- VIEW 4: CHAMPIONSHIP CONCLUDED SCREEN -->
       <section id="viewFinished" class="view-screen hidden">

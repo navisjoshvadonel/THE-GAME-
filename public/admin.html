@@ -56,13 +56,6 @@
       <button id="btnPauseResume" class="btn">⏸ Pause</button>
       <button id="btnExtendTime1m" class="btn">+1 min</button>
       <span class="spacer"></span>
-      <div class="sort-group" role="group" aria-label="Sort squads">
-        <span class="muted">Sort</span>
-        <button class="chip active" data-sort="rank">Rank</button>
-        <button class="chip" data-sort="progress">Progress</button>
-        <button class="chip" data-sort="bench">Bench</button>
-        <button class="chip" data-sort="name">Name</button>
-      </div>
       <input type="search" id="squadFilterInput" class="search" placeholder="Find squad or player…">
       <button id="btnProjector" class="btn btn-accent" title="Projector mode (P)">📺 Projector</button>
       <details class="menu">
@@ -93,6 +86,15 @@
       <span>Squad leaders, open</span>
       <strong id="joinUrl">http://…</strong>
       <span>and register your team</span>
+    </div>
+
+    <!-- Round finished: final standings + what happens next -->
+    <div id="breakBanner" class="break-banner hidden">
+      <div>
+        <div id="breakTitle" class="break-title">Round 1 complete — final standings</div>
+        <div id="breakSub" class="break-sub">Scores are locked for this round.</div>
+      </div>
+      <div id="breakNext" class="break-next"><kbd>Space</kbd> Start Round 2</div>
     </div>
 
     <!-- Live standings -->
@@ -129,6 +131,26 @@
         <button id="btnCeremonyClose" class="btn">Close</button>
       </div>
     </div>
+  </div>
+
+  <!-- Big stage pop-up (Space opens it, Space / Enter confirms, Esc cancels) -->
+  <div id="stageModal" class="stage-modal hidden" role="dialog" aria-modal="true" aria-labelledby="stageModalTitle">
+    <div class="stage-modal-card">
+      <div id="stageModalKicker" class="stage-modal-kicker">NEXT STAGE</div>
+      <h2 id="stageModalTitle" class="stage-modal-title">Start Round 1?</h2>
+      <p id="stageModalBody" class="stage-modal-body"></p>
+      <div class="stage-modal-actions">
+        <button type="button" id="btnStageCancel" class="btn btn-lg">Cancel <kbd>Esc</kbd></button>
+        <button type="button" id="btnStageConfirm" class="btn btn-primary btn-lg">Start <kbd>Space</kbd></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- "Round N — GO!" announcement -->
+  <div id="goSplash" class="go-splash hidden" aria-live="assertive">
+    <div class="go-round" id="goRound">ROUND 1</div>
+    <div class="go-title" id="goTitle">Keyword Cipher Quest</div>
+    <div class="go-go">GO!</div>
   </div>
 
   <!-- Score adjust modal -->

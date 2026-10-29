@@ -291,10 +291,10 @@ class GameStateManager {
    * BENCH TEAM REGISTRATION (One Bench, One Leader Console, 2 or 3 Members)
    * ----------------------------------------------------------- */
   registerBenchTeam({ benchNumber, teamName, gender = 'open', teamSize = 3, leaderName, memberNames = [], socketId }) {
-    const cabinetIdx = this.teams.size + 1;
+    const teamIdx = this.teams.size + 1;
     const cleanBench = (benchNumber && benchNumber !== 'Bench 01')
       ? sanitizeText(benchNumber).trim().slice(0, 16)
-      : `Cabinet ${String(cabinetIdx).padStart(2, '0')}`;
+      : `Team ${String(teamIdx).padStart(2, '0')}`;
     const cleanLeader = sanitizeText(leaderName).trim().slice(0, 20);
     if (!cleanLeader || cleanLeader.length < 2) {
       return { success: false, message: 'Please enter a valid Team Leader name (at least 2 characters).' };
@@ -1069,98 +1069,6 @@ class GameStateManager {
   /* -------------------------------------------------------------
    * ADMIN RESILIENCE & INTERVENTIONS
    * ----------------------------------------------------------- */
-  forceAdvanceTeamTurn(teamId, adminReason = 'Admin manual advance') {
-    const team = this.teams.get(teamId);
-    if (!team) return { success: false, message: 'Team not found' };
-    if (!this.roundState.active) return { success: false, message: 'Round not active' };
-
-    const progress = team.currentRoundProgress;
-    if (!progress || progress.isRoundCompleted) {
-      return { success: false, message: 'Team is already completed or not active' };
-    }
-
-    const sets = PUZZLE_SETS[this.currentRound] || [];
-    const puzzleSet = sets.find(s => s.setId === progress.setId) || sets[0];
-
-    if (this.currentRound === 2) {
-      const totalNodes = puzzleSet?.steps?.length || 10;
-      const currentTurn = progress.currentTurnIndex;
-      const currentNode = puzzleSet?.steps[currentTurn];
-      if (currentNode) {
-        progress.stepSolved[currentTurn] = true;
-        if (!progress.collectedWords.includes(currentNode.targetWord)) {
-          progress.collectedWords.push(currentNode.targetWord);
-        }
-      }
-      progress.nodesBreached = Object.keys(progress.stepSolved).length;
-      team.totalScore += 50;
-      team.roundScores[2] = (team.roundScores[2] || 0) + 50;
-
-      if (progress.currentTurnIndex + 1 < totalNodes) {
-        progress.currentTurnIndex++;
-        progress.currentTurnStartedAt = Date.now();
-        this.logEvent('ADMIN_FORCE_ADVANCE_R2', `Force-advanced Team ${team.name} on Node ${currentTurn + 1} (${adminReason}).`);
-        this.saveSnapshot();
-        return {
-          success: true,
-          message: `Force-advanced team to Node ${progress.currentTurnIndex + 1}.`,
-          nextTurnIndex: progress.currentTurnIndex
-        };
-      } else {
-        progress.currentTurnIndex = totalNodes;
-        progress.isRoundCompleted = true;
-        this._markRoundTime(team);
-        progress.completedAt = Date.now();
-        this.logEvent('ADMIN_FORCE_COMPLETE_R2', `Force-completed Round 2 for Team ${team.name}.`);
-        this.saveSnapshot();
-        this._endRoundIfAllTeamsFinished();
-        return {
-          success: true,
-          message: 'Team marked as Round 2 completed by Administrator.'
-        };
-      }
-    }
-
-    const totalRiddleSteps = puzzleSet?.steps?.length || 3;
-    const currentTurn = progress.currentTurnIndex;
-    const isLeaderTurn = currentTurn >= totalRiddleSteps;
-
-    if (!isLeaderTurn) {
-      const expectedFrag = puzzleSet?.steps[currentTurn]?.expectedFragment || 'FRAG';
-      progress.stepSolved[currentTurn] = true;
-      progress.collectedFragments.push(expectedFrag);
-      progress.currentTurnIndex++;
-      progress.currentTurnStartedAt = Date.now();
-
-      this.logEvent('ADMIN_FORCE_ADVANCE', `Force-advanced Team ${team.name} on Step ${currentTurn + 1} (${adminReason}).`);
-      this.saveSnapshot();
-
-      return {
-        success: true,
-        message: `Force-advanced team to turn ${progress.currentTurnIndex + 1}.`,
-        nextTurnIndex: progress.currentTurnIndex
-      };
-    } else {
-      // Force complete round
-      progress.stepSolved[currentTurn] = true;
-      progress.isRoundCompleted = true;
-      this._markRoundTime(team);
-      progress.completedAt = Date.now();
-      progress.assembledSubmission = '[ADMIN OVERRIDE]';
-      team.totalScore += 250;
-      team.roundScores[this.currentRound] = (team.roundScores[this.currentRound] || 0) + 250;
-
-      this.logEvent('ADMIN_FORCE_COMPLETE', `Force-completed Round ${this.currentRound} for Team ${team.name}.`);
-      this.saveSnapshot();
-      this._endRoundIfAllTeamsFinished();
-
-      return {
-        success: true,
-        message: 'Team marked as completed by Administrator.'
-      };
-    }
-  }
-
   overrideTeamScore(teamId, scoreDelta, reason = 'Admin adjustment') {
     const team = this.teams.get(teamId);
     if (!team) return { success: false, message: 'Team not found' };

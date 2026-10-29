@@ -179,21 +179,6 @@ function setupSocketHandlers(io, gameState) {
           }
           break;
 
-        case 'force_advance':
-          result = gameState.forceAdvanceTeamTurn(payload.teamId, payload.reason);
-          if (result.success) {
-            if (!gameState.roundState.active) {
-              // The forced step was the last one outstanding, so the whole round concluded
-              io.emit('round_ended', { currentRound: gameState.currentRound, status: gameState.status });
-              for (const teamId of gameState.teams.keys()) {
-                syncTeamRoom(teamId);
-              }
-            } else {
-              syncTeamRoom(payload.teamId);
-            }
-          }
-          break;
-
         case 'override_score':
           result = gameState.overrideTeamScore(payload.teamId, payload.scoreDelta, payload.reason);
           if (result.success) {

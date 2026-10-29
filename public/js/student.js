@@ -45,7 +45,6 @@
   const navSquadScore = document.getElementById('navSquadScore');
   const navRoundSub = document.getElementById('navRoundSub');
   const btnHeaderHost = document.getElementById('btnHeaderHost');
-  const btnSwitchBench = document.getElementById('btnSwitchBench');
   const soundToggleBtn = document.getElementById('soundToggleBtn');
   const soundIcon = document.getElementById('soundIcon');
   const soundText = document.getElementById('soundText');
@@ -59,6 +58,7 @@
   const viewRound2Game = document.getElementById('viewRound2Game');
   const viewRound3Game = document.getElementById('viewRound3Game');
   const viewFinished = document.getElementById('viewFinished');
+  const viewBreak = document.getElementById('viewBreak');
 
   // If a session token already exists in storage, hide registration immediately to prevent flashing/overlap
   if (sessionToken && viewRegister) {
@@ -248,7 +248,7 @@
   }
 
   let _activeScreen = null;
-  const _ALL_SCREENS = [viewRegister, viewLobby, viewGame, viewRound2Game, viewRound3Game, viewFinished];
+  const _ALL_SCREENS = [viewRegister, viewLobby, viewGame, viewRound2Game, viewRound3Game, viewBreak, viewFinished];
 
   function switchScreen(screen) {
     if (!screen) return;
@@ -386,6 +386,9 @@
   }
 
   if (btnHandoffContinue) btnHandoffContinue.addEventListener('click', closeHandoff);
+
+  // Coming back to the tab (or after a refresh) puts the cursor straight back in the answer box
+  window.addEventListener('focus', () => setTimeout(refocusActiveInput, 0));
 
   // Intro splash: shown once per browser tab, and doubles as the click that unlocks game audio
   const INTRO_SEEN_KEY = 'snow_arena_intro_seen';
@@ -675,7 +678,6 @@
         navSquadScore.title = `Cumulative Total: ${team.totalScore} PTS (R1: ${r1} | R2: ${r2} | R3: ${r3})`;
       }
       if (benchIdentityBadge) benchIdentityBadge.classList.remove('hidden');
-      if (btnSwitchBench) btnSwitchBench.classList.remove('hidden');
 
       // Pop the gained points (but not the existing total on first load / reconnect)
       if (previousScore !== null && team.totalScore > previousScore) {
@@ -684,7 +686,6 @@
       previousScore = team.totalScore;
     } else {
       if (benchIdentityBadge) benchIdentityBadge.classList.add('hidden');
-      if (btnSwitchBench) btnSwitchBench.classList.add('hidden');
     }
 
     // Host pause covers every game screen
@@ -706,15 +707,11 @@
     } else if (state.gameStatus === 'FINISHED') {
       renderFinished(state);
       switchScreen(viewFinished);
-    } else if (state.gameStatus === 'INTERMEDIATE_1') {
-      // Stage 1 Intermission: All players see Round 2 Guide & Mission Briefing!
-      renderGame(state);
-      switchScreen(viewGame);
+    } else if (state.gameStatus === 'INTERMEDIATE_1' || state.gameStatus === 'INTERMEDIATE_2') {
+      // Between rounds: the squad's result plus plain rules for the next round
+      renderBreak(state);
+      switchScreen(viewBreak);
     } else if (state.gameStatus === 'ROUND_2') {
-      renderRound2Game(state);
-      switchScreen(viewRound2Game);
-    } else if (state.gameStatus === 'INTERMEDIATE_2') {
-      // Stage 2 Intermission / Qualification Audit
       renderRound2Game(state);
       switchScreen(viewRound2Game);
     } else if (state.gameStatus === 'ROUND_3') {
@@ -723,6 +720,58 @@
     } else {
       renderGame(state);
       switchScreen(viewGame);
+    }
+  }
+
+  // What each round asks of the squad, shown during the break before it
+  const NEXT_ROUND_RULES = {
+    2: {
+      title: 'Round 2 — 10-Node Cyber Relay',
+      meta: 'Medium • 10 minutes • word puzzle, like Wordle',
+      rules: [
+        'Crack 10 password nodes, one after another. Each node has a clue and shows how many letters the password has.',
+        'Type a guess and press Enter. <b class="tile-g">Green</b> = right letter, right spot. <b class="tile-y">Yellow</b> = in the word, wrong spot. <b class="tile-x">Grey</b> = not in the word.',
+        'Each password usually starts with the <b>last letter of the previous one</b>; the link clue tells you the letter.',
+        'Points: solve on guess 1 = <b>100</b>, guess 2 = <b>80</b>, guess 3 = <b>60</b>, guess 4 = <b>40</b>. Miss all 4 and the node opens for 0, so you are never stuck.',
+        'Pass the laptop: the screen shows which teammate plays each node.'
+      ]
+    },
+    3: {
+      title: 'Round 3 — The Kensington Crescent Affair',
+      meta: 'Hard • 15 minutes • murder mystery',
+      rules: [
+        'Every squad investigates the same murder. Read the case file: summary, 5 suspects with alibis, and witness statements.',
+        'Crack 5 exhibits in turn. Each answer is one word or a time, but no single answer names the killer.',
+        'The advisory note is always shown; the stronger hint opens after 1:30. <b>Each wrong answer costs 10 points.</b>',
+        'Finally the leader files the warrant <b>SURNAME : POISON : MOTIVE</b>. A wrong warrant locks for 30 seconds and only says how many charges hold.',
+        'Talk it through as a team: the killer is the one whose story does not fit the facts.'
+      ]
+    }
+  };
+
+  function renderBreak(state) {
+    const team = state.team;
+    if (!team) return;
+    const done = state.gameStatus === 'INTERMEDIATE_1' ? 1 : 2;
+    const next = NEXT_ROUND_RULES[done + 1];
+    const setText = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    setText('breakKicker', `ROUND ${done} COMPLETE`);
+    setText('breakTeamName', team.name);
+    setText('breakRoundScore', (team.roundScores?.[done] || 0).toLocaleString('en-US'));
+    setText('breakRoundLabel', `Round ${done} points`);
+    setText('breakTotalScore', (team.totalScore || 0).toLocaleString('en-US'));
+    // Rank stays hidden until the final results, to keep the suspense
+    setText('breakNextTitle', next.title);
+    setText('breakNextMeta', next.meta);
+    setText('breakWaitText', `Waiting for the host to start Round ${done + 1}. Read the rules above with your squad and stay at your laptop!`);
+    const list = document.getElementById('breakRulesList');
+    // Rule text is fixed in this file (never player input), so it may carry simple markup
+    if (list && list.dataset.round !== String(done + 1)) {
+      list.dataset.round = String(done + 1);
+      list.innerHTML = next.rules.map(rule => `<li>${rule}</li>`).join('');
     }
   }
 
@@ -756,7 +805,7 @@
     if (!team) return;
 
     if (loungeBenchTitle) {
-      loungeBenchTitle.textContent = `${(team.benchNumber || 'CABINET').toUpperCase()} : ${team.name.toUpperCase()}`;
+      loungeBenchTitle.textContent = `${(team.benchNumber || 'TEAM').toUpperCase()} : ${team.name.toUpperCase()}`;
     }
     if (loungeMemberCount) {
       loungeMemberCount.textContent = team.members ? team.members.length : 3;
@@ -797,7 +846,7 @@
     const team = state.team;
     if (!team) return;
 
-    if (gameBenchTag) gameBenchTag.textContent = team.benchNumber ? `⚡ ${team.benchNumber.toUpperCase()}` : '⚡ CABINET ARENA';
+    if (gameBenchTag) gameBenchTag.textContent = team.benchNumber ? `⚡ ${team.benchNumber.toUpperCase()}` : '⚡ TEAM';
     if (gameTeamName) gameTeamName.textContent = team.name.toUpperCase();
     if (gameTeamScore) gameTeamScore.textContent = team.totalScore;
     if (gameRoundTitle) gameRoundTitle.textContent = `STAGE ${state.currentRound || 1}: KEYWORD CIPHER QUEST`;
@@ -914,6 +963,12 @@
     if (!puzzle) return;
 
     if (activeScholarName) activeScholarName.textContent = puzzle.activePlayerName || 'Player 1';
+    const r1Hint = document.getElementById('activeScholarHint');
+    if (r1Hint) {
+      r1Hint.textContent = puzzle.type === 'leader_step'
+        ? `💻 Pass the laptop to ${puzzle.activePlayerName || 'your leader'}: the squad leader writes the victory sentence. Everyone can help!`
+        : `💻 Pass the laptop to ${puzzle.activePlayerName || 'this player'} and let them solve this one!`;
+    }
     if (activeScholarRole) activeScholarRole.textContent = (puzzle.activePlayerRole || 'PLAYER').toUpperCase();
 
     if (puzzle.type === 'leader_step') {
@@ -980,7 +1035,7 @@
     const team = state.team;
     if (!team) return;
 
-    if (r2GameBenchTag) r2GameBenchTag.textContent = team.benchNumber ? `⚡ ${team.benchNumber.toUpperCase()}` : '⚡ CABINET ARENA';
+    if (r2GameBenchTag) r2GameBenchTag.textContent = team.benchNumber ? `⚡ ${team.benchNumber.toUpperCase()}` : '⚡ TEAM';
     if (r2GameTeamName) r2GameTeamName.textContent = team.name.toUpperCase();
     if (r2GameTeamScore) r2GameTeamScore.textContent = team.totalScore;
 
@@ -1068,6 +1123,8 @@
     if (r2ActivePlayerName) {
       r2ActivePlayerName.textContent = isYouLead ? `${puzzle.activePlayerName} (YOU)` : (puzzle.activePlayerName || 'Operative');
     }
+    const r2Hint = document.getElementById('r2ActivePlayerHint');
+    if (r2Hint) r2Hint.textContent = `💻 Pass the laptop to ${puzzle.activePlayerName || 'this player'} and let them crack Node ${puzzle.nodeNumber}!`;
     if (r2ActivePlayerRole) {
       r2ActivePlayerRole.textContent = isYouLead 
         ? '⭐ CURRENT RELAY LEAD' 
@@ -1761,8 +1818,11 @@
     // 1. Keyword Checkmarks
     inspectorKeywordsPills.innerHTML = '';
     requiredFragments.forEach(frag => {
+      // Same rule as the server: a multi-word keyword counts when any meaningful part is used
       const cleanFrag = frag.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const isPresent = normalizedWords.includes(cleanFrag);
+      const parts = frag.toLowerCase().split(/\s+/).map(p => p.replace(/[^a-z0-9]/g, '')).filter(p => p.length > 2);
+      const isPresent = normalizedWords.includes(cleanFrag) ||
+        (frag.trim().includes(' ') && parts.some(p => normalizedWords.includes(p)));
 
       const pill = document.createElement('span');
       pill.className = `keyword-check-pill ${isPresent ? 'matched' : 'missing'}`;
@@ -2432,18 +2492,6 @@
     });
   }
 
-  // 15. Switch Bench / Re-register Shortcut
-  if (btnSwitchBench) {
-    btnSwitchBench.addEventListener('click', () => {
-      if (confirm('Switch bench or re-register roster?\n\nYour current bench progress remains safely stored on the server.')) {
-        sessionStorage.removeItem('campus_puzzle_session_token');
-        localStorage.removeItem('campus_puzzle_session_token');
-        sessionToken = null;
-        window.location.reload();
-      }
-    });
-  }
-
   // 16. ROUND 3: SHER"UNLOCKING" HOMIES (THE BAKER STREET MYSTERY)
   function escapeHtml(str) {
     if (!str) return '';
@@ -2651,6 +2699,11 @@
     const r3ActivePlayerRole = document.getElementById('r3ActivePlayerRole');
     if (r3ActivePlayerName) r3ActivePlayerName.textContent = team.progress?.activePlayerName || '--';
     if (r3ActivePlayerRole) r3ActivePlayerRole.textContent = team.progress?.activePlayerRole || '';
+    const r3PassHint = document.getElementById('r3PassHint');
+    if (r3PassHint) {
+      r3PassHint.textContent = `💻 Pass the laptop to ${team.progress?.activePlayerName || 'this detective'}`;
+      r3PassHint.classList.toggle('hidden', Boolean(team.progress?.isRoundCompleted));
+    }
 
     // Case closed
     if (puzzle?.type === 'sherlock_round3_completed' || team.progress?.isRoundCompleted) {
