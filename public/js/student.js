@@ -688,7 +688,7 @@
     }
 
     // Host pause covers every game screen
-    const showPause = Boolean(state.isPaused) && Boolean(team) && !team.isEliminated && String(state.gameStatus).startsWith('ROUND_');
+    const showPause = Boolean(state.isPaused) && Boolean(team) && String(state.gameStatus).startsWith('ROUND_');
     if (pauseOverlay) pauseOverlay.classList.toggle('hidden', !showPause);
 
     // A finished round or game supersedes any celebration still on screen
@@ -2606,20 +2606,6 @@
     const boxR3WaitingTurn = document.getElementById('boxR3WaitingTurn');
     const boxR3Completed = document.getElementById('boxR3Completed');
     [boxR3MemberGame, boxR3LeaderGame, boxR3WaitingTurn, boxR3Completed].forEach(el => el && el.classList.add('hidden'));
-
-    // Squads outside the Top 5 watch the finals as spectators (just a notice, no empty case file)
-    if (viewRound3Game) viewRound3Game.classList.toggle('r3-spectator', Boolean(team.isEliminated));
-    if (team.isEliminated) {
-      if (boxR3WaitingTurn) {
-        boxR3WaitingTurn.classList.remove('hidden');
-        const title = boxR3WaitingTurn.querySelector('.waiting-title');
-        if (title) title.textContent = 'Honorary Spectators';
-        const sub = document.getElementById('r3WaitingSub');
-        if (sub) sub.textContent = `The Top 5 squads are investigating the Kensington Crescent Affair. ${team.rank ? `Your squad finished the qualifiers at rank #${team.rank} with ${team.totalScore} PTS — ` : ''}watch the Grand Hall projector to cheer them on!`;
-      }
-      updateR3TurnTimer();
-      return;
-    }
 
     buildR3CaseFile(puzzle?.caseDossier);
 

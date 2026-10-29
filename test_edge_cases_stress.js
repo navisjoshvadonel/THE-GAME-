@@ -138,10 +138,6 @@ async function runAllTests() {
   const reconInvalid = state.reconnectPlayer('non-existent-token-xyz', 'sock_fake');
   assert(!reconInvalid.success, 'TC-RECON-2: Reconnect with bogus token rejected');
 
-  // TC-LOB-1: Lobby timer controls
-  const lTimer = state.startLobbyTimer(180);
-  assert(state.lobbyTimer.active && state.lobbyTimer.durationSec === 180, 'TC-LOB-1: Lobby countdown timer initialized');
-
   // ------------------------------------------------------------------
   // CATEGORY 3: SEQUENTIAL ROUND LAUNCHING & SAFETY LOCKS
   // ------------------------------------------------------------------

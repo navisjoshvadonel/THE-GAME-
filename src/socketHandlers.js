@@ -35,18 +35,6 @@ function setupSocketHandlers(io, gameState) {
       }
     }
 
-    // Auto-merge when Lobby Assembly Timer ends
-    if (gameState.status === 'LOBBY' && gameState.lobbyTimer.active) {
-      if (Date.now() >= gameState.lobbyTimer.endTime) {
-        gameState.lobbyTimer.active = false;
-        gameState.autoMergeLeftovers();
-        for (const teamId of gameState.teams.keys()) {
-          syncTeamRoom(teamId);
-        }
-        triggerDisplayPush(true);
-        pushAdminUpdate();
-      }
-    }
     // Periodic sync to display
     triggerDisplayPush(false);
   }, 1000);
@@ -127,9 +115,6 @@ function setupSocketHandlers(io, gameState) {
 
       switch (action) {
         case 'start_round':
-          if (gameState.status === 'LOBBY') {
-            gameState.autoMergeLeftovers();
-          }
           // Server-side protection against accidental skipping
           if (payload.roundNumber === 2 && gameState.status === 'LOBBY' && !payload.force) {
             result = { success: false, message: 'Round 2 is locked. Please run and complete Round 1 first.' };
@@ -182,18 +167,6 @@ function setupSocketHandlers(io, gameState) {
           for (const teamId of gameState.teams.keys()) {
             syncTeamRoom(teamId);
           }
-          break;
-
-        case 'auto_merge':
-          result = gameState.autoMergeLeftovers();
-          for (const teamId of gameState.teams.keys()) {
-            syncTeamRoom(teamId);
-          }
-          break;
-
-        case 'start_lobby_timer':
-          result = gameState.startLobbyTimer(payload.durationSec || 300);
-          io.emit('lobby_timer_started', result);
           break;
 
         case 'advance_stage':
@@ -294,20 +267,6 @@ function setupSocketHandlers(io, gameState) {
       }
     });
 
-    // Register / Initial Join
-    socket.on('player_join', ({ name, gender }, callback) => {
-      const reg = gameState.registerPlayer(name, gender, socket.id);
-      if (reg.success) {
-        const clientState = gameState.getClientState(reg.sessionToken);
-        if (typeof callback === 'function') {
-          callback({ success: true, sessionToken: reg.sessionToken, clientState });
-        }
-        pushAdminUpdate();
-      } else {
-        if (typeof callback === 'function') callback(reg);
-      }
-    });
-
     // Reconnection Handshake with Session Token
     socket.on('reconnect_session', ({ sessionToken }, callback) => {
       const rec = gameState.reconnectPlayer(sessionToken, socket.id);
@@ -322,53 +281,6 @@ function setupSocketHandlers(io, gameState) {
         pushAdminUpdate();
       } else {
         if (typeof callback === 'function') callback(rec);
-      }
-    });
-
-    // Create Team
-    socket.on('create_team', ({ sessionToken, teamName }, callback) => {
-      const res = gameState.createTeam(sessionToken, teamName);
-      if (res.success) {
-        socket.join(`team_${res.team.teamId}`);
-        syncTeamRoom(res.team.teamId);
-        triggerDisplayPush(true);
-        pushAdminUpdate();
-        if (typeof callback === 'function') callback({ success: true, teamCode: res.teamCode });
-      } else {
-        if (typeof callback === 'function') callback(res);
-      }
-    });
-
-    // Join Team by Code
-    socket.on('join_team', ({ sessionToken, teamCode }, callback) => {
-      const res = gameState.joinTeam(sessionToken, teamCode);
-      if (res.success) {
-        socket.join(`team_${res.team.teamId}`);
-        syncTeamRoom(res.team.teamId);
-        triggerDisplayPush(true);
-        pushAdminUpdate();
-        if (typeof callback === 'function') callback({ success: true });
-      } else {
-        if (typeof callback === 'function') callback(res);
-      }
-    });
-
-    // Leave Team (Lobby stage only)
-    socket.on('leave_team', ({ sessionToken }, callback) => {
-      const player = gameState.players.get(sessionToken);
-      const oldTeamId = player?.teamId;
-      const res = gameState.leaveTeam(sessionToken);
-      if (res.success) {
-        if (oldTeamId) {
-          socket.leave(`team_${oldTeamId}`);
-          syncTeamRoom(oldTeamId);
-        }
-        socket.emit('sync_state', gameState.getClientState(sessionToken));
-        triggerDisplayPush(true);
-        pushAdminUpdate();
-        if (typeof callback === 'function') callback({ success: true });
-      } else {
-        if (typeof callback === 'function') callback(res);
       }
     });
 

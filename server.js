@@ -114,7 +114,6 @@ app.get('/api/export', (req, res) => {
       teamSize: t.teamSize || t.members.length,
       totalScore: t.totalScore,
       roundScores: t.roundScores,
-      isEliminated: Boolean(t.isEliminated),
       leaderSessionToken: t.leaderSessionToken,
       members: t.members.map((mToken, idx) => {
         const p = gameState.players.get(mToken);

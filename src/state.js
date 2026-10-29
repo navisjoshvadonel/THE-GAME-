@@ -34,13 +34,6 @@ class GameStateManager {
       remainingMsOnPause: 0
     };
 
-    this.lobbyTimer = {
-      active: false,
-      startTime: null,
-      endTime: null,
-      durationSec: 300 // 5 minutes default
-    };
-
     // Maps: sessionToken -> player, teamId -> team
     this.players = new Map();
     this.teams = new Map();
@@ -103,7 +96,6 @@ class GameStateManager {
         status: this.status,
         currentRound: this.currentRound,
         roundState: this.roundState,
-        lobbyTimer: this.lobbyTimer,
         players: Array.from(this.players.entries()),
         teams: Array.from(this.teams.entries()),
         auditLogs: this.auditLogs.slice(0, 50),
@@ -164,7 +156,6 @@ class GameStateManager {
       this.status = data.status || 'LOBBY';
       this.currentRound = data.currentRound || null;
       this.roundState = data.roundState || this.roundState;
-      this.lobbyTimer = data.lobbyTimer || this.lobbyTimer;
 
       if (Array.isArray(data.players)) {
         this.players = new Map(data.players);
@@ -204,12 +195,6 @@ class GameStateManager {
       isPaused: false,
       remainingMsOnPause: 0
     };
-    this.lobbyTimer = {
-      active: false,
-      startTime: null,
-      endTime: null,
-      durationSec: 300
-    };
     this.players.clear();
     this.teams.clear();
     this.auditLogs = [];
@@ -226,50 +211,6 @@ class GameStateManager {
   /* -------------------------------------------------------------
    * LOBBY & PLAYER MANAGEMENT
    * ----------------------------------------------------------- */
-  registerPlayer(name, gender, socketId) {
-    const cleanName = sanitizeText(name).slice(0, 24);
-    const cleanGender = (gender || '').toLowerCase().trim();
-
-    if (!cleanName || cleanName.length < 2) {
-      return { success: false, message: 'Please enter a valid display name (at least 2 characters).' };
-    }
-
-    if (!['male', 'female'].includes(cleanGender)) {
-      return { success: false, message: 'Gender must be specified as "male" or "female".' };
-    }
-
-    const sessionToken = crypto.randomUUID();
-    const player = {
-      sessionToken,
-      name: cleanName,
-      gender: cleanGender,
-      teamId: null,
-      isLeader: false,
-      isOnline: true,
-      socketId,
-      lastActive: Date.now(),
-      lastSubmitTime: 0
-    };
-
-    this.players.set(sessionToken, player);
-    this._socketIndex.set(socketId, sessionToken); // index for O(1) disconnect
-    this.logEvent('PLAYER_JOINED', `${cleanName} (${cleanGender}) joined the lobby.`);
-    this.saveSnapshot();
-    this._invalidateLeaderboard();
-
-    return {
-      success: true,
-      sessionToken,
-      player: {
-        sessionToken,
-        name: player.name,
-        gender: player.gender,
-        teamId: null,
-        isLeader: false
-      }
-    };
-  }
-
   reconnectPlayer(sessionToken, socketId) {
     if (!sessionToken || !this.players.has(sessionToken)) {
       return { success: false, message: 'Session token not found. Please rejoin.' };
@@ -442,7 +383,6 @@ class GameStateManager {
       roundScores: { 1: 0, 2: 0, 3: 0 },
       registeredAt: Date.now(),
       roundTimeMs: {},
-      isEliminated: false,
       currentRoundProgress: null
     };
 
@@ -454,7 +394,7 @@ class GameStateManager {
     });
 
     // If competition round is currently running, initialize this bench with an unassigned unique set
-    if (this.roundState.active && this.currentRound && !team.isEliminated) {
+    if (this.roundState.active && this.currentRound) {
       const assignedSetIds = new Set();
       for (const t of this.teams.values()) {
         if (t.currentRoundProgress?.setId) {
@@ -504,188 +444,6 @@ class GameStateManager {
   }
 
   /* -------------------------------------------------------------
-   * TEAM CREATION & JOINING (Gender-Exclusive, Max 4)
-   * ----------------------------------------------------------- */
-  createTeam(sessionToken, teamName) {
-    const player = this.players.get(sessionToken);
-    if (!player) return { success: false, message: 'Invalid session' };
-    if (player.teamId) return { success: false, message: 'You are already in a team' };
-
-    const cleanTeamName = sanitizeText(teamName).slice(0, 20) || `${player.name}'s Squad`;
-
-    // Generate unique 5-char team code (e.g. ALPHA, 7G4K2)
-    let teamCode = '';
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    do {
-      teamCode = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    } while (this.teams.has(teamCode));
-
-    const team = {
-      teamId: teamCode,
-      name: cleanTeamName,
-      gender: player.gender, // Locked to creator's gender (gender-exclusive!)
-      leaderSessionToken: player.sessionToken,
-      members: [player.sessionToken],
-      totalScore: 0,
-      roundScores: { 1: 0, 2: 0, 3: 0 },
-      isEliminated: false,
-      currentRoundProgress: null
-    };
-
-    player.teamId = teamCode;
-    player.isLeader = true;
-
-    this.teams.set(teamCode, team);
-    this.logEvent('TEAM_CREATED', `Team "${cleanTeamName}" [${teamCode}] created (${player.gender}-exclusive).`);
-    this.saveSnapshot();
-
-    return {
-      success: true,
-      team,
-      teamCode
-    };
-  }
-
-  joinTeam(sessionToken, teamCode) {
-    const player = this.players.get(sessionToken);
-    if (!player) return { success: false, message: 'Invalid session' };
-    if (player.teamId) return { success: false, message: 'You are already in a team' };
-
-    const normalizedCode = (teamCode || '').trim().toUpperCase();
-    const team = this.teams.get(normalizedCode);
-
-    if (!team) {
-      return { success: false, message: 'Team code not found. Please double-check with your leader.' };
-    }
-
-    if (team.members.length >= 4) {
-      return { success: false, message: 'Team is already full (maximum 4 members reached).' };
-    }
-
-    // GENDER-EXCLUSIVE ENFORCEMENT
-    if (team.gender !== player.gender) {
-      const targetGender = team.gender.toUpperCase();
-      return {
-        success: false,
-        message: `Gender-exclusive team rule: This team is designated for ${targetGender} members only.`
-      };
-    }
-
-    team.members.push(player.sessionToken);
-    player.teamId = team.teamId;
-    player.isLeader = false;
-
-    this.logEvent('PLAYER_JOINED_TEAM', `${player.name} joined Team ${team.name} [${team.teamId}].`);
-    this.saveSnapshot();
-
-    return {
-      success: true,
-      team
-    };
-  }
-
-  leaveTeam(sessionToken) {
-    const player = this.players.get(sessionToken);
-    if (!player || !player.teamId) return { success: false, message: 'Not in a team' };
-
-    const team = this.teams.get(player.teamId);
-    if (!team) return { success: false, message: 'Team not found' };
-
-    // Cannot leave once game has started
-    if (this.status !== 'LOBBY') {
-      return { success: false, message: 'Cannot leave team after the competition has started.' };
-    }
-
-    team.members = team.members.filter(t => t !== sessionToken);
-    player.teamId = null;
-    player.isLeader = false;
-
-    if (team.members.length === 0) {
-      this.teams.delete(team.teamId);
-      this.logEvent('TEAM_DISSOLVED', `Team ${team.name} dissolved.`);
-    } else if (team.leaderSessionToken === sessionToken) {
-      // Reassign leader to first remaining member
-      team.leaderSessionToken = team.members[0];
-      const newLeader = this.players.get(team.members[0]);
-      if (newLeader) newLeader.isLeader = true;
-      this.logEvent('LEADER_REASSIGNED', `${newLeader?.name} is now the leader of Team ${team.name}.`);
-    }
-
-    this.saveSnapshot();
-    return { success: true, team };
-  }
-
-  autoMergeLeftovers() {
-    const unassignedPlayers = Array.from(this.players.values()).filter(p => !p.teamId);
-    if (unassignedPlayers.length === 0) {
-      return { success: true, count: 0, message: 'All students are already in teams.' };
-    }
-
-    const males = unassignedPlayers.filter(p => p.gender === 'male');
-    const females = unassignedPlayers.filter(p => p.gender === 'female');
-
-    let createdTeamsCount = 0;
-
-    const groupIntoTeams = (pool, genderLabel) => {
-      // First, try filling existing gender-matched teams with < 4 members
-      for (const team of this.teams.values()) {
-        if (team.gender === genderLabel && team.members.length < 4 && pool.length > 0) {
-          while (team.members.length < 4 && pool.length > 0) {
-            const p = pool.shift();
-            p.teamId = team.teamId;
-            p.isLeader = false;
-            team.members.push(p.sessionToken);
-          }
-        }
-      }
-
-      // Remaining players get formed into new squads of up to 4
-      while (pool.length > 0) {
-        const batch = pool.splice(0, 4);
-        const leader = batch[0];
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let code = '';
-        do {
-          code = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-        } while (this.teams.has(code));
-
-        const teamName = `Squad ${genderLabel.toUpperCase()}-${createdTeamsCount + 1}`;
-        const team = {
-          teamId: code,
-          name: teamName,
-          gender: genderLabel,
-          leaderSessionToken: leader.sessionToken,
-          members: batch.map(p => p.sessionToken),
-          totalScore: 0,
-          roundScores: { 1: 0, 2: 0, 3: 0 },
-          isEliminated: false,
-          currentRoundProgress: null
-        };
-
-        leader.isLeader = true;
-        batch.forEach(p => {
-          p.teamId = code;
-        });
-
-        this.teams.set(code, team);
-        createdTeamsCount++;
-      }
-    };
-
-    groupIntoTeams(males, 'male');
-    groupIntoTeams(females, 'female');
-
-    this.logEvent('AUTO_MERGE', `Auto-merged unassigned players. Created ${createdTeamsCount} new gender-matched teams.`);
-    this.saveSnapshot();
-
-    return {
-      success: true,
-      count: unassignedPlayers.length,
-      createdTeamsCount
-    };
-  }
-
-  /* -------------------------------------------------------------
    * ROUND ENGINE (Reusable across Round 1, 2, and 3)
    * ----------------------------------------------------------- */
   startRound(roundNumber, customDurationSec = null) {
@@ -707,18 +465,10 @@ class GameStateManager {
       remainingMsOnPause: 0
     };
 
-    // No eliminations: every squad plays every round, including the Round 3 case
-    for (const t of this.teams.values()) t.isEliminated = false;
-
-    // Initialize round progress for participating teams
+    // Every squad plays every round (there is no elimination)
     const assignedSetIds = new Set();
     let teamIdx = 0;
     for (const team of this.teams.values()) {
-      if (team.isEliminated) {
-        // Spectators must not keep the previous round's progress, or they would be shown a stale puzzle
-        team.currentRoundProgress = null;
-        continue;
-      }
 
       const puzzleSet = getPuzzleSetForTeam(roundNumber, teamIdx, assignedSetIds);
       teamIdx++;
@@ -799,19 +549,6 @@ class GameStateManager {
     return { success: true, newEndTime: this.roundState.endTime };
   }
 
-  startLobbyTimer(durationSec = 300) {
-    const now = Date.now();
-    this.lobbyTimer = {
-      active: true,
-      startTime: now,
-      endTime: now + durationSec * 1000,
-      durationSec
-    };
-    this.logEvent('LOBBY_TIMER_STARTED', `Lobby assembly countdown started (${durationSec}s).`);
-    this.saveSnapshot();
-    return { success: true, lobbyTimer: this.lobbyTimer };
-  }
-
   endRound() {
     if (!this.roundState.active) {
       return { success: false, message: 'Round is not active' };
@@ -820,7 +557,7 @@ class GameStateManager {
     const completedRound = this.currentRound;
     // Squads that did not finish used the whole round (fair time for tie-breaks)
     for (const t of this.teams.values()) {
-      if (t.isEliminated || !t.currentRoundProgress) continue;
+      if (!t.currentRoundProgress) continue;
       if (!t.roundTimeMs) t.roundTimeMs = {};
       if (t.roundTimeMs[completedRound] === undefined) t.roundTimeMs[completedRound] = this.roundState.durationSec * 1000;
     }
@@ -846,7 +583,6 @@ class GameStateManager {
 
   advanceStage() {
     if (this.status === 'LOBBY') {
-      this.autoMergeLeftovers();
       return this.startRound(1);
     }
     if (this.status === 'ROUND_1') {
@@ -917,7 +653,6 @@ class GameStateManager {
 
     const team = this.teams.get(player.teamId);
     if (!team) return { success: false, message: 'Team not found' };
-    if (team.isEliminated) return { success: false, message: 'Your team did not qualify for this round.' };
 
     const progress = team.currentRoundProgress;
     if (!progress) return { success: false, message: 'Round progress not initialized' };
@@ -1085,7 +820,7 @@ class GameStateManager {
       return { success: false, message: 'Skipping is only available in Rounds 1 and 3.' };
     }
     const team = this.teams.get(player.teamId);
-    if (!team || team.isEliminated) return { success: false, message: 'Your team is not playing this round.' };
+    if (!team) return { success: false, message: 'Team not found.' };
     if (team.leaderSessionToken !== sessionToken) {
       return { success: false, message: 'Only the squad console can skip a turn.' };
     }
@@ -1160,9 +895,6 @@ class GameStateManager {
     const team = this.teams.get(player.teamId);
     if (!team) {
       return { success: false, message: 'Team not found.' };
-    }
-    if (team.isEliminated) {
-      return { success: false, message: 'Your team did not qualify for this round.' };
     }
     const progress = team.currentRoundProgress;
     if (!progress || progress.isRoundCompleted) {
@@ -1307,7 +1039,7 @@ class GameStateManager {
   _timeUsedMs(team) {
     let total = Object.values(team.roundTimeMs || {}).reduce((sum, ms) => sum + ms, 0);
     // Still solving the live round: count the time spent so far
-    if (this.roundState.active && this.currentRound && !team.isEliminated && team.currentRoundProgress &&
+    if (this.roundState.active && this.currentRound && team.currentRoundProgress &&
         (team.roundTimeMs || {})[this.currentRound] === undefined) {
       total += Math.max(0, Date.now() - this.roundState.startTime);
     }
@@ -1326,7 +1058,7 @@ class GameStateManager {
   // Concludes the active round as soon as every participating team has finished it
   _endRoundIfAllTeamsFinished() {
     if (!this.roundState.active) return false;
-    const activeTeams = Array.from(this.teams.values()).filter(t => !t.isEliminated);
+    const activeTeams = Array.from(this.teams.values());
     const allFinished = activeTeams.length > 0 && activeTeams.every(t => t.currentRoundProgress?.isRoundCompleted);
     if (!allFinished) return false;
     this.logEvent('ALL_TEAMS_FINISHED', `All ${activeTeams.length} teams completed Round ${this.currentRound}! Concluding stage.`);
@@ -1579,7 +1311,7 @@ class GameStateManager {
       const isBenchConsole = player.isLeader || team.leaderSessionToken === sessionToken;
       const isYourTurn = isBenchConsole || (currentTurnAssignment.scholar?.sessionToken === sessionToken);
 
-      if (this.roundState.active && progress && !progress.isRoundCompleted && !team.isEliminated) {
+      if (this.roundState.active && progress && !progress.isRoundCompleted) {
         if (this.currentRound === 2) {
           // ROUND 2: 10-Node Cyber Terminal Hack View — Collaborative Relay (Visible to ALL squad members)
           const stepObj = puzzleSet.steps[activeTurnIndex] || {};
@@ -1778,7 +1510,6 @@ class GameStateManager {
         roundScores: team.roundScores,
         rank: this.getLeaderboard().findIndex(t => t.teamId === team.teamId) + 1,
         totalTeams: this.teams.size,
-        isEliminated: team.isEliminated,
         progress: progress ? {
           setId: progress.setId,
           currentTurnIndex: progress.currentTurnIndex,
@@ -1859,7 +1590,6 @@ class GameStateManager {
         memberCount: t.members.length,
         totalScore: t.totalScore,
         roundScores: t.roundScores,
-        isEliminated: t.isEliminated,
         currentTurnIndex: prog ? prog.currentTurnIndex : 0,
         isRoundCompleted: prog ? prog.isRoundCompleted : false,
         completedAt: prog ? prog.completedAt : null,
@@ -1887,9 +1617,6 @@ class GameStateManager {
       remainingMs = this.roundState.isPaused
         ? this.roundState.remainingMsOnPause
         : Math.max(0, this.roundState.endTime - now);
-    } else if (this.status === 'LOBBY' && this.lobbyTimer.active) {
-      remainingMs = Math.max(0, this.lobbyTimer.endTime - now);
-      timerActive = true;
     }
 
     let roundTitle = 'Lobby & Assembly Stage';
@@ -1910,7 +1637,7 @@ class GameStateManager {
       roundActive: timerActive,
       isPaused: this.roundState.isPaused,
       remainingMs,
-      durationSec: this.roundState.active ? this.roundState.durationSec : this.lobbyTimer.durationSec,
+      durationSec: this.roundState.active ? this.roundState.durationSec : 0,
       leaderboard: this.getLeaderboard(),
       serverTime: now
     };
@@ -1937,7 +1664,7 @@ class GameStateManager {
         if (done) solved++;
         steps += done ? 'S' : (prog && !prog.isRoundCompleted && prog.currentTurnIndex === i ? 'A' : 'L');
       }
-      if (prog && !t.isEliminated) {
+      if (prog) {
         playingCount++;
         if (prog.isRoundCompleted) finishedCount++;
       }
@@ -1948,7 +1675,6 @@ class GameStateManager {
         rank: idx + 1,
         totalScore: t.totalScore,
         roundScores: t.roundScores,
-        isEliminated: Boolean(t.isEliminated),
         isRoundCompleted: Boolean(prog?.isRoundCompleted),
         solved,
         totalSteps,

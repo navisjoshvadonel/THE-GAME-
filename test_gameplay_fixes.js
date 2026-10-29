@@ -1,7 +1,7 @@
 /**
  * SNOW'S ARENA — GAMEPLAY REGRESSION TESTS
  * Covers the anti-stuck and fairness fixes: timed skip, stale turn indexes,
- * tiered Round 2 scoring, spectator isolation, leaderboard freshness and host-only advance.
+ * tiered Round 2 scoring, every squad playing Round 3, leaderboard freshness and host-only advance.
  */
 
 // Keep test runs away from the live data/snapshot.json
@@ -159,11 +159,11 @@ state.endRound();
 state.overrideTeamScore(alpha.team.teamId, -alpha.team.totalScore, 'last place');
 state.startRound(3);
 const lastPlaceState = state.getClientState(alpha.token);
-assert(!alpha.team.isEliminated && alpha.team.currentRoundProgress?.roundNumber === 3, 'R3-1: Even the last-placed squad plays Round 3');
+assert(alpha.team.currentRoundProgress?.roundNumber === 3, 'R3-1: Even the last-placed squad plays Round 3');
 assert(lastPlaceState.puzzle && lastPlaceState.puzzle.type === 'member_step', 'R3-2: Every squad receives the Round 3 case');
-assert([...state.teams.values()].every(t => !t.isEliminated), 'R3-3: Nobody is eliminated');
+assert([...state.teams.values()].every(t => t.currentRoundProgress?.roundNumber === 3), 'R3-3: Nobody is eliminated: every squad has the case');
 const lateSquad = registerTeam(state, 'MidFinals');
-assert(!lateSquad.team.isEliminated && lateSquad.team.currentRoundProgress?.roundNumber === 3, 'R3-4: A squad registering mid-Round 3 can still play it');
+assert(lateSquad.team.currentRoundProgress?.roundNumber === 3, 'R3-4: A squad registering mid-Round 3 can still play it');
 
 console.log('\n--- [WRONG-ANSWER PENALTY] ---');
 {

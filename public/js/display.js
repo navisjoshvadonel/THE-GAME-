@@ -174,7 +174,7 @@
   let lastLeaderboardSig = '';
   function renderLeaderboard(teams) {
     const sig = currentStageStatus + '|' + lanHostUrl + '|' + JSON.stringify(teams.map(t => [
-      t.teamId, t.name, t.totalScore, t.roundScores, t.isRoundCompleted, t.isEliminated, t.collectedCount, t.nodesBreached,
+      t.teamId, t.name, t.totalScore, t.roundScores, t.isRoundCompleted, t.collectedCount, t.nodesBreached,
       (t.membersTurnOrder || []).map(m => m.turnStatus).join('')
     ]));
     if (sig === lastLeaderboardSig) return;
@@ -243,9 +243,6 @@
         if (team.isRoundCompleted) {
           statusHtml = '<span class="display-status-pill status-completed">✓ Case Solved</span>';
           activeSolverInfo = '🏛️ Warrant Verified! Criminal Convicted!';
-        } else if (team.isEliminated) {
-          statusHtml = '<span class="display-status-pill status-eliminated">Spectating</span>';
-          activeSolverInfo = 'Did not reach the Top 5';
         } else {
           const exhibits = Math.max(1, ((team.membersTurnOrder || []).length || 6) - 1);
           const found = team.collectedCount || 0;
@@ -258,8 +255,6 @@
         if (team.isRoundCompleted) {
           statusHtml = '<span class="display-status-pill status-completed">✓ Qualified</span>';
           activeSolverInfo = '✓ All 4 Games Solved';
-        } else if (team.isEliminated) {
-          statusHtml = '<span class="display-status-pill status-eliminated">Eliminated</span>';
         } else if (team.membersTurnOrder) {
           const activeMem = team.membersTurnOrder.find(m => m.turnStatus === 'ACTIVE');
           if (activeMem) {

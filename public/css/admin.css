@@ -270,7 +270,6 @@ body {
 .row:nth-child(even) { background: #141d36; }
 .row.leader-row { background: #2a2a2f; }
 .row.done-row .c-team .team-name::after { content: " ✓"; color: var(--good); }
-.row.out-row { opacity: 0.45; }
 .row.cutoff { box-shadow: inset 0 -2px 0 var(--warn); }
 
 .c-rank { display: flex; align-items: center; gap: 4px; font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
@@ -331,8 +330,6 @@ body {
   padding: 1px 6px;
   border-radius: 4px;
 }
-.tag-q { background: rgba(61, 220, 132, 0.15); color: var(--good); }
-.tag-out { background: rgba(141, 155, 196, 0.15); color: var(--muted); }
 .tag-off { background: rgba(255, 93, 108, 0.15); color: var(--bad); }
 
 .paused-banner {

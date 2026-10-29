@@ -273,7 +273,6 @@
 
   function renderBoard(data) {
     const status = data.status;
-    const finalsPhase = status === 'INTERMEDIATE_2' || status === 'ROUND_3' || status === 'FINISHED';
     const filter = (filterInput.value || '').toLowerCase().trim();
     const now = Date.now();
 
@@ -316,13 +315,12 @@
       let tag = '';
       let tagClass = '';
       if (status === 'LOBBY') nowText = `${t.members.length} players ready`;
-      else if (t.isEliminated && finalsPhase) { nowText = 'Spectating the finals'; tag = 'OUT'; tagClass = 'tag-out'; }
       else if (t.isRoundCompleted) nowText = '✓ Finished this round';
       else if (t.activeName) nowText = `▶ ${t.activeName} is solving`;
       if (!t.online) { tag = 'OFFLINE'; tagClass = 'tag-off'; }
 
       const sig = [t.rank, showDelta ? h.delta : 0, t.name, t.benchNumber, t.totalScore, t.roundScores?.[1], t.roundScores?.[2], t.roundScores?.[3],
-        nowText, tag, t.members.map(m => (m.isOnline ? 1 : 0)).join(''), t.isEliminated, t.isRoundCompleted].join('|');
+        nowText, tag, t.members.map(m => (m.isOnline ? 1 : 0)).join(''), t.isRoundCompleted].join('|');
       if (sig !== entry.sig) {
         entry.sig = sig;
         if (medal) refs.rank.innerHTML = `<span class="rank-medal">${medal}</span>`;
@@ -341,8 +339,7 @@
         refs.r3.textContent = t.roundScores?.[3] || 0;
         refs.totalCell.textContent = t.totalScore.toLocaleString('en-US');
         el.classList.toggle('leader-row', t.rank === 1 && t.totalScore > 0);
-        el.classList.toggle('done-row', t.isRoundCompleted && !t.isEliminated);
-        el.classList.toggle('out-row', t.isEliminated && finalsPhase);
+        el.classList.toggle('done-row', t.isRoundCompleted);
       }
 
       // Score bump animation

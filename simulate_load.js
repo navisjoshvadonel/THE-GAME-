@@ -254,7 +254,7 @@ async function hostAction(socket, action, payload = {}) {
     for (const b of bots) {
       if (b.awaitingSync) b.socket.emit('request_state_refresh', { sessionToken: b.token });
       const s = b.state;
-      if (s?.roundActive && s.puzzle && !s.team?.isEliminated && !s.team?.progress?.isRoundCompleted && Date.now() - b.lastProgressAt > 240000 * Math.max(SPEED, 0.25)) {
+      if (s?.roundActive && s.puzzle && !s.team?.progress?.isRoundCompleted && Date.now() - b.lastProgressAt > 240000 * Math.max(SPEED, 0.25)) {
         issues.push(`${b.name} made no progress for 4 min in ${s.gameStatus}`);
         b.lastProgressAt = Date.now();
       }

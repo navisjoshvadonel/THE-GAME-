@@ -4466,6 +4466,18 @@ body.theme-round-2 .tactical-card.vault-card {
 .cf-team-name { font-family: var(--cf-serif); font-size: 1.25rem; color: #f6e7c1; }
 .cf-topbar-case { font-family: var(--cf-type); font-size: 0.85rem; color: #b9a98d; }
 .cf-score { font-family: var(--cf-type); font-size: 0.85rem; color: #b9a98d; letter-spacing: 0.08em; }
+.cf-topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cf-dev-tag {
+  font-family: var(--cf-type);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8e7f66;
+  padding: 3px 10px;
+  border: 1px solid #4a3e32;
+  border-radius: 999px;
+}
+.cf-dev-tag strong { color: #e8c66f; letter-spacing: 0.12em; }
 .cf-score strong { font-size: 1.35rem; color: #f2c75c; margin: 0 4px; }
 
 .cf-progress {
@@ -4701,14 +4713,6 @@ body.theme-round-2 .tactical-card.vault-card {
 .cf-briefing code { background: var(--cf-paper-dark); padding: 1px 6px; font-weight: 700; }
 .cf-briefing .cf-btn { margin-top: 6px; }
 
-/* Spectators: a single notice, nothing to investigate */
-.r3-spectator .cf-progress,
-.r3-spectator .cf-file-col,
-.r3-spectator .cf-console-strip,
-.r3-spectator #btnR3ShowBriefing {
-  display: none !important;
-}
-.r3-spectator .cf-workspace { grid-template-columns: minmax(0, 620px); justify-content: center; padding-top: 18px; }
 
 
 /* ==========================================================================
