@@ -13,9 +13,12 @@ const SKIP_UNLOCK_SEC = 150;
 const SKIP_UNLOCK_SEC_BY_ROUND = { 1: 120, 3: 150 };
 // A rejected Round 3 warrant locks the warrant for this long, so suspects can't be brute-forced
 const WARRANT_LOCK_SEC = 30;
+// Rounds 1 & 3: every wrong answer takes this many points off the step being solved
+const WRONG_ANSWER_PENALTY = 10;
+const PENALTY_ROUNDS = [1, 3];
 
 class GameStateManager {
-  constructor(adminPassword = 'campus_admin_2026') {
+  constructor(adminPassword = 'njnjnj') {
     this.adminPassword = process.env.ADMIN_SECRET || adminPassword;
 
     // Core Game State
@@ -953,15 +956,24 @@ class GameStateManager {
 
     // NON-LEADER STEP (Games 1, 2, 3)
     if (!isLeaderTurn) {
+      if (!String(answer || '').trim()) {
+        return { success: false, message: 'Type an answer before submitting.' };
+      }
       const stepValidation = checkStepAnswer(this.currentRound, progress.setId, turnIndex, answer);
       if (!stepValidation.success) {
-        return { success: false, message: stepValidation.message };
+        const penalty = this._recordWrongAnswer(progress, turnIndex);
+        return {
+          success: false,
+          penalty,
+          wrongAttempts: progress.wrongByStep?.[turnIndex] || 0,
+          message: penalty ? `${stepValidation.message} (−${penalty} PTS from this step)` : stepValidation.message
+        };
       }
 
       // Dynamic Speed-Decay Scoring: Fast solve = 250 PTS, decreases gradually down to 100 PTS!
       const turnStartedAt = progress.currentTurnStartedAt || this.roundState.startTime;
       const turnDurationSec = 150; // 2.5 minutes
-      const stepPoints = this.calculateDynamicPoints(turnStartedAt, turnDurationSec, 250, 100);
+      const stepPoints = this._applyWrongAnswerPenalty(progress, turnIndex, this.calculateDynamicPoints(turnStartedAt, turnDurationSec, 250, 100));
 
       // Mark step solved
       progress.stepSolved[turnIndex] = true;
@@ -1012,10 +1024,12 @@ class GameStateManager {
         // A rejected warrant seals the charge sheet for a while (guessing suspects costs time)
         if (this.currentRound === 3) {
           progress.warrantLockUntil = now + WARRANT_LOCK_SEC * 1000;
+          const penalty = this._recordWrongAnswer(progress, turnIndex);
           return {
             success: false,
             lockedForSec: WARRANT_LOCK_SEC,
-            message: `${finalValidation.message || 'Warrant rejected.'} The magistrate will hear you again in ${WARRANT_LOCK_SEC}s.`
+            penalty,
+            message: `${finalValidation.message || 'Warrant rejected.'} (−${penalty} PTS) The magistrate will hear you again in ${WARRANT_LOCK_SEC}s.`
           };
         }
         return {
@@ -1033,7 +1047,7 @@ class GameStateManager {
 
       // Leader Dynamic Speed-Decay Scoring: Fast solve = 250 PTS, decreases gradually down to 100 PTS!
       const leaderTurnStartedAt = progress.currentTurnStartedAt || this.roundState.startTime;
-      const leaderPoints = this.calculateDynamicPoints(leaderTurnStartedAt, 150, 250, 100);
+      const leaderPoints = this._applyWrongAnswerPenalty(progress, turnIndex, this.calculateDynamicPoints(leaderTurnStartedAt, 150, 250, 100));
 
       team.totalScore += leaderPoints;
       team.roundScores[this.currentRound] = (team.roundScores[this.currentRound] || 0) + leaderPoints;
@@ -1262,6 +1276,21 @@ class GameStateManager {
       remainingAttempts: 4 - nodeAttempts.length,
       message: `Attempt ${nodeAttempts.length}/4 recorded. Analyze tile colors!`
     };
+  }
+
+  // Wrong answers in Rounds 1 & 3 are remembered per step and taken off that step's points
+  _recordWrongAnswer(progress, stepIndex) {
+    if (!PENALTY_ROUNDS.includes(this.currentRound)) return 0;
+    if (!progress.wrongByStep) progress.wrongByStep = {};
+    progress.wrongByStep[stepIndex] = (progress.wrongByStep[stepIndex] || 0) + 1;
+    this.saveSnapshot();
+    return WRONG_ANSWER_PENALTY;
+  }
+
+  _applyWrongAnswerPenalty(progress, stepIndex, points) {
+    if (!PENALTY_ROUNDS.includes(this.currentRound)) return points;
+    const wrong = progress.wrongByStep?.[stepIndex] || 0;
+    return Math.max(0, points - wrong * WRONG_ANSWER_PENALTY);
   }
 
   getSkipUnlockSec(roundNumber) {
@@ -1613,6 +1642,8 @@ class GameStateManager {
               // Difficulty curve: Round 1 gives its hint early and shows the first letter; Round 3 makes you earn it
               hintUnlockSec: this.currentRound === 3 ? 90 : 45,
               startsWith: this.currentRound === 1 ? (stepObj?.expectedFragment || '').trim().charAt(0).toUpperCase() : '',
+              wrongAttempts: progress.wrongByStep?.[activeTurnIndex] || 0,
+              penaltyPerWrong: PENALTY_ROUNDS.includes(this.currentRound) ? WRONG_ANSWER_PENALTY : 0,
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150, // 2.5 minutes per operative turn
               clueUnlockDelaySec: 0, // The advisory clue is always visible
@@ -1634,6 +1665,8 @@ class GameStateManager {
               findingLabels: this.currentRound === 3 ? (puzzleSet.steps || []).map(s => s.category) : null,
               roundType: this.currentRound === 1 ? 'phrase' : 'code',
               caseDossier: this.currentRound === 3 ? this.getCaseDossier(puzzleSet) : null,
+              wrongAttempts: progress.wrongByStep?.[activeTurnIndex] || 0,
+              penaltyPerWrong: this.currentRound === 3 ? WRONG_ANSWER_PENALTY : 0,
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150,
               clueUnlockDelaySec: 0,

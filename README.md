@@ -78,7 +78,7 @@ npm start
 
 ### Environment Variables (Optional)
 ```bash
-PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
+PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=your-password npm start
 ```
 
 ---
@@ -90,7 +90,7 @@ PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
 | **1. Scholar Portal** | Student Participants (Laptops/Phones) | `http://172.16.10.5:5000` | Squad enrollment, lobby staging, turn-locked puzzles, and leader synthesis. |
 | **2. High Proctor & Grand Hall Display** | Tournament Host / Admin Laptop | `http://172.16.10.5:5000/admin` | Full tournament administration, 1-click stage advancement, manual unlocks, and built-in access to the Projector Display (`/display`). |
 
-> **Host Password**: `campus_admin_2026`
+> **Host Password**: the default is set in `server.js`; override it with the `ADMIN_SECRET` environment variable.
 
 ---
 
@@ -150,7 +150,7 @@ PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
 5. **High Proctor Interventions**:
    - If a student's laptop battery dies or they drop off WiFi, the host can click **"⚡ Advance"** next to their squad in the Admin Panel to immediately inject the fragment and unlock the next teammate!
 6. **Data Export**:
-   - Results can be exported as a structured JSON file at any time via the Admin panel or `/api/export?secret=campus_admin_2026`.
+   - Results can be exported as a structured JSON file at any time via the host screen menu (⋯ → Export results).
 
 ---
 

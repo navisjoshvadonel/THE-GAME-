@@ -1596,6 +1596,18 @@
     return Math.max(100, Math.round(250 - (decayFraction * (250 - 100))));
   }
 
+  // Rounds 1 & 3: each wrong answer takes points off the step being solved
+  function bountyAfterPenalty(puzzle, bounty) {
+    const penalty = (puzzle?.wrongAttempts || 0) * (puzzle?.penaltyPerWrong || 0);
+    return Math.max(0, bounty - penalty);
+  }
+
+  // The server doesn't resync on a wrong answer, so record the new count locally
+  function noteWrongAnswer(res) {
+    const puzzle = currentClientState?.puzzle;
+    if (puzzle && res && typeof res.wrongAttempts === 'number') puzzle.wrongAttempts = res.wrongAttempts;
+  }
+
   function updateOperativeTurnTimer(puzzle) {
     if (!puzzle) {
       if (operativeTimerStrip) operativeTimerStrip.classList.add('hidden');
@@ -1613,7 +1625,7 @@
     const mins = Math.floor(remainingTurnSec / 60);
     const secs = remainingTurnSec % 60;
     const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    const liveBounty = calculateCurrentBounty(elapsedSec, durationSec);
+    const liveBounty = bountyAfterPenalty(puzzle, calculateCurrentBounty(elapsedSec, durationSec));
 
     // 1. Leader Boss Turn
     if (puzzle.type === 'leader_step') {
@@ -2155,6 +2167,7 @@
         socket.emit('request_state_refresh', { sessionToken });
       } else {
         if (res && res.outOfSync) socket.emit('request_state_refresh', { sessionToken });
+        noteWrongAnswer(res);
         if (sound) sound.playError();
         if (slotsBoard) {
           slotsBoard.classList.add('error-shake');
@@ -2487,8 +2500,8 @@
     }
     if (remainingEl) remainingEl.textContent = formatClock(remaining);
     if (bountyEl) bountyEl.textContent = remaining > 0
-      ? `BOUNTY ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`
-      : `TIME'S UP • ${calculateCurrentBounty(elapsedSec, durationSec)} PTS`;
+      ? `BOUNTY ${bountyAfterPenalty(puzzle, calculateCurrentBounty(elapsedSec, durationSec))} PTS`
+      : `TIME'S UP • ${bountyAfterPenalty(puzzle, calculateCurrentBounty(elapsedSec, durationSec))} PTS`;
     if (skipBtn) skipBtn.classList.toggle('hidden', elapsedSec < (puzzle.skipUnlockSec || durationSec));
 
     // The forensic hint is earned: it stays sealed for the first part of the turn
@@ -2764,6 +2777,8 @@
           socket.emit('request_state_refresh', { sessionToken });
         } else {
           if (res && res.outOfSync) socket.emit('request_state_refresh', { sessionToken });
+          noteWrongAnswer(res);
+          updateR3TurnTimer();
           if (sound) sound.playError();
           if (fb) { fb.textContent = res?.message || 'Incorrect deduction. Re-examine the testimony and clues.'; fb.className = 'alert-box alert-error'; fb.classList.remove('hidden'); }
         }

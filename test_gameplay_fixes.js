@@ -165,6 +165,39 @@ assert([...state.teams.values()].every(t => !t.isEliminated), 'R3-3: Nobody is e
 const lateSquad = registerTeam(state, 'MidFinals');
 assert(!lateSquad.team.isEliminated && lateSquad.team.currentRoundProgress?.roundNumber === 3, 'R3-4: A squad registering mid-Round 3 can still play it');
 
+console.log('\n--- [WRONG-ANSWER PENALTY] ---');
+{
+  const pen = new GameStateManager();
+  pen.resetAllState();
+  const sq = registerTeam(pen, 'Penalty', 2);
+  pen.startRound(1);
+  const set = PUZZLE_SETS[1].find(s => s.setId === sq.team.currentRoundProgress.setId);
+  const miss = pen.submitTurnAnswer(sq.token, 0, 'definitelywrong');
+  assert(!miss.success && miss.penalty === 10 && miss.wrongAttempts === 1, 'PEN-1: A wrong Round 1 answer costs 10 points');
+  ageTurn(pen, sq.team, sq.token, 0);
+  pen.submitTurnAnswer(sq.token, 0, 'stillwrong');
+  ageTurn(pen, sq.team, sq.token, 0);
+  const hit = pen.submitTurnAnswer(sq.token, 0, set.steps[0].acceptedAnswers[0]);
+  assert(hit.success && hit.earnedPoints === 230, 'PEN-2: Two wrong answers take 20 off the step (250 → 230)', String(hit.earnedPoints));
+  ageTurn(pen, sq.team, sq.token, 0);
+  const blank = pen.submitTurnAnswer(sq.token, 1, '   ');
+  assert(!blank.success && !blank.penalty, 'PEN-3: An empty submission is never penalised');
+  assert(pen.getClientState(sq.token).puzzle.penaltyPerWrong === 10, 'PEN-4: Players are told the penalty');
+}
+
+console.log('\n--- [30 SQUADS, 30 QUESTION SETS] ---');
+{
+  const big = new GameStateManager();
+  big.resetAllState();
+  for (let i = 0; i < 30; i++) registerTeam(big, `Squad${i}`);
+  for (const round of [1, 2]) {
+    big.startRound(round);
+    const ids = new Set([...big.teams.values()].map(t => t.currentRoundProgress.setId));
+    assert(ids.size === 30, `SETS-${round}: 30 squads get 30 different Round ${round} sets`, `got ${ids.size}`);
+    big.endRound();
+  }
+}
+
 console.log('\n--- [RESET] ---');
 state.getLeaderboard();
 state.resetAllState();

@@ -5,6 +5,7 @@
  */
 
 const { ROUND3_CASE } = require('./round3Case');
+const { EXTRA_R1_SETS, EXTRA_R2_SETS } = require('./questionBankExtra');
 
 const ROUND_CONFIGS = {
   "1": {
@@ -3767,6 +3768,10 @@ const PUZZLE_SETS = {
 /**
  * Assigns a puzzle set to each team (Common set for Round 3 finals)
  */
+// Sets 21-30 live in questionBankExtra.js so 30 squads all get their own questions
+PUZZLE_SETS[1].push(...EXTRA_R1_SETS);
+PUZZLE_SETS[2].push(...EXTRA_R2_SETS);
+
 function getPuzzleSetForTeam(roundNumber, teamIndex = 0, assignedSetIds = new Set()) {
   const sets = PUZZLE_SETS[roundNumber];
   if (!sets || sets.length === 0) return null;

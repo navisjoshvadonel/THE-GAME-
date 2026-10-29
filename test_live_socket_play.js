@@ -2,7 +2,7 @@ const io = require('socket.io-client');
 const http = require('http');
 
 const SERVER_URL = 'http://localhost:5000';
-const ADMIN_PASSWORD = 'campus_admin_2026';
+const ADMIN_PASSWORD = 'njnjnj';
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

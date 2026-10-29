@@ -1,7 +1,7 @@
 const { io } = require('socket.io-client');
 
 const socket = io('http://127.0.0.1:5000', { transports: ['websocket'] });
-const ADMIN_PASSWORD = 'campus_admin_2026';
+const ADMIN_PASSWORD = 'njnjnj';
 
 socket.emit('register_admin', { password: ADMIN_PASSWORD });
 

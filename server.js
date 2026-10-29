@@ -8,7 +8,7 @@ const { setupSocketHandlers } = require('./src/socketHandlers');
 const { printServerBanner, getLocalIpAddresses } = require('./src/networkUtils');
 
 const PORT = process.env.PORT || 5000;
-const ADMIN_PASSWORD = process.env.ADMIN_SECRET || 'campus_admin_2026';
+const ADMIN_PASSWORD = process.env.ADMIN_SECRET || 'njnjnj';
 
 const app = express();
 const server = http.createServer(app);

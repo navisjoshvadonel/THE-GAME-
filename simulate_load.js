@@ -30,7 +30,7 @@ const SERVER_URL = arg('url', process.env.SERVER_URL || 'http://localhost:5000')
 const TEAM_COUNT = parseInt(arg('teams', 20), 10);
 const SPEED = parseFloat(arg('speed', 1)); // multiplier on think-time; 0.5 = twice as fast
 const DRIVE_HOST = Boolean(arg('host', false));
-const ADMIN_PASSWORD = arg('password', process.env.ADMIN_SECRET || 'campus_admin_2026');
+const ADMIN_PASSWORD = arg('password', process.env.ADMIN_SECRET || 'njnjnj');
 const MAX_MINUTES = parseFloat(arg('max-minutes', 40));
 
 const FIRST_NAMES = ['Joshva', 'Sharma', 'Priya', 'Arjun', 'Divya', 'Karthik', 'Meera', 'Rahul', 'Sneha', 'Vikram', 'Ananya', 'Rohan', 'Kavya', 'Aditya', 'Nisha', 'Surya', 'Lakshmi', 'Ishaan', 'Pooja', 'Varun'];
