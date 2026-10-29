@@ -79,13 +79,15 @@ function setupSocketHandlers(io, gameState) {
     const team = gameState.teams.get(teamId);
     if (!team) return;
 
-    // Send personalized, sanitized client state to each member in the team room
+    // One state per connected laptop. A bench squad shares one socket, so sending one
+    // message per member would deliver 3-4 copies (each from a different player's view).
+    const sentSockets = new Set();
     team.members.forEach(token => {
       const player = gameState.players.get(token);
-      if (player && player.socketId) {
-        const clientState = gameState.getClientState(token);
-        io.to(player.socketId).emit('sync_state', clientState);
-      }
+      if (!player || !player.socketId || sentSockets.has(player.socketId)) return;
+      sentSockets.add(player.socketId);
+      const ownerToken = gameState._socketIndex.get(player.socketId) || token;
+      io.to(player.socketId).emit('sync_state', gameState.getClientState(ownerToken));
     });
   }
 
@@ -406,7 +408,13 @@ function setupSocketHandlers(io, gameState) {
       const result = gameState.skipTurn(sessionToken);
       if (typeof callback === 'function') callback(result);
       if (result.success && player) {
-        syncTeamRoom(player.teamId);
+        if (!gameState.roundState.active) {
+          // That skip finished the last squad, so the round is over for everyone
+          io.emit('round_ended', { currentRound: gameState.currentRound, status: gameState.status });
+          for (const tId of gameState.teams.keys()) syncTeamRoom(tId);
+        } else {
+          syncTeamRoom(player.teamId);
+        }
         triggerDisplayPush(true);
         pushAdminUpdate();
       }

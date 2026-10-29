@@ -277,7 +277,7 @@ async function hostAction(socket, action, payload = {}) {
     rows.forEach(b => bySet.set(b.assigned[round].setId, [...(bySet.get(b.assigned[round].setId) || []), b.name]));
     const dupes = [...bySet.entries()].filter(([, names]) => names.length > 1);
     console.log(`\n  ROUND ${round}: ${rows.length} squads played, ${bySet.size} different question sets`);
-    if (round === 3) console.log('    (Round 3 is the shared Baker Street case for the Top 5 by design)');
+    if (round === 3) console.log('    (Round 3 is one shared murder case for every squad, by design)');
     else if (dupes.length === 0) console.log('    ✓ every squad got its own questions');
     else dupes.forEach(([setId, names]) => console.log(`    ⚠ ${setId} shared by: ${names.join(', ')}`));
     rows.slice(0, 6).forEach(b => console.log(`    ${b.name.padEnd(14)} ${b.assigned[round].setId.padEnd(22)} "${b.assigned[round].firstQuestion}"`));

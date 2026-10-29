@@ -49,9 +49,6 @@
         <span class="dev-tag-icon">⚡</span>
         <span class="dev-tag-text">Developed by <strong class="dev-tag-name">NJ</strong></span>
       </div>
-      <div class="intro-developer-tag">
-        <span>⚡ Developed by <strong>NJ</strong></span>
-      </div>
     </div>
   </div>
 
@@ -334,10 +331,6 @@
               <span class="dev-tag-icon">⚡</span>
               <span class="dev-tag-text">Developed by <strong class="dev-tag-name">NJ</strong></span>
             </div>
-            <div class="login-developer-tag">
-              <span class="dev-tag-icon">⚡</span>
-              <span class="dev-tag-text">Developed by <strong class="dev-tag-name">NJ</strong></span>
-            </div>
           </div>
         </div>
       </section>
@@ -410,7 +403,7 @@
                   <div class="snow-step-num">01</div>
                   <div class="snow-step-body">
                     <strong>4 GAMES TOTAL (2.5 MIN PER GAME)</strong>
-                    <p>Game 1 (AI &amp; ML), Game 2 (Tamil Cinema), Game 3 (Famous Personality), Game 4 (Captain Final Boss). Clues unlock at 2:00.</p>
+                    <p>Game 1 (AI &amp; ML), Game 2 (Tamil Cinema), Game 3 (Famous Personality), Game 4 (Captain Final Boss). The clue is shown right away, a bonus hint opens after 45 seconds, and you can skip after 2 minutes.</p>
                   </div>
                 </div>
                 <div class="snow-step">
@@ -546,12 +539,12 @@
 
                   <!-- Expandable Archive Clue Drawer (Locked until 2:00 mark) -->
                   <div class="clue-drawer">
-                    <button id="btnToggleClue" class="clue-toggle-btn btn-retro-clue clue-locked" type="button" disabled>
-                      <span id="clueLockIcon" class="clue-icon">🔒</span>
-                      <span id="clueLockLabel">SECRET HINT LOCKED [UNLOCKS AT 2:00 (120s)]</span>
+                    <button id="btnToggleClue" class="clue-toggle-btn btn-retro-clue clue-unlocked" type="button">
+                      <span id="clueLockIcon" class="clue-icon">📜</span>
+                      <span id="clueLockLabel">CLUE &amp; HINT</span>
                       <span class="drawer-arrow">▾</span>
                     </button>
-                    <div id="clueContent" class="clue-content hidden">
+                    <div id="clueContent" class="clue-content">
                       <p id="puzzleClueText" class="clue-body-text">Clue text appears here...</p>
                       <div class="letter-count-box">
                         <span class="letter-hint-icon">💡</span>
@@ -695,6 +688,9 @@
                       <span>➔</span>
                     </button>
                     <div id="leaderFeedbackBox" class="alert-box hidden"></div>
+                    <button type="button" id="btnSkipLeader" class="btn btn-secondary btn-sm btn-skip-turn hidden" title="Finish the round without the boss bounty">
+                      <span>⏭ STUCK? FINISH ROUND WITHOUT BOSS BOUNTY (0 PTS)</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1011,7 +1007,7 @@
 
                 <div class="victory-standby-pill">
                   <span class="pulse-indicator"></span>
-                  <span>STANDBY FOR HIGH PROCTOR // STAGE 2 AUDIT &amp; TOP 5 FINALS CUTOFF</span>
+                  <span>STAGE 2 COMPLETE // EVERY SQUAD PLAYS THE FINAL CASE NEXT</span>
                 </div>
               </div>
 

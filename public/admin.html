@@ -3,133 +3,151 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snow's Arena — Tournament Host Control</title>
+  <title>Snow's Arena — Host Control</title>
   <link rel="stylesheet" href="/css/admin.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" media="print" onload="this.media='all'">
-  <noscript>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap">
-  </noscript>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❄️</text></svg>">
 </head>
-<body class="server-deck">
-  <!-- Ambient Studio Lighting & Aurora Glows -->
-  <div class="aurora-bg" aria-hidden="true">
-    <div class="aurora-glow aurora-glow-1"></div>
-    <div class="aurora-glow aurora-glow-2"></div>
-    <div class="aurora-glow aurora-glow-3"></div>
-    <div class="cyber-grid"></div>
-  </div>
-  <!-- Minimal Top Control Header -->
-  <!-- 1. DEDICATED HOST LOGIN SCREEN (Visible when unauthenticated) -->
-  <section id="hostLoginScreen" class="host-login-wrapper">
-    <div class="host-login-card">
-      <div class="login-crest">🏛️</div>
-      <h1 class="login-title">Snow's Arena — Host Login</h1>
-      <p class="login-sub">Administrator access to server controls, live team scores, and dynamic member unlocks.</p>
-      
-      <form id="adminLoginForm" onsubmit="return false;" class="login-form">
-        <div class="form-group">
-          <label for="adminPasswordInput">Host Password</label>
-          <input type="password" id="adminPasswordInput" class="admin-input" placeholder="Password..." value="" autofocus>
-          <span class="field-hint">Enter the Game Master tournament password</span>
-        </div>
-        <p id="adminLoginError" class="auth-error-msg hidden">Invalid credentials</p>
-        <button type="submit" id="btnAdminLogin" class="btn btn-primary btn-block">
-          <span>Login as Host & Open Dashboard</span>
-          <span>➔</span>
-        </button>
-      </form>
+<body data-stage="LOBBY">
 
-      <div class="login-footer-links">
-        <a href="/" class="login-switch-link">← Switch to Player Login</a>
-        <span class="dot-divider">•</span>
-        <a href="/display" target="_blank" class="login-switch-link">📺 Open Projector Display</a>
-      </div>
-      <div class="admin-developer-tag">
-        <span class="dev-tag-icon">⚡</span>
-        <span class="dev-tag-text">Developed by <strong class="dev-tag-name">NJ</strong></span>
-      </div>
-    </div>
+  <!-- HOST LOGIN -->
+  <section id="hostLoginScreen" class="login-wrap">
+    <form id="adminLoginForm" class="login-card" onsubmit="return false;">
+      <div class="login-flake" aria-hidden="true">❄</div>
+      <h1>Snow's Arena</h1>
+      <p>Host control &amp; projector screen</p>
+      <label for="adminPasswordInput">Host password</label>
+      <input type="password" id="adminPasswordInput" autocomplete="current-password" autofocus>
+      <button type="submit" id="btnAdminLogin" class="btn btn-primary btn-lg">Enter control room</button>
+      <div id="adminLoginError" class="login-error hidden"></div>
+    </form>
   </section>
 
-  <!-- 2. MAIN TOURNAMENT SERVER DASHBOARD (Visible when authenticated) -->
-  <div id="hostDashboardScreen" class="host-dashboard-layout hidden">
-    <!-- Minimal Top Control Header -->
-    <header class="server-header">
-      <div class="header-brand">
-        <span class="brand-crest">🏛️</span>
+  <!-- HOST SCREEN (control mode + projector mode) -->
+  <div id="hostDashboardScreen" class="host hidden">
+
+    <header class="host-header">
+      <div class="brand">
+        <span class="brand-flake" aria-hidden="true">❄</span>
         <div>
-          <h1 class="brand-title">❄️ Snow's Arena — Host Dashboard</h1>
-          <div class="header-status-line">
-            <span class="status-indicator"></span>
-            <span id="headerStageText">STAGE: LOBBY</span>
-            <span class="status-divider">•</span>
-            <span id="metricTimer" class="timer-display">--:--</span>
-            <span class="status-divider">•</span>
-            <span id="adminLanIpBadge" class="lan-ip-badge" title="Share with student laptops" style="color: #00f0ff; font-family: monospace; font-size: 0.85rem; font-weight: 700; background: rgba(0,240,255,0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0,240,255,0.3);">📶 http://172.16.10.5:5000</span>
-          </div>
+          <div class="brand-name">Snow's Arena</div>
+          <div id="stageTitle" class="stage-title">Lobby — squads assembling</div>
         </div>
       </div>
 
-      <!-- Simple, Direct Control Bar -->
-      <div class="header-actions">
-        <button id="btnStartRound1" class="btn btn-sm btn-primary" title="Launch Round 1: Keyword Cipher Quest">▶ Round 1</button>
-        <button id="btnStartRound2" class="btn btn-sm btn-secondary" disabled title="Locked: Complete Round 1 first">🔒 Round 2</button>
-        <button id="btnStartRound3" class="btn btn-sm btn-gold" disabled title="Locked: Complete Round 2 first">🔒 Round 3</button>
-        <span class="button-separator"></span>
-        <button id="btnPauseResume" class="btn btn-sm btn-outline">⏸ Pause</button>
-        <button id="btnExtendTime1m" class="btn btn-sm btn-outline">+1m</button>
-        <button id="btnForceEndRound" class="btn btn-sm btn-danger-outline">⏹ End</button>
-        <span class="button-separator"></span>
-        <button id="btnExportResults" class="btn btn-sm btn-secondary" title="Export scores to JSON">💾 Export</button>
-        <a href="/display" target="_blank" class="btn btn-sm btn-outline" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border-color: #ffd60a; color: #ffd60a;" title="Open Grand Hall Leaderboard & Timer on Projector">📺 Hall Display</a>
-        <button id="btnResetAll" class="btn btn-sm btn-text-danger" title="Reset all data">Reset</button>
-        <span class="button-separator"></span>
-        <button id="btnHostLogout" class="btn btn-sm btn-outline" title="Log out from Host Panel">🚪 Logout</button>
+      <ol id="stageStepper" class="stepper" aria-label="Tournament stages">
+        <li data-stage="LOBBY">Lobby</li>
+        <li data-stage="ROUND_1">Round 1</li>
+        <li data-stage="INTERMEDIATE_1">Break</li>
+        <li data-stage="ROUND_2">Round 2</li>
+        <li data-stage="INTERMEDIATE_2">Break</li>
+        <li data-stage="ROUND_3">Finals</li>
+        <li data-stage="FINISHED">Results</li>
+      </ol>
+
+      <div class="clock-block">
+        <div id="clockLabel" class="clock-label">TIME LEFT</div>
+        <div id="metricTimer" class="clock">--:--</div>
       </div>
     </header>
 
-    <!-- Main Clean Teams & Dynamic Unlocks Grid -->
-    <main class="server-container">
-      <div class="dashboard-bar">
-        <div class="bar-left">
-          <span class="bar-title">TEAMS & LIVE MEMBER UNLOCKS</span>
-          <span class="squad-counter">(<span id="metricTotalSquads">0</span> Teams / <span id="metricOnlinePlayers">0</span> Online Players)</span>
-        </div>
-        <div class="bar-right">
-          <input type="text" id="squadFilterInput" class="search-input" placeholder="Search team or member...">
-        </div>
+    <!-- Control bar (hidden in projector mode) -->
+    <div class="control-bar">
+      <button id="btnPrimaryAction" class="btn btn-primary btn-lg">▶ Start Round 1</button>
+      <button id="btnPauseResume" class="btn">⏸ Pause</button>
+      <button id="btnExtendTime1m" class="btn">+1 min</button>
+      <span class="spacer"></span>
+      <div class="sort-group" role="group" aria-label="Sort squads">
+        <span class="muted">Sort</span>
+        <button class="chip active" data-sort="rank">Rank</button>
+        <button class="chip" data-sort="progress">Progress</button>
+        <button class="chip" data-sort="bench">Bench</button>
+        <button class="chip" data-sort="name">Name</button>
       </div>
+      <input type="search" id="squadFilterInput" class="search" placeholder="Find squad or player…">
+      <button id="btnProjector" class="btn btn-accent" title="Projector mode (P)">📺 Projector</button>
+      <details class="menu">
+        <summary class="btn">⋯</summary>
+        <div class="menu-panel">
+          <button id="btnExportResults" class="menu-item">💾 Export results (JSON)</button>
+          <button id="btnShowCeremony" class="menu-item">🏆 Results ceremony</button>
+          <a href="/display" target="_blank" class="menu-item">🖥️ Open separate projector page</a>
+          <button id="btnResetAll" class="menu-item danger">⚠ Reset everything</button>
+          <button id="btnHostLogout" class="menu-item">Log out</button>
+        </div>
+      </details>
+    </div>
 
-      <!-- DYNAMIC TEAMS LIST -->
-      <div id="teamsCardList" class="teams-container">
-        <div class="loading-state">
-          <span>Connecting to server engine...</span>
-        </div>
+    <!-- Stats strip -->
+    <div class="stats">
+      <div class="stat"><span id="metricTotalSquads">0</span><label>Squads</label></div>
+      <div class="stat"><span id="metricOnlinePlayers">0</span><label>Players online</label></div>
+      <div class="stat stat-progress">
+        <span id="metricFinished">0 / 0</span><label id="metricFinishedLabel">Finished this round</label>
+        <div class="meter"><div id="metricFinishedBar" class="meter-fill"></div></div>
       </div>
+      <div class="stat stat-wide"><span id="activityText" class="activity">Waiting for squads…</span><label>Latest</label></div>
+    </div>
+
+    <!-- Join banner (lobby) -->
+    <div id="joinBanner" class="join-banner hidden">
+      <span>Squad leaders, open</span>
+      <strong id="joinUrl">http://…</strong>
+      <span>and register your team</span>
+    </div>
+
+    <!-- Live standings -->
+    <main class="board-wrap">
+      <div class="board-head">
+        <span class="c-rank">#</span>
+        <span class="c-team">Squad</span>
+        <span class="c-progress" id="progressHead">Progress</span>
+        <span class="c-round">R1</span>
+        <span class="c-round">R2</span>
+        <span class="c-round">R3</span>
+        <span class="c-total">Total</span>
+        <span class="c-actions"></span>
+      </div>
+      <div id="board" class="board" role="list"></div>
+      <div id="boardEmpty" class="board-empty">No squads yet. They appear here the moment they register.</div>
     </main>
+
+    <div id="pausedBanner" class="paused-banner hidden">⏸ ROUND PAUSED</div>
+    <button id="btnExitProjector" class="exit-projector" title="Back to controls (P)">✕</button>
   </div>
 
-  <!-- Simple Score Override Modal -->
-  <div id="scoreOverrideModal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <h3>Adjust Team Score</h3>
-      <p id="scoreModalSquadName">Team: --</p>
-      <div class="form-group">
-        <label>Points delta (+/-):</label>
-        <input type="number" id="scoreDeltaInput" class="admin-input" placeholder="+100">
-      </div>
-      <div class="form-group">
-        <label>Reason:</label>
-        <input type="text" id="scoreReasonInput" class="admin-input" placeholder="Manual adjustment">
-      </div>
-      <div class="modal-actions">
-        <button id="btnCancelScoreOverride" class="btn btn-secondary">Cancel</button>
-        <button id="btnConfirmScoreOverride" class="btn btn-primary">Apply</button>
+  <!-- RESULTS CEREMONY -->
+  <div id="ceremony" class="ceremony hidden" aria-live="polite">
+    <canvas id="confetti" class="confetti"></canvas>
+    <div class="ceremony-inner">
+      <div class="ceremony-kicker">SNOW'S ARENA 2026 • FINAL STANDINGS</div>
+      <h1 class="ceremony-title">Champions</h1>
+      <div id="runnersUp" class="runners-up"></div>
+      <div id="podium" class="podium"></div>
+      <div id="fullStandings" class="full-standings hidden"></div>
+      <div class="ceremony-actions">
+        <button id="btnCeremonyReplay" class="btn">↻ Replay</button>
+        <button id="btnCeremonyClose" class="btn">Close</button>
       </div>
     </div>
   </div>
+
+  <!-- Score adjust modal -->
+  <div id="scoreOverrideModal" class="modal hidden">
+    <form class="modal-card" onsubmit="return false;">
+      <h3>Adjust score</h3>
+      <p id="scoreModalSquadName" class="muted">--</p>
+      <label for="scoreDeltaInput">Points (+ or −)</label>
+      <input type="number" id="scoreDeltaInput" placeholder="e.g. 50 or -50">
+      <label for="scoreReasonInput">Reason</label>
+      <input type="text" id="scoreReasonInput" placeholder="Reason for the log">
+      <div class="modal-actions">
+        <button type="button" id="btnCancelScoreOverride" class="btn">Cancel</button>
+        <button type="submit" id="btnConfirmScoreOverride" class="btn btn-primary">Apply</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toastContainer" class="toasts"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/admin.js"></script>

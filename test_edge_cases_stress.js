@@ -366,13 +366,19 @@ async function runAllTests() {
   const badWarrantCulprit = state.submitTurnAnswer(leaderP4, 5, 'PETER:CYANIDE:LEDGER');
   assert(!badWarrantCulprit.success && /2 of 3/.test(badWarrantCulprit.message), 'TC-R3-5a: Rejects the thief and reports 2 of 3 charges');
 
-  // Test 5b: Wrong weapon
+  // Test 5a-lock: a rejected warrant seals the charge sheet, even for the right answer
   state.players.forEach(p => p.lastSubmitTime = 0);
+  const lockedTry = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:CYANIDE:LEDGER');
+  assert(!lockedTry.success && lockedTry.lockedForSec > 0, 'TC-R3-5a-lock: Warrant is locked after a rejection (no brute force)');
+  const unlockWarrant = () => { team4p.currentRoundProgress.warrantLockUntil = 0; state.players.forEach(p => p.lastSubmitTime = 0); };
+
+  // Test 5b: Wrong weapon
+  unlockWarrant();
   const badWarrantWeapon = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:STRYCHNINE:LEDGER');
   assert(!badWarrantWeapon.success, 'TC-R3-5b: Rejects indictment with wrong weapon (STRYCHNINE)');
 
   // Test 5c: Wrong motive
-  state.players.forEach(p => p.lastSubmitTime = 0);
+  unlockWarrant();
   const badWarrantMotive = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:CYANIDE:THEFT');
   assert(!badWarrantMotive.success, 'TC-R3-5c: Rejects indictment with wrong motive (THEFT)');
 
@@ -385,7 +391,7 @@ async function runAllTests() {
   assert(checkLeaderExactCode(3, r3SetId, 'SHARMA CYANIDE LEDGER').success, 'TC-R3-5h: Accepts space separated format');
 
   // Conclude warrant for team4p
-  state.players.forEach(p => p.lastSubmitTime = 0);
+  unlockWarrant();
   const closeCase = state.submitTurnAnswer(leaderP4, 5, 'SHARMA:CYANIDE:LEDGER');
   assert(closeCase.success && closeCase.isRoundCompleted, 'TC-R3-CONVECT: Rohan Sharma convicted and case officially closed!');
 

@@ -100,8 +100,27 @@ assert(solve.success && solve.earnedPoints === 250, 'R1-7: Missing turn index de
 
 state.players.get(alpha.token).lastSubmitTime = 0;
 state.submitTurnAnswer(alpha.token, 2, alphaSet.steps[2].acceptedAnswers[0]);
+ageTurn(state, alpha.team, alpha.token, 100);
+assert(!state.skipTurn(alpha.token).success, 'R1-8a: Round 1 victory sentence cannot be skipped early');
 ageTurn(state, alpha.team, alpha.token, 151);
-assert(!state.skipTurn(alpha.token).success, 'R1-8: The leader\'s final step can never be skipped');
+const bossSkip = state.skipTurn(alpha.token);
+assert(bossSkip.success && alpha.team.currentRoundProgress.isRoundCompleted, 'R1-8b: A stuck Round 1 leader can finish the round for 0 pts after time-out');
+assert(alpha.team.roundTimeMs[1] >= 0, 'R1-8c: Finishing records the squad\'s round time for tie-breaks');
+
+console.log('\n--- [TIE-BREAKS & BENCH STATUS] ---');
+{
+  const tieA = { totalScore: 500, roundTimeMs: { 1: 300000 }, registeredAt: 2 };
+  const tieB = { totalScore: 500, roundTimeMs: { 1: 200000 }, registeredAt: 3 };
+  assert(state.compareTeams(tieA, tieB) > 0, 'TIE-1: On equal points the faster squad ranks higher');
+  const tieC = { totalScore: 500, roundTimeMs: { 1: 200000 }, registeredAt: 1 };
+  assert(state.compareTeams(tieC, tieB) < 0, 'TIE-2: Same points and time: earlier registration ranks higher');
+
+  const benchMember = state.players.get(beta.team.members[0]);
+  state.handleDisconnect('sock_Beta');
+  assert(benchMember.isOnline === false, 'BENCH-1: Teammates on a bench laptop go offline with it');
+  state.reconnectPlayer(beta.token, 'sock_Beta_new');
+  assert(benchMember.isOnline === true && benchMember.socketId === 'sock_Beta_new', 'BENCH-2: The whole roster comes back with the leader');
+}
 
 console.log('\n--- [LEADERBOARD FRESHNESS] ---');
 state.getLeaderboard();
@@ -131,19 +150,20 @@ state.resumeRound();
 const shift = alpha.team.currentRoundProgress.currentTurnStartedAt - turnStartBeforeResume;
 assert(shift >= 59000 && shift <= 61000, 'R2-4: Resume gives back the paused minute to the turn clock', `shift=${shift}`);
 
-console.log('\n--- [ROUND 3: SPECTATORS] ---');
+console.log('\n--- [ROUND 3: EVERY SQUAD PLAYS] ---');
 for (let i = 0; i < 5; i++) {
   const late = registerTeam(state, `Late${i}`);
   state.overrideTeamScore(late.team.teamId, 10 + i, 'outscore Alpha');
 }
 state.endRound();
-state.overrideTeamScore(alpha.team.teamId, -alpha.team.totalScore, 'drop out of top 5');
+state.overrideTeamScore(alpha.team.teamId, -alpha.team.totalScore, 'last place');
 state.startRound(3);
-const spectatorState = state.getClientState(alpha.token);
-assert(alpha.team.isEliminated && alpha.team.currentRoundProgress === null, 'R3-1: Non-qualified squads lose stale Round 2 progress');
-assert(spectatorState.puzzle === null, 'R3-2: Spectators are never sent a Round 3 puzzle');
-const lateFinalist = registerTeam(state, 'MidFinals');
-assert(lateFinalist.team.isEliminated && !lateFinalist.team.currentRoundProgress, 'R3-3: A squad registering mid-finals joins as a spectator');
+const lastPlaceState = state.getClientState(alpha.token);
+assert(!alpha.team.isEliminated && alpha.team.currentRoundProgress?.roundNumber === 3, 'R3-1: Even the last-placed squad plays Round 3');
+assert(lastPlaceState.puzzle && lastPlaceState.puzzle.type === 'member_step', 'R3-2: Every squad receives the Round 3 case');
+assert([...state.teams.values()].every(t => !t.isEliminated), 'R3-3: Nobody is eliminated');
+const lateSquad = registerTeam(state, 'MidFinals');
+assert(!lateSquad.team.isEliminated && lateSquad.team.currentRoundProgress?.roundNumber === 3, 'R3-4: A squad registering mid-Round 3 can still play it');
 
 console.log('\n--- [RESET] ---');
 state.getLeaderboard();

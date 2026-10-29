@@ -116,13 +116,13 @@ PORT=5000 HOST_IP=172.16.10.5 ADMIN_SECRET=campus_admin_2026 npm start
   • 4-Attempt auto-bypass fail-safe ensures no squad is stalled.
          │
          ▼
-[Stage 2 Intermission & Top 5 Cutoff]
-  • High Proctor locks rankings: Top 5 qualifying fellowships advance to Finals.
+[Stage 2 Intermission]
+  • Standings are locked for the break. There is no elimination: every squad plays Round 3.
   • Remaining squads transition into Honorary Fellowship Spectator Mode.
          │
          ▼
 [Stage 3: Sher"unlocking" Homies — The Kensington Crescent Affair] (~15 min)
-  • Top 5 finalists investigate the death of Lord Alistair Blackwood from a typed police case file:
+  • Every squad investigates the death of Lord Alistair Blackwood from a typed police case file:
     case summary, 5 suspects with alibis, and 5 witness statements.
   • Squad members crack 5 exhibits in turn (poison, time of death, footprints, cipher, locked room).
     No single answer names the killer; forensic hints unlock after 1:30.

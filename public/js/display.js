@@ -147,8 +147,8 @@
       roundTitleDisplay.textContent = 'STAGE 1 CONCLUDED — OFFICIAL SQUAD STANDINGS';
       roundSubtitleDisplay.textContent = '🏆 10-Minute Battle Complete! Final Round 1 Leaderboard locked. Standing by for Game Master...';
     } else if (data.status === 'INTERMEDIATE_2') {
-      roundTitleDisplay.textContent = 'STAGE 2 CONCLUDED — TOP 5 FINALISTS';
-      roundSubtitleDisplay.textContent = '🎖️ Top 5 Finalists Locked! Standing by for Game Master...';
+      roundTitleDisplay.textContent = 'STAGE 2 CONCLUDED — STANDINGS';
+      roundSubtitleDisplay.textContent = '🕵️ Every squad plays the final case next. Standing by for the Game Master...';
     } else if (data.status === 'FINISHED') {
       roundTitleDisplay.textContent = 'TOURNAMENT FINALS CONCLUDED';
       roundSubtitleDisplay.textContent = '🏆 Grand Finals Concluded — Champions Crowned!';

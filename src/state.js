@@ -7,8 +7,12 @@ const { validateLeaderPhrase, sanitizeText } = require('./nlpValidator');
 // Tests point SNAPSHOT_DIR at a temp folder so they never touch a live tournament's save file
 const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || path.join(__dirname, '..', 'data');
 const SNAPSHOT_FILE = path.join(SNAPSHOT_DIR, 'snapshot.json');
-// A riddle step's full turn window; after it the squad may skip (0 pts) so nobody is stuck
+// After this long on one step the squad may skip it (0 pts) so nobody is ever stuck.
+// Round 1 is the gentle opener, so its skip arrives sooner.
 const SKIP_UNLOCK_SEC = 150;
+const SKIP_UNLOCK_SEC_BY_ROUND = { 1: 120, 3: 150 };
+// A rejected Round 3 warrant locks the warrant for this long, so suspects can't be brute-forced
+const WARRANT_LOCK_SEC = 30;
 
 class GameStateManager {
   constructor(adminPassword = 'campus_admin_2026') {
@@ -281,6 +285,16 @@ class GameStateManager {
     let team = null;
     if (player.teamId && this.teams.has(player.teamId)) {
       team = this.teams.get(player.teamId);
+      // A bench squad shares one laptop: the whole roster comes back online with it
+      if (team.leaderSessionToken === sessionToken) {
+        team.members.forEach(tok => {
+          const m = this.players.get(tok);
+          if (m) {
+            m.socketId = socketId;
+            m.isOnline = true;
+          }
+        });
+      }
     }
 
     this.logEvent('PLAYER_RECONNECTED', `${player.name} reconnected.`);
@@ -316,6 +330,14 @@ class GameStateManager {
     player.isOnline = false;
     player.lastActive = Date.now();
     this._socketIndex.delete(socketId);
+    // Teammates on the same bench laptop went offline with it
+    const benchTeam = player.teamId ? this.teams.get(player.teamId) : null;
+    if (benchTeam) {
+      benchTeam.members.forEach(tok => {
+        const m = this.players.get(tok);
+        if (m && m.socketId === socketId) m.isOnline = false;
+      });
+    }
     this.logEvent('PLAYER_DISCONNECTED', `${player.name} went offline.`);
     this._invalidateLeaderboard();
     return player;
@@ -415,7 +437,9 @@ class GameStateManager {
       teamSize: allMembers.length,
       totalScore: 0,
       roundScores: { 1: 0, 2: 0, 3: 0 },
-      isEliminated: this.currentRound === 3 || this.status === 'FINISHED',
+      registeredAt: Date.now(),
+      roundTimeMs: {},
+      isEliminated: false,
       currentRoundProgress: null
     };
 
@@ -680,15 +704,8 @@ class GameStateManager {
       remainingMsOnPause: 0
     };
 
-    // For Round 3 (Final Decider), qualify only top 5 teams
-    if (roundNumber === 3) {
-      const sortedTeams = Array.from(this.teams.values())
-        .sort((a, b) => b.totalScore - a.totalScore);
-
-      sortedTeams.forEach((t, idx) => {
-        t.isEliminated = idx >= 5;
-      });
-    }
+    // No eliminations: every squad plays every round, including the Round 3 case
+    for (const t of this.teams.values()) t.isEliminated = false;
 
     // Initialize round progress for participating teams
     const assignedSetIds = new Set();
@@ -798,19 +815,17 @@ class GameStateManager {
     }
 
     const completedRound = this.currentRound;
+    // Squads that did not finish used the whole round (fair time for tie-breaks)
+    for (const t of this.teams.values()) {
+      if (t.isEliminated || !t.currentRoundProgress) continue;
+      if (!t.roundTimeMs) t.roundTimeMs = {};
+      if (t.roundTimeMs[completedRound] === undefined) t.roundTimeMs[completedRound] = this.roundState.durationSec * 1000;
+    }
     this.roundState.active = false;
     this.roundState.isPaused = false;
 
     if (completedRound === 3) {
       this.status = 'FINISHED';
-    } else if (completedRound === 2) {
-      this.status = 'INTERMEDIATE_2';
-      // Mark Top 5 qualified, others eliminated for the finals
-      const sortedTeams = Array.from(this.teams.values()).sort((a, b) => b.totalScore - a.totalScore);
-      sortedTeams.forEach((t, idx) => {
-        t.isEliminated = idx >= 5;
-      });
-      this.logEvent('FINALS_QUALIFIED', `Top 5 finalists determined for Round 3.`);
     } else {
       this.status = `INTERMEDIATE_${completedRound}`;
     }
@@ -961,7 +976,8 @@ class GameStateManager {
       const memberDetails = team.members.map(tok => this.players.get(tok)).filter(Boolean);
       const turnAssignment = this.getTurnPlayer(memberDetails, turnIndex);
       const activeMemberObj = turnAssignment.scholar || player;
-      this.logEvent('STEP_SOLVED', `Team ${team.name}: Game ${turnIndex + 1} solved by ${activeMemberObj.name} (+${stepPoints} pts).`);
+      const stepLabel = this.currentRound === 3 ? `Exhibit ${String.fromCharCode(65 + turnIndex)}` : `Game ${turnIndex + 1}`;
+      this.logEvent('STEP_SOLVED', `Team ${team.name}: ${stepLabel} solved by ${activeMemberObj.name} (+${stepPoints} pts).`);
       this.saveSnapshot();
 
       return {
@@ -978,6 +994,10 @@ class GameStateManager {
 
     // LEADER STEP (Game 4: Final Boss Assembly)
     if (isLeaderTurn) {
+      if (progress.warrantLockUntil && now < progress.warrantLockUntil) {
+        const wait = Math.ceil((progress.warrantLockUntil - now) / 1000);
+        return { success: false, lockedForSec: wait, message: `The magistrate is reviewing your last warrant. Try again in ${wait}s.` };
+      }
       let finalValidation = null;
 
       if (this.currentRound === 1) {
@@ -989,6 +1009,15 @@ class GameStateManager {
       }
 
       if (!finalValidation.success && !finalValidation.isValid) {
+        // A rejected warrant seals the charge sheet for a while (guessing suspects costs time)
+        if (this.currentRound === 3) {
+          progress.warrantLockUntil = now + WARRANT_LOCK_SEC * 1000;
+          return {
+            success: false,
+            lockedForSec: WARRANT_LOCK_SEC,
+            message: `${finalValidation.message || 'Warrant rejected.'} The magistrate will hear you again in ${WARRANT_LOCK_SEC}s.`
+          };
+        }
         return {
           success: false,
           message: finalValidation.message || 'Incorrect final solution. Check your collected keywords and active verb!'
@@ -998,6 +1027,7 @@ class GameStateManager {
       // Round Complete for Team!
       progress.stepSolved[turnIndex] = true;
       progress.isRoundCompleted = true;
+      this._markRoundTime(team);
       progress.completedAt = now;
       progress.assembledSubmission = sanitizeText(answer);
 
@@ -1052,11 +1082,26 @@ class GameStateManager {
     const puzzleSet = sets.find(s => s.setId === progress.setId) || sets[0];
     const stepIndex = progress.currentTurnIndex;
     const step = puzzleSet?.steps?.[stepIndex];
-    if (!step) return { success: false, message: 'The final step cannot be skipped.' };
+    // The Round 3 arrest warrant is the whole point of the finals: it can never be skipped
+    if (!step && this.currentRound !== 1) return { success: false, message: 'The final step cannot be skipped.' };
 
+    const skipAfter = this.getSkipUnlockSec(this.currentRound);
     const elapsedSec = (Date.now() - (progress.currentTurnStartedAt || this.roundState.startTime)) / 1000;
-    if (elapsedSec < SKIP_UNLOCK_SEC) {
-      return { success: false, message: `Skip unlocks after ${Math.ceil(SKIP_UNLOCK_SEC - elapsedSec)}s more. Keep trying!` };
+    if (elapsedSec < skipAfter) {
+      return { success: false, message: `Skip unlocks after ${Math.ceil(skipAfter - elapsedSec)}s more. Keep trying!` };
+    }
+
+    if (!step) {
+      // Round 1 victory sentence: give up the boss bounty but finish the round
+      progress.stepSolved[stepIndex] = true;
+      progress.isRoundCompleted = true;
+      progress.completedAt = Date.now();
+      progress.assembledSubmission = '[Skipped]';
+      this._markRoundTime(team);
+      this.logEvent('STEP_SKIPPED', `Team ${team.name}: Round ${this.currentRound} final step skipped after time-out (+0 pts).`);
+      this.saveSnapshot();
+      this._endRoundIfAllTeamsFinished();
+      return { success: true, skipped: true, earnedPoints: 0, roundCompleted: true, fragment: null, message: 'Final step skipped (+0 PTS). Round complete!' };
     }
 
     progress.stepSolved[stepIndex] = true;
@@ -1172,6 +1217,7 @@ class GameStateManager {
       const isCompleted = progress.currentTurnIndex >= puzzleSet.steps.length;
       if (isCompleted) {
         progress.isRoundCompleted = true;
+        this._markRoundTime(team);
         progress.completedAt = Date.now();
         this.logEvent('ROUND_COMPLETED', `Team ${team.name} breached all 10 nodes in Round 2! (+1000 max)`);
 
@@ -1216,6 +1262,36 @@ class GameStateManager {
       remainingAttempts: 4 - nodeAttempts.length,
       message: `Attempt ${nodeAttempts.length}/4 recorded. Analyze tile colors!`
     };
+  }
+
+  getSkipUnlockSec(roundNumber) {
+    return SKIP_UNLOCK_SEC_BY_ROUND[roundNumber] || SKIP_UNLOCK_SEC;
+  }
+
+  // Remember how long a squad needed for a round (the tie-breaker after points)
+  _markRoundTime(team) {
+    if (!team || !this.currentRound) return;
+    if (!team.roundTimeMs) team.roundTimeMs = {};
+    team.roundTimeMs[this.currentRound] = Math.max(0, Date.now() - (this.roundState.startTime || Date.now()));
+  }
+
+  _timeUsedMs(team) {
+    let total = Object.values(team.roundTimeMs || {}).reduce((sum, ms) => sum + ms, 0);
+    // Still solving the live round: count the time spent so far
+    if (this.roundState.active && this.currentRound && !team.isEliminated && team.currentRoundProgress &&
+        (team.roundTimeMs || {})[this.currentRound] === undefined) {
+      total += Math.max(0, Date.now() - this.roundState.startTime);
+    }
+    return total;
+  }
+
+  // Ranking: points first, then less total time used, then whoever registered first
+  compareTeams(a, b) {
+    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    const timeA = this._timeUsedMs(a);
+    const timeB = this._timeUsedMs(b);
+    if (timeA !== timeB) return timeA - timeB;
+    return (a.registeredAt || 0) - (b.registeredAt || 0);
   }
 
   // Concludes the active round as soon as every participating team has finished it
@@ -1272,6 +1348,7 @@ class GameStateManager {
       } else {
         progress.currentTurnIndex = totalNodes;
         progress.isRoundCompleted = true;
+        this._markRoundTime(team);
         progress.completedAt = Date.now();
         this.logEvent('ADMIN_FORCE_COMPLETE_R2', `Force-completed Round 2 for Team ${team.name}.`);
         this.saveSnapshot();
@@ -1306,6 +1383,7 @@ class GameStateManager {
       // Force complete round
       progress.stepSolved[currentTurn] = true;
       progress.isRoundCompleted = true;
+      this._markRoundTime(team);
       progress.completedAt = Date.now();
       progress.assembledSubmission = '[ADMIN OVERRIDE]';
       team.totalScore += 250;
@@ -1532,11 +1610,13 @@ class GameStateManager {
               totalLetters,
               caseDossier: this.currentRound === 3 ? this.getCaseDossier(puzzleSet) : null,
               exhibit: stepObj?.exhibit || null,
-              hintUnlockSec: this.currentRound === 3 ? 90 : 0,
+              // Difficulty curve: Round 1 gives its hint early and shows the first letter; Round 3 makes you earn it
+              hintUnlockSec: this.currentRound === 3 ? 90 : 45,
+              startsWith: this.currentRound === 1 ? (stepObj?.expectedFragment || '').trim().charAt(0).toUpperCase() : '',
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150, // 2.5 minutes per operative turn
-              clueUnlockDelaySec: 120, // Clue unlocks at 2:00 mark (120s)
-              skipUnlockSec: SKIP_UNLOCK_SEC
+              clueUnlockDelaySec: 0, // The advisory clue is always visible
+              skipUnlockSec: this.getSkipUnlockSec(this.currentRound)
             };
           } else {
             // Leader step (Game 4: Master Boss / Scotland Yard Indictment)
@@ -1556,7 +1636,9 @@ class GameStateManager {
               caseDossier: this.currentRound === 3 ? this.getCaseDossier(puzzleSet) : null,
               turnStartedAt: progress.currentTurnStartedAt || this.roundState.startTime,
               turnDurationSec: 150,
-              clueUnlockDelaySec: 0
+              clueUnlockDelaySec: 0,
+              skipUnlockSec: this.currentRound === 1 ? 150 : 0,
+              warrantLockedForSec: progress.warrantLockUntil ? Math.max(0, Math.ceil((progress.warrantLockUntil - Date.now()) / 1000)) : 0
             };
           }
         }
@@ -1704,7 +1786,7 @@ class GameStateManager {
     if (!this._leaderboardDirty && this._leaderboardCache) {
       return this._leaderboardCache;
     }
-    const list = Array.from(this.teams.values()).map(t => {
+    const list = Array.from(this.teams.values()).sort((a, b) => this.compareTeams(a, b)).map((t, rankIdx) => {
       const prog = t.currentRoundProgress;
       const memberDetails = t.members.map(tok => this.players.get(tok)).filter(Boolean);
       const membersTurnOrder = [];
@@ -1751,16 +1833,10 @@ class GameStateManager {
         collectedCount: prog ? (prog.collectedFragments ? prog.collectedFragments.length : 0) : 0,
         nodesBreached: prog ? (prog.nodesBreached !== undefined ? prog.nodesBreached : Object.keys(prog.stepSolved || {}).length) : 0,
         collectedWords: prog?.collectedWords || [],
+        rank: rankIdx + 1,
+        timeUsedMs: this._timeUsedMs(t),
         membersTurnOrder
       };
-    });
-
-    list.sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-      if (a.isRoundCompleted && b.isRoundCompleted) {
-        return (a.completedAt || 0) - (b.completedAt || 0);
-      }
-      return 0;
     });
 
     // Cache the result
@@ -1807,73 +1883,68 @@ class GameStateManager {
     };
   }
 
+  // Lean, pre-ranked snapshot for the host screen (pushed at most once a second).
+  // Steps are encoded as a short string: S = solved, A = being solved now, L = locked.
   getAdminState() {
+    const now = Date.now();
+    const round = this.currentRound;
+    const totalSteps = round ? this.getTotalStepCount(round) : 0;
+    const ranked = Array.from(this.teams.values()).sort((a, b) => this.compareTeams(a, b));
+    let finishedCount = 0;
+    let playingCount = 0;
+
+    const teams = ranked.map((t, idx) => {
+      const prog = t.currentRoundProgress && t.currentRoundProgress.roundNumber === round ? t.currentRoundProgress : null;
+      const memberDetails = t.members.map(tok => this.players.get(tok)).filter(Boolean);
+      const active = prog && !prog.isRoundCompleted ? this.getTurnPlayer(memberDetails, prog.currentTurnIndex, round) : null;
+      let steps = '';
+      let solved = 0;
+      for (let i = 0; i < totalSteps; i++) {
+        const done = Boolean(prog && (prog.stepSolved?.[i] || prog.isRoundCompleted));
+        if (done) solved++;
+        steps += done ? 'S' : (prog && !prog.isRoundCompleted && prog.currentTurnIndex === i ? 'A' : 'L');
+      }
+      if (prog && !t.isEliminated) {
+        playingCount++;
+        if (prog.isRoundCompleted) finishedCount++;
+      }
+      return {
+        teamId: t.teamId,
+        benchNumber: t.benchNumber || '',
+        name: t.name,
+        rank: idx + 1,
+        totalScore: t.totalScore,
+        roundScores: t.roundScores,
+        isEliminated: Boolean(t.isEliminated),
+        isRoundCompleted: Boolean(prog?.isRoundCompleted),
+        solved,
+        totalSteps,
+        steps,
+        activeName: active?.scholar?.name || '',
+        timeUsedMs: this._timeUsedMs(t),
+        online: memberDetails.some(m => m.isOnline),
+        members: memberDetails.map(m => ({ name: m.name, isLeader: Boolean(m.isLeader), isOnline: Boolean(m.isOnline) }))
+      };
+    });
+
     return {
       status: this.status,
-      currentRound: this.currentRound,
-      roundState: this.roundState,
-      lobbyTimer: this.lobbyTimer,
+      currentRound: round,
+      roundTitle: round ? (ROUND_CONFIGS[round]?.title || `Round ${round}`) : '',
+      serverTime: now,
+      roundState: {
+        active: this.roundState.active,
+        isPaused: this.roundState.isPaused,
+        endTime: this.roundState.endTime,
+        remainingMsOnPause: this.roundState.remainingMsOnPause,
+        durationSec: this.roundState.durationSec
+      },
       totalPlayers: this.players.size,
       onlinePlayers: Array.from(this.players.values()).filter(p => p.isOnline).length,
-      teams: Array.from(this.teams.values()).map(t => {
-        const prog = t.currentRoundProgress;
-        const memberDetails = t.members.map(tok => this.players.get(tok)).filter(Boolean);
-        const activeAssignment = prog ? this.getTurnPlayer(memberDetails, prog.currentTurnIndex, this.currentRound) : null;
-        const nodesBreached = prog ? (prog.nodesBreached !== undefined ? prog.nodesBreached : Object.keys(prog.stepSolved || {}).length) : 0;
-        const totalNodes = prog?.totalNodes || this.getTotalStepCount(this.currentRound);
-        const activeNodeNumber = prog ? Math.min(prog.currentTurnIndex + 1, totalNodes) : 1;
-
-        return {
-          teamId: t.teamId,
-          benchNumber: t.benchNumber || '',
-          name: t.name,
-          gender: t.gender,
-          totalScore: t.totalScore,
-          roundScores: t.roundScores,
-          isEliminated: t.isEliminated,
-          currentRoundProgress: prog,
-          nodesBreached,
-          totalNodes,
-          activeNodeNumber,
-          activeOperativeName: activeAssignment?.scholar?.name || 'Operative',
-          activeOperativeRole: activeAssignment?.role || 'PLAYER',
-          isRoundCompleted: prog ? prog.isRoundCompleted : false,
-          collectedWords: prog?.collectedWords || [],
-          membersDetail: t.members.map((mToken, idx) => {
-            const p = this.players.get(mToken);
-            let turnStatus = 'LOBBY';
-            if (prog) {
-              if (prog.isRoundCompleted) {
-                turnStatus = 'SOLVED';
-              } else if (activeAssignment?.scholar?.sessionToken === mToken) {
-                turnStatus = 'ACTIVE';
-              } else if (prog.stepSolved && prog.stepSolved[idx]) {
-                turnStatus = 'SOLVED';
-              } else {
-                turnStatus = 'LOCKED';
-              }
-            }
-            return {
-              turnIndex: idx + 1,
-              sessionToken: mToken,
-              name: p?.name || 'Unknown',
-              gender: p?.gender || '?',
-              isOnline: p?.isOnline || false,
-              isLeader: p?.isLeader || (idx === t.members.length - 1),
-              turnStatus,
-              fragment: prog?.collectedFragments && prog.collectedFragments[idx] ? prog.collectedFragments[idx] : null
-            };
-          })
-        };
-      }),
-      unassignedPlayers: Array.from(this.players.values()).filter(p => !p.teamId).map(p => ({
-        sessionToken: p.sessionToken,
-        name: p.name,
-        gender: p.gender,
-        isOnline: p.isOnline
-      })),
-      leaderboard: this.getLeaderboard(),
-      auditLogs: this.auditLogs.slice(0, 30)
+      finishedCount,
+      playingCount,
+      teams,
+      activity: this.auditLogs.slice(0, 8).map(l => ({ t: l.timestamp, type: l.type, text: l.detail }))
     };
   }
 }

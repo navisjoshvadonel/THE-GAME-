@@ -955,8 +955,6 @@
       if (puzzlePromptText) puzzlePromptText.textContent = puzzle.prompt;
 
       if (puzzleClueText) puzzleClueText.textContent = puzzle.clue || 'No additional clue provided.';
-      if (puzzleHintText) puzzleHintText.textContent = puzzle.hint || '';
-      if (clueContent) clueContent.classList.add('hidden');
 
       if (boxPassConsole) boxPassConsole.classList.add('hidden');
 
@@ -997,11 +995,9 @@
         boxR2Locked.classList.remove('hidden');
         if (r2WaitingTeammateInfo) r2WaitingTeammateInfo.classList.add('hidden');
         if (state.gameStatus === 'INTERMEDIATE_2') {
-          if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ STAGE 2 INTERMISSION // TOP 5 AUDIT';
+          if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ STAGE 2 COMPLETE // FINAL CASE NEXT';
           if (r2LockedSub) {
-            r2LockedSub.textContent = team.isEliminated
-              ? 'Outstanding performance! Your squad is now in Honorary Fellowship Spectator Mode. Watch the Top 5 finalists battle in Round 3 on the Grand Projector!'
-              : 'Official Round 2 scores are locked. Look at the Grand Projector Screen for the Top 5 Finalists Announcement!';
+            r2LockedSub.textContent = 'Round 2 scores are locked. Every squad plays the Round 3 murder case next — stay at your laptop and check the projector for standings!';
           }
         } else {
           if (r2LockedTitle) r2LockedTitle.textContent = '⏸️ MATCH PAUSED // BY HIGH PROCTOR';
@@ -1646,6 +1642,9 @@
       if (leaderLiveBountyBadge) {
         leaderLiveBountyBadge.textContent = `⚡ BOSS BOUNTY: ${liveBounty} PTS`;
       }
+      if (btnSkipLeader) {
+        btnSkipLeader.classList.toggle('hidden', !(puzzle.skipUnlockSec > 0 && elapsedSec >= puzzle.skipUnlockSec));
+      }
       return;
     }
 
@@ -1687,40 +1686,22 @@
       liveBountyBadge.textContent = `⌛ TIME'S UP • BOUNTY ${liveBounty} PTS • SKIP UNLOCKED`;
     }
 
-    // Check Clue Lock Status (Locked until 2:00 mark)
-    const unlockDelaySec = puzzle.clueUnlockDelaySec || 120; // 2.0 mins
-    if (elapsedSec < unlockDelaySec) {
-      const lockRem = unlockDelaySec - elapsedSec;
-      const lockMins = Math.floor(lockRem / 60);
-      const lockSecs = lockRem % 60;
-      const lockFormatted = `${lockMins}:${lockSecs.toString().padStart(2, '0')}`;
-
-      if (btnToggleClue) {
-        btnToggleClue.disabled = true;
-        btnToggleClue.classList.add('clue-locked');
-        btnToggleClue.classList.remove('clue-unlocked');
-      }
-      if (clueLockIcon) clueLockIcon.textContent = '🔒';
-      if (clueLockLabel) {
-        clueLockLabel.textContent = `SECRET HINT LOCKED [UNLOCKS AT 2:00 (${lockFormatted} REMAINING)]`;
-      }
-      if (clueContent) clueContent.classList.add('hidden');
-    } else {
-      // Clue is UNLOCKED (Passed 2 minutes!)
-      if (!clueJustUnlockedPlayed) {
-        clueJustUnlockedPlayed = true;
-        if (sound) sound.playTurnUnlock();
-        showToast('🔓 Secret Hint Unlocked! Tap to expand.', 'info');
-      }
-
-      if (btnToggleClue) {
-        btnToggleClue.disabled = false;
-        btnToggleClue.classList.remove('clue-locked');
-        btnToggleClue.classList.add('clue-unlocked');
-      }
-      if (clueLockIcon) clueLockIcon.textContent = '🔓';
-      if (clueLockLabel) {
-        clueLockLabel.textContent = '🔓 SECRET HINT UNLOCKED [CLICK TO EXPAND]';
+    // Round 1 is the friendly opener: the clue is always open and the stronger hint
+    // arrives after a short wait (puzzle.hintUnlockSec)
+    const hintAfter = puzzle.hintUnlockSec ?? 45;
+    if (puzzleHintText) {
+      if (elapsedSec < hintAfter) {
+        const wait = hintAfter - elapsedSec;
+        puzzleHintText.textContent = `🔒 Bonus hint unlocks in ${Math.floor(wait / 60)}:${String(wait % 60).padStart(2, '0')}`;
+        puzzleHintText.classList.add('hint-sealed');
+      } else {
+        if (!clueJustUnlockedPlayed) {
+          clueJustUnlockedPlayed = true;
+          if (sound) sound.playTurnUnlock();
+          showToast('💡 Bonus hint unlocked!', 'info');
+        }
+        puzzleHintText.textContent = puzzle.hint || '';
+        puzzleHintText.classList.remove('hint-sealed');
       }
     }
   }
@@ -2024,11 +2005,11 @@
 
       // Update letter count badge
       if (slotsCountLabel) {
+        const startsWith = puzzle.startsWith ? ` • STARTS WITH "${puzzle.startsWith}"` : '';
         if (pattern.length === 1) {
-          slotsCountLabel.textContent = `${pattern[0]} LETTERS`;
+          slotsCountLabel.textContent = `${pattern[0]} LETTERS${startsWith}`;
         } else {
-          const total = pattern.reduce((a, b) => a + b, 0);
-          slotsCountLabel.textContent = `${pattern.join(' + ')} LETTERS (${pattern.length} WORDS)`;
+          slotsCountLabel.textContent = `${pattern.join(' + ')} LETTERS (${pattern.length} WORDS)${startsWith}`;
         }
       }
 
@@ -2289,17 +2270,24 @@
     });
   }
 
-  // Skip a riddle whose turn window has run out (0 PTS, keyword revealed) — shared by Rounds 1 & 3
+  // Skip a riddle whose turn window has run out (0 PTS, keyword revealed) — shared by Rounds 1 & 3.
+  // In Round 1 the leader may also give up the victory sentence so the squad is never stuck.
   let skipRequestPending = false;
   function requestSkipTurn() {
     if (skipRequestPending) return;
     const puzzle = currentClientState?.puzzle;
-    if (!puzzle || puzzle.type !== 'member_step') return;
-    if (!confirm('Skip this riddle?\n\nThe answer will be revealed and added to your inventory, but your squad scores 0 points for it.')) return;
+    if (!puzzle || (puzzle.type !== 'member_step' && puzzle.type !== 'leader_step')) return;
+    const isBoss = puzzle.type === 'leader_step';
+    if (!confirm(isBoss
+      ? 'Finish Round 1 without the victory sentence?\n\nYour squad keeps its points so far but scores 0 for the final step.'
+      : 'Skip this riddle?\n\nThe answer will be revealed and added to your inventory, but your squad scores 0 points for it.')) return;
     skipRequestPending = true;
     socket.emit('skip_turn', { sessionToken }, (res) => {
       skipRequestPending = false;
-      if (res && res.success) {
+      if (res && res.success && isBoss) {
+        if (sound) sound.playWhoosh();
+        showHandoff({ icon: '🏁', title: 'Round 1 finished', points: 0, detail: 'Study the Round 2 briefing while the other squads finish.', tone: 'warning', awaitNext: false });
+      } else if (res && res.success) {
         if (sound) sound.playWhoosh();
         showHandoff({
           icon: '⏭️',
@@ -2317,6 +2305,8 @@
 
   const btnSkipTurn = document.getElementById('btnSkipTurn');
   if (btnSkipTurn) btnSkipTurn.addEventListener('click', requestSkipTurn);
+  const btnSkipLeader = document.getElementById('btnSkipLeader');
+  if (btnSkipLeader) btnSkipLeader.addEventListener('click', requestSkipTurn);
 
   // 9. Real-time typing listener for Leader Thesis Inspector
   if (leaderAnswerInput) {
@@ -2692,6 +2682,7 @@
 
     if (puzzle?.type === 'leader_step') {
       if (boxR3LeaderGame) boxR3LeaderGame.classList.remove('hidden');
+      if (puzzle.warrantLockedForSec > 0) lockWarrant(puzzle.warrantLockedForSec);
       const proofs = document.getElementById('r3GatheredProofs');
       if (proofs) {
         const frags = puzzle.collectedFragments || [];
@@ -2780,11 +2771,34 @@
     });
   }
 
+  // After a rejected warrant the magistrate needs time: count the File button down
+  let warrantLockTimer = null;
+  function lockWarrant(seconds) {
+    const btn = document.getElementById('btnR3LeaderSubmit');
+    if (!btn) return;
+    const until = Date.now() + seconds * 1000;
+    clearInterval(warrantLockTimer);
+    const tick = () => {
+      const left = Math.ceil((until - Date.now()) / 1000);
+      if (left <= 0) {
+        clearInterval(warrantLockTimer);
+        warrantLockTimer = null;
+        btn.disabled = false;
+        btn.textContent = 'File ➔';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = `Wait ${left}s`;
+    };
+    tick();
+    warrantLockTimer = setInterval(tick, 1000);
+  }
+
   const r3LeaderForm = document.getElementById('r3LeaderForm');
   if (r3LeaderForm) {
     r3LeaderForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      if (r3Submitting) return;
+      if (r3Submitting || warrantLockTimer) return;
       const input = document.getElementById('r3LeaderInput');
       const val = (input?.value || '').trim();
       const fb = document.getElementById('r3LeaderFeedback');
@@ -2821,6 +2835,7 @@
         } else {
           if (sound) sound.playError();
           if (fb) { fb.textContent = res?.message || 'Warrant Rejected by Magistrate. Check format: [CULPRIT]:[WEAPON]:[MOTIVE]'; fb.className = 'alert-box alert-error'; fb.classList.remove('hidden'); }
+          if (res?.lockedForSec) lockWarrant(res.lockedForSec);
         }
       });
     });
