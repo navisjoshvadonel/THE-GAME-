@@ -823,3 +823,33 @@ body.server-deck {
   color: #92400e;
   border: 1px solid #fde68a;
 }
+
+
+/* ==========================================================================
+   DEVELOPER CREDIT TAG
+   ========================================================================== */
+.admin-developer-tag {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.admin-developer-tag .dev-tag-icon {
+  color: #c59b27;
+  font-size: 0.9rem;
+}
+
+.admin-developer-tag .dev-tag-name {
+  color: var(--navy-dark);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
